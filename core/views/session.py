@@ -1,16 +1,12 @@
 import json
 import logging
 import random
-import uuid
 
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.conf import settings
 from django.core.cache import cache
 
-from core.exception import catchException
-from core.models import *
 from core.auth import generateToken
 from core.auth import validateToken
 from core.common import *

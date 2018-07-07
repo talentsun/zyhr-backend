@@ -2,11 +2,17 @@ from core.models import *
 
 
 def resolve_department(dep):
-    return dep.__dict__
+    if dep is None:
+        return None
+    else:
+        return dep.__dict__
 
 
 def resolve_position(pos):
-    return pos.__dict__
+    if pos is None:
+        return None
+    else:
+        return pos.__dict__
 
 
 def resolve_profile(profile):
@@ -15,7 +21,13 @@ def resolve_profile(profile):
         'name': profile.name,
         'email': profile.email,
         'phone': profile.phone,
-        'desc': profile.desc
+        'desc': profile.desc,
+
+        'department': resolve_department(profile.department),
+        'position': resolve_position(profile.position),
+
+        'created_at': profile.created_at.isoformat(),
+        'updated_at': profile.updated_at.isoformat(),
     }
 
 

@@ -1,11 +1,14 @@
 import json
+import logging
+
 from django.test import TestCase
 from django.test import Client
 
-from core.models import *
 from core.auth import generateToken
 from core.views import session
 from core.tests import helpers
+
+logger = logging.getLogger('app.core.tests.session')
 
 
 class SessionTestCase(TestCase):
@@ -123,4 +126,5 @@ class SessionTestCase(TestCase):
             HTTP_AUTHORIZATION=token)
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content.decode('utf-8'))
+        logger.info(result)
         self.assertEqual(result['name'], self.profile.name)
