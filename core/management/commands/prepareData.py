@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 
 from core.models import *
+from core import specs
 
 
 def random_generator(size=6, chars=string.ascii_uppercase + string.digits):
@@ -12,7 +13,6 @@ def random_generator(size=6, chars=string.ascii_uppercase + string.digits):
 
 
 class Command(BaseCommand):
-
     def createProfile(self, name, dep, pos):
         user = User.objects.create(username=name)
         user.set_password('123456')
@@ -23,34 +23,14 @@ class Command(BaseCommand):
                                       position=pos,
                                       department=dep)
 
-    def createAuditConfig(self, category=None, subtype=None, spec=None):
-        config = AuditActivityConfig.objects\
-            .create(category=category,
-                    subtype=subtype)
-        stepSpecs = spec.split('->')
-        for index, step in enumerate(stepSpecs):
-            dep, pos = step.split('.')
-            dep, pos = dep.strip(), pos.strip()
-            pos = Position.objects.get(code=pos)
-            if dep == '_':
-                dep = None
-            else:
-                dep = Department.objects.get(code=dep)
-
-            AuditActivityConfigStep.objects\
-                .create(config=config,
-                        assigneeDepartment=dep,
-                        assigneePosition=pos,
-                        position=index)
-
     def handle(self, *args, **options):
         positions = [
             {'name': '总裁', 'code': 'ceo'},
             {'name': '负责人', 'code': 'owner'},
             {'name': '会计', 'code': 'accountant'},
             {'name': '出纳', 'code': 'cashier'},
-            {'name': '组员',  'code': 'member'},  # 各部门一般成员职位
-            {'name': '业务经理',  'code': 'mgr'}  # 只在大宗商品事业部
+            {'name': '组员', 'code': 'member'},  # 各部门一般成员职位
+            {'name': '业务经理', 'code': 'mgr'}  # 只在大宗商品事业部
         ]
         for pos in positions:
             Position.objects.create(**pos)
@@ -83,49 +63,66 @@ class Command(BaseCommand):
             self.createProfile(profile['name'], dep, pos)
 
         # 费用报销流程（总额<=5000）
-        self.createAuditConfig(category='fin', subtype='cost_lte_5000',
-                               spec='fin.accountant->\
+        specs.createAuditConfig(spec='fin.cost_lte_5000:\
+                                fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
-                                fin.owner->\
-                                fin.cashier')
+                                fin.owner')
         # 费用报销流程（总额>5000）
-        self.createAuditConfig(category='fin', subtype='cost_gt_5000',
-                               spec='fin.accountant->\
+        specs.createAuditConfig(spec='fin.cost_gt_5000:\
+                                fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner->\
-                                root.ceo->\
-                                fin.cashier')
+                                root.ceo')
+
+        # 差旅报销流程（总额<=5000）
+        specs.createAuditConfig(spec='fin.travel_lte_5000:\
+                                fin.accountant->\
+                                _.owner->\
+                                hr.owner->\
+                                fin.owner')
+        # 差旅报销流程（总额>5000）
+        specs.createAuditConfig(spec='fin.travel_gt_5000:\
+                                fin.accountant->\
+                                _.owner->\
+                                hr.owner->\
+                                fin.owner->\
+                                root.ceo')
+
         # 借款申请
-        self.createAuditConfig(category='fin', subtype='loan_lte_5000',
-                               spec='_.owner->\
+        specs.createAuditConfig(spec='fin.loan_lte_5000:\
+                                _.owner->\
+                                fin.owner')
+        specs.createAuditConfig(spec='fin.loan_gt_5000:\
+                                _.owner->\
                                 fin.owner->\
-                                fin.cashier')
-        self.createAuditConfig(category='fin', subtype='loan_gt_5000',
-                               spec='_.owner->\
-                                fin.owner->\
-                                root.ceo->\
-                                fin.cashier')
+                                root.ceo')
+
+        # 采购申请
+        specs.createAuditConfig(
+            spec='fin.purchase_lte_5000:_.owner->fin.owner')
+        specs.createAuditConfig(
+            spec='fin.purchase_gt_5000:_.owner->fin.owner->root.ceo')
 
         # 用款申请
-        self.createAuditConfig(category='fin', subtype='money_lte_50k',
-                               spec='_.owner->\
-                                fin.owner->\
-                                fin.cashier')
-        self.createAuditConfig(category='fin', subtype='money_gt_50k',
-                               spec='_.owner->\
-                                fin.owner->\
-                                root.ceo->\
-                                fin.cashier')
+        specs.createAuditConfig(spec='fin.money_lte_50k:_.owner->fin.owner')
+        specs.createAuditConfig(
+            spec='fin.money_gt_50k:_.owner->fin.owner->root.ceo')
 
         # 开户
-        self.createAuditConfig(category='fin', subtype='open_account',
-                               spec='_.owner->\
-                                fin.owner->\
-                                root.ceo->\
-                                fin.cashier')
+        specs.createAuditConfig(
+            spec='fin.open_account:_.owner->fin.owner->root.ceo')
+
+        # 业务合同会签
+        specs.createAuditConfig(
+            spec='law.biz_contract:_.owner->fin.accountant->fin.owner->root.ceo')
+
+        # 职能类合同会签
+        specs.createAuditConfig(
+            spec='law.fn_contract_zero:_.owner->root.ceo')
+        specs.createAuditConfig(
+            spec='law.fn_contract:_.owner->fin.owner->root.ceo')
 
         # 测试用的审批流程
-        self.createAuditConfig(category='test', subtype='test',
-                               spec='root.ceo->root.ceo->root.ceo')
+        specs.createAuditConfig(spec='test.test:root.ceo->root.ceo->root.ceo')

@@ -32,6 +32,9 @@ def createActivity(profile, data):
     else:
         config = AuditActivityConfig.objects.get(subtype=configCode)
 
+    taskId = uuid.uuid4()
+    logger.info('{} create activity base on config: {}'.format(taskId, config.subtype))
+
     configSteps = AuditActivityConfigStep.objects \
         .filter(config=config) \
         .order_by('position')
@@ -40,7 +43,11 @@ def createActivity(profile, data):
         .create(config=config,
                 creator=profile,
                 extra=data['extra'])
+
+    logger.info('{} create steps'.format(taskId))
     for index, step in enumerate(configSteps):
+        logger.info('{} resolve assignee for step#{}'.format(taskId, step.position))
+
         assigneeDepartment = step.assigneeDepartment
         if assigneeDepartment is None:
             # 如果部门没有配置，那么就设置为发起者所在部门
@@ -50,9 +57,21 @@ def createActivity(profile, data):
             .filter(department=assigneeDepartment,
                     position=step.assigneePosition)
         if profiles.count() != 1:
+            names = ', '.join([p.name for p in profiles])
+            logger.info('{} fail to resolve assignee for step#{}, dep: {}, pos: {}, candidates: {}'.format(taskId,
+                                                                                                           step.position,
+                                                                                                           assigneeDepartment.code,
+                                                                                                           step.assigneePosition.code,
+                                                                                                           names))
             raise Exception('Can not resolve assignee')
 
         assignee = profiles[0]
+        logger.info('{} assignee for step#{} resolved, dep: {}, pos: {}, assignee: {}'.format(taskId,
+                                                                                              step.position,
+                                                                                              assigneeDepartment.code,
+                                                                                              step.assigneePosition.code,
+                                                                                              assignee.name))
+
         active = False
         if index == 0:
             active = True
@@ -61,7 +80,7 @@ def createActivity(profile, data):
             .create(activity=activity,
                     active=active,
                     assignee=assignee,
-                    assigneeDepartment=step.assigneeDepartment,
+                    assigneeDepartment=assigneeDepartment,
                     assigneePosition=step.assigneePosition,
                     position=step.position)
 
