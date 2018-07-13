@@ -5,6 +5,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
+from sendfile import sendfile
 
 from core.exception import catchException
 from core.models import *
@@ -16,8 +17,9 @@ logger = logging.getLogger('app.core.views.upload')
 
 
 @require_http_methods(["POST"])
-@transaction.atomic
+@validateToken
 @catchException
+@transaction.atomic
 def upload(request):
     f = request.FILES.get('file', None)
     if f is None:
@@ -26,17 +28,23 @@ def upload(request):
             'errorMsg': 'File is empty'
         }, status=400)
 
-    q = qiniu.Auth(settings.QINIU_ACCESS_KEY, settings.QINIU_SECRET_KEY)
-    token = q.upload_token(settings.QINIU_BUCKET)
-    key = 'hauser-wirth/' + str(uuid.uuid4())
-    ret, info = qiniu.put_data(token, key, f.read())
+    path = str(uuid.uuid4())
+    file = File.objects.create(path=path, name=f.name, size=f.size)
 
-    if ret is not None:
-        return JsonResponse({
-            'url': 'http://{}/{}'.format(settings.QINIU_DOMAIN, key)
-        })
-    else:
-        return JsonResponse({
-            'errorId': 'upload-file-failed',
-            'qiniu-error': info
-        }, status=500)
+    filepath = '{}/{}'.format(settings.DATA_DIR, file.path)
+    with open(filepath, 'wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+
+    return JsonResponse({
+        'id': file.pk,
+        'url': 'http://{}/api/v1/assets/{}'.format(settings.HOST, path),
+        'name': file.name,
+        'size': file.size
+    })
+
+
+@require_http_methods(["GET"])
+def assets(request, path):
+    file = File.objects.get(path=path)
+    return sendfile(request, '{}/{}'.format(settings.DATA_DIR, file.path))

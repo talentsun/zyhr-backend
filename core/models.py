@@ -17,6 +17,7 @@ class Department(models.Model):
 
 class Position(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    code = models.CharField(max_length=50)
     name = models.CharField(max_length=255)
 
 
@@ -30,7 +31,8 @@ class Profile(models.Model):
         Department, on_delete=models.CASCADE, null=True)
     position = models.ForeignKey(Position, on_delete=models.CASCADE, null=True)
     blocked = models.BooleanField(default=False)
-    desc = models.TextField(default='')
+    desc = models.TextField(default='', null=True)
+    archived = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -39,7 +41,6 @@ class Profile(models.Model):
 # TODO: 支持待处理任务的生成
 class AuditActivityConfig(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    name = models.CharField(max_length=255)
     category = models.CharField(max_length=255)
     subtype = models.CharField(max_length=255, unique=True)
 
@@ -47,9 +48,11 @@ class AuditActivityConfig(models.Model):
 class AuditActivityConfigStep(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     config = models.ForeignKey(AuditActivityConfig, on_delete=models.CASCADE)
-    assigneeDepartment = models.ForeignKey(
-        Department, on_delete=models.CASCADE)
-    assigneePosition = models.ForeignKey(Position, on_delete=models.CASCADE)
+    assigneeDepartment = models.ForeignKey(Department,
+                                           null=True,
+                                           on_delete=models.CASCADE)
+    assigneePosition = models.ForeignKey(Position,
+                                         on_delete=models.CASCADE)
     position = models.IntegerField()
 
 
@@ -72,6 +75,7 @@ class AuditActivity(models.Model):
         max_length=20, choices=StateChoices, default=StateProcessing)
     extra = JSONField()  # 审批相关数据，不同类型的审批，相关数据不一样，暂时使用 json 保存
 
+    finished_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -88,10 +92,9 @@ class AuditActivity(models.Model):
         if self.state != self.StateProcessing:
             return None
 
-        return AuditStep.objects \
+        return AuditStep.objects\
             .filter(activity=self,
-                    state=AuditStep.StatePending) \
-            .order_by('position') \
+                    active=True)\
             .first()
 
     def steps(self):
@@ -112,12 +115,18 @@ class AuditStep(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     activity = models.ForeignKey(AuditActivity, on_delete=models.CASCADE)
+    active = models.BooleanField(default=False)
     assignee = models.ForeignKey(Profile, on_delete=models.CASCADE)
     assigneeDepartment = models.ForeignKey(
         Department, on_delete=models.CASCADE)
     assigneePosition = models.ForeignKey(Position, on_delete=models.CASCADE)
-    state = models.CharField(max_length=20, choices=StateChoices, default=StatePending)
+    state = models.CharField(
+        max_length=20, choices=StateChoices, default=StatePending)
     position = models.IntegerField()
+    desc = models.TextField(null=True)
+
+    activated_at = models.DateTimeField(null=True)  # 开始时间
+    finished_at = models.DateTimeField(null=True)  # 结束时间
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -135,3 +144,9 @@ class AuditStep(models.Model):
                                          position=self.position + 1)
         except:
             return None
+
+
+class File(models.Model):
+    name = models.CharField(max_length=255)
+    path = models.CharField(max_length=255)
+    size = models.IntegerField()

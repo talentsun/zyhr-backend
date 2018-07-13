@@ -57,8 +57,7 @@ class AuditTestCase(TestCase):
     def audit_activity_normal_lifecycle(self, actions):
         self.perpareData()
         config = AuditActivityConfig.objects \
-            .create(name='test',
-                    category='fin',
+            .create(category='fin',
                     subtype='baoxiao')
         AuditActivityConfigStep.objects \
             .create(config=config,
@@ -112,7 +111,8 @@ class AuditTestCase(TestCase):
         for action in actions:
             if action == 'cancel':
                 response = client.post(
-                    '/api/v1/audit-activities/{}/actions/cancel'.format(activity.pk),
+                    '/api/v1/audit-activities/{}/actions/cancel'.format(
+                        activity.pk),
                     content_type='application/json',
                     HTTP_AUTHORIZATION=token
                 )
@@ -136,8 +136,52 @@ class AuditTestCase(TestCase):
                 )
                 self.assertEquals(response.status_code, 200)
 
+    def test_query_configs(self):
+        self.audit_activity_normal_lifecycle([])
+        activity = AuditActivity.objects.all()[0]
+
+        token = generateToken(activity.creator)
+        client = Client()
+        response = client.get(
+            '/api/v1/audit-configs',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(result['configs']), 1)
+
     def test_create_audit_activity(self):
         self.audit_activity_normal_lifecycle([])
+        activity = AuditActivity.objects.all()[0]
+        steps = activity.steps()
+        self.assertEqual(steps[0].active, True)
+        self.assertEqual(steps[1].active, False)
+        self.assertEqual(steps[2].active, False)
+
+    def test_query_mine_activities(self):
+        self.audit_activity_normal_lifecycle([])
+        activity = AuditActivity.objects.all()[0]
+
+        token = generateToken(activity.creator)
+        client = Client()
+
+        response = client.get(
+            '/api/v1/mine-audit-activities?type=baoxiao&state=processing',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(len(result['activities']), 1)
+
+        response = client.get(
+            '/api/v1/mine-audit-activities?start=20',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(len(result['activities']), 0)
 
     def test_cancel_audit_activity(self):
         self.audit_activity_normal_lifecycle(['cancel'])
@@ -159,9 +203,61 @@ class AuditTestCase(TestCase):
         result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(result['errorId'], 'invalid-state')
 
+    def test_query_assigned_activities(self):
+        self.audit_activity_normal_lifecycle([])
+
+        token = generateToken(self.lee)
+        client = Client()
+        response = client.get(
+            '/api/v1/assigned-audit-activities?type=baoxiao&creator=jack',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEquals(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(len(result['activities']), 1)
+
+        client = Client()
+        response = client.get(
+            '/api/v1/assigned-audit-activities?type=baoxiao&creator=jack&start=20',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEquals(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(len(result['activities']), 0)
+
+    def test_query_processed_activities(self):
+        self.audit_activity_normal_lifecycle(['approve'])
+
+        token = generateToken(self.lee)
+        client = Client()
+        response = client.get(
+            '/api/v1/processed-audit-activities?type=baoxiao&creator=jack',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEquals(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(len(result['activities']), 1)
+
+        client = Client()
+        response = client.get(
+            '/api/v1/processed-audit-activities?type=baoxiao&creator=jack&start=20',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEquals(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(len(result['activities']), 0)
+
     def test_approve_audit_step(self):
         self.audit_activity_normal_lifecycle(['approve'])
         activity = AuditActivity.objects.all()[0]
+
+        steps = activity.steps()
+        stepActive = [step.active for step in steps]
+        self.assertListEqual(stepActive, [False, True, False])
 
         currentStep = activity.currentStep()
         self.assertEqual(currentStep.position, 1)
@@ -184,6 +280,9 @@ class AuditTestCase(TestCase):
             AuditStep.StateRejected,
             AuditStep.StatePending
         ])
+
+        stepActive = [step.active for step in steps]
+        self.assertListEqual(stepActive, [False, False, False])
 
     def test_approve_rejected_step(self):
         self.audit_activity_normal_lifecycle(['approve', 'reject'])

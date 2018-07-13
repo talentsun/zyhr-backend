@@ -29,6 +29,9 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 CORS_ORIGIN_ALLOW_ALL = True
 
+HOST = os.getenv('HOST', 'localhost:8000')
+SENDFILE_BACKEND = 'sendfile.backends.simple'
+
 
 QINIU_ACCESS_KEY = os.getenv('QINIU_ACCESS_KEY', '')
 QINIU_SECRET_KEY = os.getenv('QINIU_SECRET_KEY', '')
@@ -88,10 +91,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
+DATA_DIR = '/var/lib/zyhr'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join('/var/lib/zyhr/', 'db.sqlite3'),
+        'NAME': os.path.join(DATA_DIR, 'db.sqlite3'),
     }
 }
 
@@ -133,7 +137,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
