@@ -79,3 +79,16 @@ def resolve_step(step):
         'created_at': step.created_at.isoformat(),
         'updated_at': step.updated_at.isoformat()
     }
+
+
+def resolve_role(r):
+    if r is None:
+        return None
+
+    return {
+        'id': str(r.pk),
+        'name': r.name,
+        'version': r.version,
+        'desc': r.desc,
+        'extra': r.extra
+    }

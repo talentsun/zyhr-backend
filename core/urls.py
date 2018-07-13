@@ -5,6 +5,7 @@ from core.views import session
 from core.views import audit
 from core.views import emps
 from core.views import organization
+from core.views import roles
 
 
 urlpatterns = [
@@ -39,4 +40,9 @@ urlpatterns = [
     path(r'emps/<uuid:empId>/actions/update-password', emps.updatePassword),
     path(r'departments', organization.departments),
     path(r'positions', organization.positions),
+
+
+    # roles api
+    path(r'roles', roles.index),
+    path(r'roles/<uuid:roleId>', roles.detail),
 ]

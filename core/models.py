@@ -21,6 +21,48 @@ class Position(models.Model):
     name = models.CharField(max_length=255)
 
 
+# v1 权限常量
+P_V1_VIEW_LAUNCH_AUDIT = 'view_launch_audit'  # 浏览发起审批页面
+P_V1_VIEW_ASSIGNED_AUDIT = 'view_assigned_audit'  # 浏览待我审批页面
+P_V1_VIEW_PROCESSED_AUDIT = 'view_processed_audit'  # 浏览我已审批页面
+P_V1_VIEW_MINE_AUDIT = 'view_mine_audit'  # 浏览我发起的审批页面
+P_V1_LAUNCH_FIN_AUDIT = 'launch_fin_audit'  # 发起财务类审批
+P_V1_LAUNCH_LAW_AUDIT = 'launch_law_audit'  # 发起法务类审批
+P_V1_VIEW_EMP = 'view_emp'  # 浏览员工配置页面
+P_V1_ADD_EMP = 'add_emp'  # 添加员工
+P_V1_MANAGE_EMP = 'manage_emp'  # 管理员工
+P_V1 = [
+    P_V1_VIEW_LAUNCH_AUDIT,
+    P_V1_VIEW_ASSIGNED_AUDIT,
+    P_V1_VIEW_PROCESSED_AUDIT,
+    P_V1_VIEW_MINE_AUDIT,
+    P_V1_LAUNCH_FIN_AUDIT,
+    P_V1_LAUNCH_LAW_AUDIT,
+    P_V1_VIEW_EMP,
+    P_V1_ADD_EMP,
+    P_V1_MANAGE_EMP,
+]
+
+
+class Role(models.Model):
+    '''
+    v1 中 extra 字段格式：Array<Permission>
+    '''
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    name = models.CharField(max_length=255)
+    desc = models.CharField(max_length=255, null=True)
+    version = models.CharField(max_length=10, default='v1')
+    archived = models.BooleanField(default=False)
+    extra = JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def profiles(self):
+        return Profile.objects.filter(role=self).count()
+
+
 class Profile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -33,6 +75,7 @@ class Profile(models.Model):
     blocked = models.BooleanField(default=False)
     desc = models.TextField(default='', null=True)
     archived = models.BooleanField(default=False)
+    role = models.ForeignKey(Role, null=True, on_delete=models.CASCADE)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -150,3 +193,6 @@ class File(models.Model):
     name = models.CharField(max_length=255)
     path = models.CharField(max_length=255)
     size = models.IntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
