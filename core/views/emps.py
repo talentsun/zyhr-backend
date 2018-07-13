@@ -62,7 +62,7 @@ def detail(request, empId):
     elif request.method == 'PUT':
         data = json.loads(request.body.decode('utf-8'))
         partial = {}
-        for prop in ['department', 'position', 'phone', 'desc']:
+        for prop in ['department', 'position', 'phone', 'desc', 'role']:
             if data.get(prop, None) != None:
                 partial[prop] = data.get(prop)
         Profile.objects.filter(pk=empId).update(**partial)

@@ -20,22 +20,17 @@ logger = logging.getLogger('app.core.views.emps')
 @transaction.atomic
 def index(request):
     if request.method == 'GET':
-        start = int(request.GET.get('start', '0'))
-        limit = int(request.GET.get('limit', '20'))
         roles = Role.objects\
             .filter(archived=False)\
             .order_by('-updated_at')
-        total = roles.count()
-        roles = roles[start:start + limit]
         return JsonResponse({
-            'total': total,
             'roles': [resolve_role(r) for r in roles]
         })
     if request.method == 'POST':
         # TODO: check profile permission
 
         data = json.loads(request.body.decode('utf-8'))
-        extra = data.get('extra')
+        extra = data.get('extra', [])
         for item in extra:
             if item not in P_V1:
                 return JsonResponse({
@@ -45,7 +40,7 @@ def index(request):
         data = json.loads(request.body.decode('utf-8'))
         Role.objects.create(name=data['name'],
                             desc=data.get('desc', None),
-                            extra=data['extra'])
+                            extra=extra)
         return JsonResponse({'ok': True})
 
 

@@ -38,7 +38,7 @@ def resolve_profile(profile):
         'phone': profile.phone,
         'desc': profile.desc,
         'blocked': profile.blocked,
-
+        'role': resolve_role(profile.role),
         'department': resolve_department(profile.department),
         'position': resolve_position(profile.position),
 
@@ -88,6 +88,7 @@ def resolve_role(r):
     return {
         'id': str(r.pk),
         'name': r.name,
+        'profiles': r.profiles,
         'version': r.version,
         'desc': r.desc,
         'extra': r.extra

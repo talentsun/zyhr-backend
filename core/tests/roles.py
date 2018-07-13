@@ -60,9 +60,8 @@ class RolesTestCase(TestCase):
 
         result = json.loads(response.content.decode('utf-8'))
         roles = result['roles']
-        self.assertEqual(result['total'], 2)
-        self.assertEqual(len(roles), 1)
-        self.assertEqual(roles[0]['name'], 'r1')
+        self.assertEqual(len(roles), 2)
+        self.assertEqual(roles[0]['name'], 'r2')
 
     def test_delete_role(self):
         role = Role.objects.create(name='r1', extra={})
