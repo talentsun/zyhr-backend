@@ -54,7 +54,7 @@ def detail(request, roleId):
     elif request.method == 'PUT':
         data = json.loads(request.body.decode('utf-8'))
         partial = {}
-        for prop in ['name', 'desc']:
+        for prop in ['name', 'desc', 'extra']:
             if data.get(prop, None) != None:
                 partial[prop] = data.get(prop)
         Role.objects.filter(pk=roleId).update(**partial)
