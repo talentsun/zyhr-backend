@@ -5,12 +5,17 @@ def createAuditConfig(spec=None):
     '''
     spec format: {category}.{subtype}:dep.pos->dep.pos->...
     '''
+    hasTask = spec.endswith('...')
+    if hasTask:
+        spec = spec[0:-3]
+
     categorySpecs, flowSpecs = spec.split(':')
     categorySpecs, flowSpecs = categorySpecs.strip(), flowSpecs.strip()
     category, subtype = categorySpecs.split('.')
 
     config = AuditActivityConfig.objects \
         .create(category=category,
+                hasTask=hasTask,
                 subtype=subtype)
 
     stepSpecs = flowSpecs.split('->')

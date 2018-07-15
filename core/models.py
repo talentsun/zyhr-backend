@@ -86,6 +86,7 @@ class AuditActivityConfig(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     category = models.CharField(max_length=255)
     subtype = models.CharField(max_length=255, unique=True)
+    hasTask = models.BooleanField(default=False)
 
 
 class AuditActivityConfigStep(models.Model):

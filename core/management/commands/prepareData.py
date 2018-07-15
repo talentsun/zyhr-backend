@@ -67,52 +67,52 @@ class Command(BaseCommand):
                                 fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
-                                fin.owner')
+                                fin.owner...')
         # 费用报销流程（总额>5000）
         specs.createAuditConfig(spec='fin.cost_gt_5000:\
                                 fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner->\
-                                root.ceo')
+                                root.ceo...')
 
         # 差旅报销流程（总额<=5000）
         specs.createAuditConfig(spec='fin.travel_lte_5000:\
                                 fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
-                                fin.owner')
+                                fin.owner...')
         # 差旅报销流程（总额>5000）
         specs.createAuditConfig(spec='fin.travel_gt_5000:\
                                 fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner->\
-                                root.ceo')
+                                root.ceo...')
 
         # 借款申请
         specs.createAuditConfig(spec='fin.loan_lte_5000:\
                                 _.owner->\
-                                fin.owner')
+                                fin.owner...')
         specs.createAuditConfig(spec='fin.loan_gt_5000:\
                                 _.owner->\
                                 fin.owner->\
-                                root.ceo')
+                                root.ceo...')
 
         # 采购申请
         specs.createAuditConfig(
-            spec='fin.purchase_lte_5000:_.owner->fin.owner')
+            spec='fin.purchase_lte_5000:_.owner->fin.owner...')
         specs.createAuditConfig(
-            spec='fin.purchase_gt_5000:_.owner->fin.owner->root.ceo')
+            spec='fin.purchase_gt_5000:_.owner->fin.owner->root.ceo...')
 
         # 用款申请
         specs.createAuditConfig(spec='fin.money_lte_50k:_.owner->fin.owner')
         specs.createAuditConfig(
-            spec='fin.money_gt_50k:_.owner->fin.owner->root.ceo')
+            spec='fin.money_gt_50k:_.owner->fin.owner->root.ceo...')
 
         # 开户
         specs.createAuditConfig(
-            spec='fin.open_account:_.owner->fin.owner->root.ceo')
+            spec='fin.open_account:_.owner->fin.owner->root.ceo...')
 
         # 业务合同会签
         specs.createAuditConfig(
@@ -125,4 +125,4 @@ class Command(BaseCommand):
             spec='law.fn_contract:_.owner->fin.owner->root.ceo')
 
         # 测试用的审批流程
-        specs.createAuditConfig(spec='test.test:root.ceo->root.ceo->root.ceo')
+        specs.createAuditConfig(spec='test.test:root.ceo->root.ceo->root.ceo...')

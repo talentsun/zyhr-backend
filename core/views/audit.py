@@ -33,7 +33,8 @@ def createActivity(profile, data):
         config = AuditActivityConfig.objects.get(subtype=configCode)
 
     taskId = uuid.uuid4()
-    logger.info('{} create activity base on config: {}'.format(taskId, config.subtype))
+    logger.info('{} create activity base on config: {}'.format(
+        taskId, config.subtype))
 
     configSteps = AuditActivityConfigStep.objects \
         .filter(config=config) \
@@ -46,7 +47,8 @@ def createActivity(profile, data):
 
     logger.info('{} create steps'.format(taskId))
     for index, step in enumerate(configSteps):
-        logger.info('{} resolve assignee for step#{}'.format(taskId, step.position))
+        logger.info('{} resolve assignee for step#{}'.format(
+            taskId, step.position))
 
         assigneeDepartment = step.assigneeDepartment
         if assigneeDepartment is None:
@@ -229,7 +231,8 @@ def mineActivities(request):
 
     activities = AuditActivity.objects.filter(creator=request.profile)
     if notEmpty(auditType):
-        activities = activities.filter(config__subtype=auditType)
+        activities = activities.filter(
+            config__subtype__in=auditType.split(','))
     if notEmpty(state):
         activities = activities.filter(state=state)
     if notEmpty(created_at):
@@ -262,7 +265,8 @@ def assignedActivities(request):
     steps = AuditStep.objects.filter(assignee=request.profile,
                                      active=True)
     if notEmpty(auditType):
-        steps = steps.filter(activity__config__subtype=auditType)
+        steps = steps.filter(
+            activity__config__subtype__in=auditType.split(','))
     if notEmpty(creator_name):
         steps = steps.filter(activity__creator__name=creator_name)
     if notEmpty(created_at):
@@ -294,7 +298,8 @@ def processedActivities(request):
                                          AuditStep.StateRejected
                                      ])
     if notEmpty(auditType):
-        steps = steps.filter(activity__config__subtype=auditType)
+        steps = steps.filter(
+            activity__config__subtype__in=auditType.split(','))
     if notEmpty(creator_name):
         steps = steps.filter(activity__creator__name=creator_name)
     if notEmpty(created_at):
@@ -306,4 +311,33 @@ def processedActivities(request):
     return JsonResponse({
         'total': total,
         'activities': [resolve_activity(step.activity) for step in steps]
+    })
+
+
+@require_http_methods(['GET'])
+@validateToken
+def auditTasks(request):
+    auditType = request.GET.get('type', None)
+    state = request.GET.get('state', None)
+    created_at = request.GET.get('created_at', None)
+
+    start = int(request.GET.get('start', '0'))
+    limit = int(request.GET.get('limit', '20'))
+
+    activities = AuditActivity.objects.filter(state=AuditActivity.StateApproved,
+                                              config__hasTask=True)
+    if notEmpty(auditType):
+        activities = activities.filter(
+            config__subtype__in=auditType.split(','))
+    if notEmpty(state):
+        activities = activities.filter(state=state)
+    if notEmpty(created_at):
+        # TODO: handle time filter
+        pass
+
+    total = activities.count()
+    activities = activities[start:start + limit]
+    return JsonResponse({
+        'total': total,
+        'activities': [resolve_activity(activity) for activity in activities]
     })

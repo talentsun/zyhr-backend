@@ -31,6 +31,7 @@ urlpatterns = [
     path(r'mine-audit-activities', audit.mineActivities),
     path(r'assigned-audit-activities', audit.assignedActivities),
     path(r'processed-audit-activities', audit.processedActivities),
+    path(r'audit-tasks', audit.auditTasks),
 
 
     # emps/deps/positions api
