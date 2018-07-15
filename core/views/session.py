@@ -79,7 +79,9 @@ def loginWithCode(request):
 def sendCode(request):
     data = json.loads(request.body.decode('utf-8'))
     # TODO: call http api to send code
-    cacheCode(data['phone'], generateCode())
+    code = generateCode()
+    logger.info('send code {} for {}'.format(code, data['phone']))
+    cacheCode(data['phone'], code)
     return JsonResponse({'ok': True})
 
 
