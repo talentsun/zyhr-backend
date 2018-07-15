@@ -219,6 +219,13 @@ def rejectStep(request, stepId):
         }, status=400)
 
 
+def resolveDateRange(created_at):
+    start = datetime.datetime.strptime(created_at, '%Y-%m-%d')
+    start = start - datetime.timedelta(days=1) - datetime.timedelta(hours=8)
+    to = start + datetime.timedelta(days=1)
+    return start, to
+
+
 @require_http_methods(['GET'])
 @validateToken
 def mineActivities(request):
@@ -236,8 +243,9 @@ def mineActivities(request):
     if notEmpty(state):
         activities = activities.filter(state=state)
     if notEmpty(created_at):
-        # TODO: handle time filter
-        pass
+        _start, _to = resolveDateRange(created_at)
+        activities = activities.filter(created_at__gte=_start,
+                                       created_at__lt=_to)
 
     total = activities.count()
     activities = activities[start:start + limit]
@@ -270,8 +278,9 @@ def assignedActivities(request):
     if notEmpty(creator_name):
         steps = steps.filter(activity__creator__name=creator_name)
     if notEmpty(created_at):
-        # TODO: handle time filter
-        pass
+        _start, _to = resolveDateRange(created_at)
+        steps = steps.filter(activity__created_at__gte=_start,
+                             activity__created_at__lt=_to)
 
     total = steps.count()
     steps = steps[start:start + limit]
@@ -303,8 +312,9 @@ def processedActivities(request):
     if notEmpty(creator_name):
         steps = steps.filter(activity__creator__name=creator_name)
     if notEmpty(created_at):
-        # TODO: handle time filter
-        pass
+        _start, _to = resolveDateRange(created_at)
+        steps = steps.filter(activity__created_at__gte=_start,
+                             activity__created_at__lt=_to)
 
     total = steps.count()
     steps = steps[start:start + limit]
@@ -332,8 +342,9 @@ def auditTasks(request):
     if notEmpty(state):
         activities = activities.filter(state=state)
     if notEmpty(created_at):
-        # TODO: handle time filter
-        pass
+        _start, _to = resolveDateRange(created_at)
+        activities = activities.filter(created_at__gte=_start,
+                                       created_at__lt=_to)
 
     total = activities.count()
     activities = activities[start:start + limit]
