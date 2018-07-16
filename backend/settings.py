@@ -33,12 +33,6 @@ HOST = os.getenv('HOST', 'localhost:8000')
 SENDFILE_BACKEND = 'sendfile.backends.simple'
 
 
-QINIU_ACCESS_KEY = os.getenv('QINIU_ACCESS_KEY', '')
-QINIU_SECRET_KEY = os.getenv('QINIU_SECRET_KEY', '')
-QINIU_BUCKET = os.getenv('QINIU_BUCKET', '')
-QINIU_DOMAIN = os.getenv('QINIU_DOMAIN', '')
-
-
 # Application definition
 
 INSTALLED_APPS = [
