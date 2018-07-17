@@ -17,6 +17,7 @@ urlpatterns = [
     path(r'login', session.login),
     path(r'login-with-code', session.loginWithCode),
     path(r'send-code', session.sendCode),
+    path(r'change-phone', session.changePhone),
     path(r'profile', session.profile),
 
 

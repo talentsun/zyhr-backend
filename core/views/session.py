@@ -85,6 +85,22 @@ def sendCode(request):
     return JsonResponse({'ok': True})
 
 
+@require_http_methods(["POST"])
+@transaction.atomic
+@validateToken
+def changePhone(request):
+    profile = request.profile
+    data = json.loads(request.body.decode('utf-8'))
+    phone = data['phone']
+    code = data['code']
+    if checkCode(phone, code):
+        profile.phone = phone
+        profile.save()
+        return JsonResponse({'ok': True})
+    else:
+        return JsonResponse({'errorId': 'invalid-code'}, status=400)
+
+
 @require_http_methods(['GET'])
 @transaction.atomic
 @validateToken
