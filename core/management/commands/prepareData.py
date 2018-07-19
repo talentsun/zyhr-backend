@@ -24,6 +24,8 @@ class Command(BaseCommand):
                                       department=dep)
 
     def handle(self, *args, **options):
+        roleSuperuser = Role.objects.create(name='超级管理员', extra=P_V1)
+
         positions = [
             {'name': '总裁', 'code': 'ceo'},
             {'name': '负责人', 'code': 'owner'},
@@ -60,7 +62,10 @@ class Command(BaseCommand):
         for profile in profiles:
             dep = Department.objects.get(code=profile['dep'])
             pos = Position.objects.get(code=profile['pos'])
-            self.createProfile(profile['name'], dep, pos)
+            p = self.createProfile(profile['name'], dep, pos)
+            if profile['name'] == 'ceo':
+                p.role = roleSuperuser
+                p.save()
 
         # 费用报销流程（总额<=5000）
         specs.createAuditConfig(spec='fin.cost_lte_5000:\

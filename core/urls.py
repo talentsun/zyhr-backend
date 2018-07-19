@@ -7,11 +7,9 @@ from core.views import emps
 from core.views import organization
 from core.views import roles
 
-
 urlpatterns = [
     path(r'upload', upload.upload),
     path(r'assets/<str:path>', upload.assets),
-
 
     # session api
     path(r'login', session.login),
@@ -19,7 +17,6 @@ urlpatterns = [
     path(r'send-code', session.sendCode),
     path(r'change-phone', session.changePhone),
     path(r'profile', session.profile),
-
 
     # audit api
     path(r'audit-configs', audit.configs),
@@ -34,7 +31,6 @@ urlpatterns = [
     path(r'processed-audit-activities', audit.processedActivities),
     path(r'audit-tasks', audit.auditTasks),
 
-
     # emps/deps/positions api
     path(r'emps', emps.index),
     path(r'emps/<uuid:empId>', emps.detail),
@@ -42,7 +38,6 @@ urlpatterns = [
     path(r'emps/<uuid:empId>/actions/update-password', emps.updatePassword),
     path(r'departments', organization.departments),
     path(r'positions', organization.positions),
-
 
     # roles api
     path(r'roles', roles.index),
