@@ -22,25 +22,62 @@ class Position(models.Model):
 
 
 # v1 权限常量
+P_V1_VIEW_HOME = 'view_home'  # 浏览首页
+P_V1_VIEW_HOME_MINE_AUDIT = 'view_home_mine_audit'  # 浏览我发起的
+P_V1_VIEW_HOME_ASSIGNED_AUDIT = 'view_home_assigned_audit'  # 浏览待我审批
+
 P_V1_VIEW_LAUNCH_AUDIT = 'view_launch_audit'  # 浏览发起审批页面
-P_V1_VIEW_ASSIGNED_AUDIT = 'view_assigned_audit'  # 浏览待我审批页面
-P_V1_VIEW_PROCESSED_AUDIT = 'view_processed_audit'  # 浏览我已审批页面
-P_V1_VIEW_MINE_AUDIT = 'view_mine_audit'  # 浏览我发起的审批页面
 P_V1_LAUNCH_FIN_AUDIT = 'launch_fin_audit'  # 发起财务类审批
 P_V1_LAUNCH_LAW_AUDIT = 'launch_law_audit'  # 发起法务类审批
+
+P_V1_VIEW_ASSIGNED_AUDIT = 'view_assigned_audit'  # 浏览待我审批页面
+P_V1_MGR_ASSIGNED_AUDIT = 'mgr_assigned_audit'  # 浏览待我审批页面
+
+P_V1_VIEW_AUDIT_DETAIL = 'view_audit_detail'  # 查看审批详情
+P_V1_VIEW_PROCESSED_AUDIT = 'view_processed_audit'  # 浏览我已审批页面
+P_V1_VIEW_MINE_AUDIT = 'view_mine_audit'  # 浏览我发起的审批页面
+P_V1_CANCEL_AUDIT = 'cancel_audit'  # 撤回审批
+P_V1_EDIT_AUDIT = 'edit_audit'  # 编辑审批
+
+P_V1_VIEW_PROFILE = 'view_profile'  # 浏览个人中心
+P_V1_CHANE_PHONE = 'change_phone'  # 浏览个人中心
+
+P_V1_VIEW_ROLE = 'view_role'  # 浏览角色配置页面
+P_V1_ADD_ROLE = 'add_role'  # 添加角色
+P_V1_MANAGE_ROLE = 'manage_role'  # 管理角色
+
 P_V1_VIEW_EMP = 'view_emp'  # 浏览员工配置页面
 P_V1_ADD_EMP = 'add_emp'  # 添加员工
 P_V1_MANAGE_EMP = 'manage_emp'  # 管理员工
 P_V1 = [
+    P_V1_VIEW_HOME,
+    P_V1_VIEW_HOME_MINE_AUDIT,
+    P_V1_VIEW_HOME_ASSIGNED_AUDIT,
+
     P_V1_VIEW_LAUNCH_AUDIT,
-    P_V1_VIEW_ASSIGNED_AUDIT,
-    P_V1_VIEW_PROCESSED_AUDIT,
-    P_V1_VIEW_MINE_AUDIT,
     P_V1_LAUNCH_FIN_AUDIT,
     P_V1_LAUNCH_LAW_AUDIT,
+
+    P_V1_VIEW_AUDIT_DETAIL,
+
+    P_V1_VIEW_ASSIGNED_AUDIT,
+    P_V1_MGR_ASSIGNED_AUDIT,
+
+    P_V1_VIEW_PROCESSED_AUDIT,
+    P_V1_VIEW_MINE_AUDIT,
+    P_V1_CANCEL_AUDIT,
+    P_V1_EDIT_AUDIT,
+
+    P_V1_VIEW_PROFILE,
+    P_V1_CHANE_PHONE,
+
     P_V1_VIEW_EMP,
     P_V1_ADD_EMP,
     P_V1_MANAGE_EMP,
+
+    P_V1_VIEW_ROLE,
+    P_V1_ADD_ROLE,
+    P_V1_MANAGE_ROLE
 ]
 
 
