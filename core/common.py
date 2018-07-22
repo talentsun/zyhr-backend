@@ -31,6 +31,8 @@ def resolve_position(pos):
 
 
 def resolve_profile(profile):
+    accounts = BankAccount.objects.filter(profile=profile)
+
     return {
         'id': str(profile.pk),
         'name': profile.name,
@@ -41,6 +43,12 @@ def resolve_profile(profile):
         'role': resolve_role(profile.role),
         'department': resolve_department(profile.department),
         'position': resolve_position(profile.position),
+
+        'accounts': [{
+            'name': account.name,
+            'bank': account.bank,
+            'number': account.number
+        } for account in accounts],
 
         'created_at': profile.created_at.isoformat(),
         'updated_at': profile.updated_at.isoformat(),

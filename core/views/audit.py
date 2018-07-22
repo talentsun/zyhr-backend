@@ -1,6 +1,7 @@
+import re
+import json
 import logging
 import datetime
-import json
 
 from django.db import transaction
 from django.utils import timezone
@@ -32,6 +33,28 @@ def submitActivityAudit(activity):
     step.active = True
     step.activated_at = datetime.datetime.now(tz=timezone.utc)
     step.save()
+
+
+def recordBankAccountIfNeed(profile, code, data):
+    accounts = []
+    if re.match('cost|loan', code):
+        accounts = [data['account']]
+    if re.match('money', code):
+        accounts = [data['inAccount'], data['outAccount']]
+        for account in accounts:
+            account['name'] = account['company']
+
+    for account in accounts:
+        if BankAccount.object. \
+                filter(profile=profile,
+                       name=account['name'],
+                       bank=account['bank'],
+                       number=account['number']).count() == 0:
+            BankAccount.objects. \
+                create(profile=profile,
+                       name=account['name'],
+                       bank=account['bank'],
+                       number=account['number'])
 
 
 @transaction.atomic
@@ -88,7 +111,7 @@ def createActivity(profile, data):
                                                                                               step.assigneePosition.code,
                                                                                               assignee.name))
 
-        step = AuditStep.objects \
+        AuditStep.objects \
             .create(activity=activity,
                     active=False,
                     assignee=assignee,
@@ -98,6 +121,8 @@ def createActivity(profile, data):
 
     if submit:
         submitActivityAudit(activity)
+
+    recordBankAccountIfNeed(profile, activity.config.subtype, activity.extra)
 
     return activity
 
@@ -150,6 +175,9 @@ def updateData(request, activityId):
     activity = AuditActivity.objects.get(pk=activityId)
     activity.extra = data
     activity.save()
+
+    recordBankAccountIfNeed(request.profile, activity.config.subtype, data)
+
     return JsonResponse({'ok': True})
 
 
