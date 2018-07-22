@@ -81,6 +81,7 @@ class AuditTestCase(TestCase):
             '/api/v1/audit-activities',
             json.dumps({
                 'config': str(config.pk),
+                'submit': True,
                 'extra': {}
             }),
             content_type='application/json',

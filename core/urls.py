@@ -23,6 +23,9 @@ urlpatterns = [
     path(r'audit-activities', audit.activities),
     path(r'audit-activities/<uuid:activityId>', audit.activity),
     path(r'audit-activities/<str:activityId>/actions/cancel', audit.cancel),
+    path(r'audit-activities/<str:activityId>/actions/update-data', audit.updateData),
+    path(r'audit-activities/<str:activityId>/actions/submit-audit', audit.submitAudit),
+    path(r'audit-activities/<str:activityId>/actions/relaunch', audit.relaunch),
     path(r'audit-steps/<uuid:stepId>/actions/approve', audit.approveStep),
     path(r'audit-steps/<uuid:stepId>/actions/reject', audit.rejectStep),
 

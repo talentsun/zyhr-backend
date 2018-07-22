@@ -25,6 +25,23 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         roleSuperuser = Role.objects.create(name='超级管理员', extra=P_V1)
+        roleMember = Role.objects.create(name='普通员工', extra=[
+            P_V1_VIEW_HOME,
+            P_V1_VIEW_HOME_ASSIGNED_AUDIT,
+            P_V1_VIEW_HOME_MINE_AUDIT,
+
+            P_V1_VIEW_LAUNCH_AUDIT,
+            P_V1_LAUNCH_FIN_AUDIT,
+            P_V1_LAUNCH_LAW_AUDIT,
+
+            P_V1_VIEW_MINE_AUDIT,
+            P_V1_VIEW_AUDIT_DETAIL,
+            P_V1_CANCEL_AUDIT,
+            P_V1_EDIT_AUDIT,
+
+            P_V1_VIEW_PROFILE,
+            P_V1_CHANE_PHONE,
+        ])
 
         positions = [
             {'name': '总裁', 'code': 'ceo'},
@@ -65,6 +82,9 @@ class Command(BaseCommand):
             p = self.createProfile(profile['name'], dep, pos)
             if profile['name'] == 'ceo':
                 p.role = roleSuperuser
+                p.save()
+            else:
+                p.role = roleMember
                 p.save()
 
         # 费用报销流程（总额<=5000）
@@ -111,7 +131,7 @@ class Command(BaseCommand):
             spec='fin.purchase_gt_5000:_.owner->fin.owner->root.ceo...')
 
         # 用款申请
-        specs.createAuditConfig(spec='fin.money_lte_50k:_.owner->fin.owner')
+        specs.createAuditConfig(spec='fin.money_lte_50k:_.owner->fin.owner...')
         specs.createAuditConfig(
             spec='fin.money_gt_50k:_.owner->fin.owner->root.ceo...')
 
@@ -121,13 +141,14 @@ class Command(BaseCommand):
 
         # 业务合同会签
         specs.createAuditConfig(
-            spec='law.biz_contract:_.owner->fin.accountant->fin.owner->root.ceo')
+            spec='law.biz_contract:_.owner->fin.accountant->fin.owner->root.ceo...')
 
         # 职能类合同会签
         specs.createAuditConfig(
-            spec='law.fn_contract_zero:_.owner->root.ceo')
+            spec='law.fn_contract_zero:_.owner->root.ceo...')
         specs.createAuditConfig(
-            spec='law.fn_contract:_.owner->fin.owner->root.ceo')
+            spec='law.fn_contract:_.owner->fin.owner->root.ceo...')
 
         # 测试用的审批流程
-        specs.createAuditConfig(spec='test.test:root.ceo->root.ceo->root.ceo...')
+        specs.createAuditConfig(
+            spec='test.test:root.ceo->root.ceo->root.ceo...')

@@ -39,6 +39,8 @@ P_V1_VIEW_MINE_AUDIT = 'view_mine_audit'  # 浏览我发起的审批页面
 P_V1_CANCEL_AUDIT = 'cancel_audit'  # 撤回审批
 P_V1_EDIT_AUDIT = 'edit_audit'  # 编辑审批
 
+P_V1_VIEW_TASKS = 'view_tasks'
+
 P_V1_VIEW_PROFILE = 'view_profile'  # 浏览个人中心
 P_V1_CHANE_PHONE = 'change_phone'  # 浏览个人中心
 
@@ -67,6 +69,8 @@ P_V1 = [
     P_V1_VIEW_MINE_AUDIT,
     P_V1_CANCEL_AUDIT,
     P_V1_EDIT_AUDIT,
+
+    P_V1_VIEW_TASKS,
 
     P_V1_VIEW_PROFILE,
     P_V1_CHANE_PHONE,
@@ -138,11 +142,13 @@ class AuditActivityConfigStep(models.Model):
 
 
 class AuditActivity(models.Model):
+    StateDraft = 'draft'
     StateProcessing = 'processing'
     StateApproved = 'approved'
     StateRejected = 'rejected'
     StateCancelled = 'cancelled'
     StateChoices = (
+        (StateDraft, StateDraft),
         (StateProcessing, StateProcessing),
         (StateApproved, StateApproved),
         (StateRejected, StateRejected),
@@ -153,10 +159,11 @@ class AuditActivity(models.Model):
     config = models.ForeignKey(AuditActivityConfig, on_delete=models.CASCADE)
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
     state = models.CharField(
-        max_length=20, choices=StateChoices, default=StateProcessing)
+        max_length=20, choices=StateChoices, default=StateDraft)
     extra = JSONField()  # 审批相关数据，不同类型的审批，相关数据不一样，暂时使用 json 保存
-
     finished_at = models.DateTimeField(null=True)
+    archived = models.BooleanField(default=False)  # 逻辑删除标志
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -22,11 +22,22 @@ def configs(request):
     })
 
 
+def submitActivityAudit(activity):
+    activity.state = AuditActivity.StateProcessing
+    activity.save()
+
+    step = AuditStep.objects.get(activity=activity, position=0)
+    step.active = True
+    step.activated_at = datetime.datetime.now()
+    step.save()
+
+
 @transaction.atomic
 def createActivity(profile, data):
     # TODO: validate user permission
     configId = data.get('config', None)  # audit acitivity config id
     configCode = data.get('code', None)  # audit acitivity config code
+    submit = data.get('submit', False)  # 是否提交审核
     if configId is not None:
         config = AuditActivityConfig.objects.get(pk=configId)
     else:
@@ -42,6 +53,7 @@ def createActivity(profile, data):
 
     activity = AuditActivity.objects \
         .create(config=config,
+                state=AuditActivity.StateProcessing if submit else AuditActivity.StateDraft,
                 creator=profile,
                 extra=data['extra'])
 
@@ -74,21 +86,18 @@ def createActivity(profile, data):
                                                                                               step.assigneePosition.code,
                                                                                               assignee.name))
 
-        active = False
-        if index == 0:
-            active = True
-
         step = AuditStep.objects \
             .create(activity=activity,
-                    active=active,
+                    active=False,
                     assignee=assignee,
                     assigneeDepartment=assigneeDepartment,
                     assigneePosition=step.assigneePosition,
                     position=step.position)
 
-        if index == 0:
-            step.activated_at = datetime.datetime.now()
-            step.save()
+        if submit:
+            submitActivityAudit(activity)
+
+    return activity
 
 
 @require_http_methods(['POST', 'GET'])
@@ -133,6 +142,46 @@ def cancel(request, activityId):
         return JsonResponse({
             'errorId': 'activity-not-found'
         }, status=400)
+
+
+@require_http_methods(['POST'])
+@validateToken
+def updateData(request, activityId):
+    # TODO: validate user permission
+    data = json.loads(request.body.decode('utf-8'))
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.extra = data
+    activity.save()
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+def submitAudit(request, activityId):
+    # TODO: validate user permission
+    activity = AuditActivity.objects.get(pk=activityId)
+    if activity.state != AuditActivity.StateDraft:
+        return JsonResponse({'errorId': 'invalid-state'}, status=400)
+
+    submitActivityAudit(activity)
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+@transaction.atomic
+def relaunch(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.archived = True
+    activity.save()
+
+    data = {
+        'code': activity.config.subtype,
+        'submit': False,
+        'extra': activity.extra
+    }
+    activity = createActivity(request.profile, data)
+    return JsonResponse({'id': str(activity.pk)})
 
 
 def validateStepState(step, profile):
@@ -237,7 +286,8 @@ def mineActivities(request):
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    activities = AuditActivity.objects.filter(creator=request.profile)
+    activities = AuditActivity.objects.filter(creator=request.profile,
+                                              archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
@@ -247,7 +297,7 @@ def mineActivities(request):
         _start, _to = resolveDateRange(created_at)
         activities = activities.filter(created_at__gte=_start,
                                        created_at__lt=_to)
-
+    activities = activities.order_by('-updated_at')
     total = activities.count()
     activities = activities[start:start + limit]
     return JsonResponse({
@@ -272,6 +322,7 @@ def assignedActivities(request):
 
     # TODO: 处理职位变更问题
     steps = AuditStep.objects.filter(assignee=request.profile,
+                                     activity__archived=False,
                                      active=True)
     if notEmpty(auditType):
         steps = steps.filter(
@@ -283,6 +334,7 @@ def assignedActivities(request):
         steps = steps.filter(activity__created_at__gte=_start,
                              activity__created_at__lt=_to)
 
+    steps.order_by('-activity__updated_at')
     total = steps.count()
     steps = steps[start:start + limit]
     return JsonResponse({
@@ -303,6 +355,7 @@ def processedActivities(request):
 
     # TODO: 处理职位变更问题
     steps = AuditStep.objects.filter(assignee=request.profile,
+                                     activity__archived=False,
                                      state__in=[
                                          AuditStep.StateApproved,
                                          AuditStep.StateRejected
@@ -317,6 +370,7 @@ def processedActivities(request):
         steps = steps.filter(activity__created_at__gte=_start,
                              activity__created_at__lt=_to)
 
+    steps.order_by('-activity__updated_at')
     total = steps.count()
     steps = steps[start:start + limit]
     return JsonResponse({
@@ -336,6 +390,7 @@ def auditTasks(request):
     limit = int(request.GET.get('limit', '20'))
 
     activities = AuditActivity.objects.filter(state=AuditActivity.StateApproved,
+                                              activity__archived=False,
                                               config__hasTask=True)
     if notEmpty(auditType):
         activities = activities.filter(
@@ -347,6 +402,7 @@ def auditTasks(request):
         activities = activities.filter(created_at__gte=_start,
                                        created_at__lt=_to)
 
+    activities = activities.order_by('-updated_at')
     total = activities.count()
     activities = activities[start:start + limit]
     return JsonResponse({
