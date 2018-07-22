@@ -60,6 +60,7 @@ def resolve_activity(activity):
 
     return {
         'id': str(activity.pk),
+        'sn': activity.sn,
         'creator': resolve_profile(activity.creator),
         'type': activity.config.subtype,
         'state': activity.state,

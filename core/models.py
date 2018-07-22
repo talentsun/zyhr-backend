@@ -156,6 +156,7 @@ class AuditActivity(models.Model):
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    sn = models.CharField(max_length=255)
     config = models.ForeignKey(AuditActivityConfig, on_delete=models.CASCADE)
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
     state = models.CharField(

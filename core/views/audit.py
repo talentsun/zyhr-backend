@@ -42,10 +42,11 @@ def recordBankAccountIfNeed(profile, code, data):
     if re.match('money', code):
         accounts = [data['inAccount'], data['outAccount']]
         for account in accounts:
-            account['name'] = account['company']
+            if 'company' in account:
+                account['name'] = account['company']
 
     for account in accounts:
-        if BankAccount.object. \
+        if BankAccount.objects. \
                 filter(profile=profile,
                        name=account['name'],
                        bank=account['bank'],
@@ -55,6 +56,17 @@ def recordBankAccountIfNeed(profile, code, data):
                        name=account['name'],
                        bank=account['bank'],
                        number=account['number'])
+
+
+def generateActivitySN():
+    now = datetime.datetime.now()
+    start = now.date()
+    end = start + datetime.timedelta(days=1)
+    count = AuditActivity.objects\
+        .filter(created_at__gte=start, created_at__lt=end)\
+        .count()
+    sn = now.strftime('%Y%m%d') + str(count + 1).zfill(4)
+    return sn
 
 
 @transaction.atomic
@@ -78,6 +90,7 @@ def createActivity(profile, data):
 
     activity = AuditActivity.objects \
         .create(config=config,
+                sn=generateActivitySN(),
                 state=AuditActivity.StateDraft,
                 creator=profile,
                 extra=data['extra'])
