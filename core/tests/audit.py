@@ -54,7 +54,7 @@ class AuditTestCase(TestCase):
         lucy.save()
         self.lucy = lucy
 
-    def audit_activity_normal_lifecycle(self, actions):
+    def audit_activity_normal_lifecycle(self, actions, submitDirectly=True):
         self.perpareData()
         config = AuditActivityConfig.objects \
             .create(category='fin',
@@ -81,7 +81,7 @@ class AuditTestCase(TestCase):
             '/api/v1/audit-activities',
             json.dumps({
                 'config': str(config.pk),
-                'submit': True,
+                'submit': submitDirectly,
                 'extra': {}
             }),
             content_type='application/json',
@@ -94,7 +94,22 @@ class AuditTestCase(TestCase):
 
         activity = AuditActivity.objects.all()[0]
         self.assertEqual(activity.creator, self.jack)
-        self.assertEqual(activity.state, AuditActivity.StateProcessing)
+        if submitDirectly:
+            self.assertEqual(activity.state, AuditActivity.StateProcessing)
+        else:
+            self.assertEqual(activity.state, AuditActivity.StateDraft)
+
+        if not submitDirectly:
+            response = client.post(
+                '/api/v1/audit-activities/{}/actions/submit-audit'.format(
+                    str(activity.pk)),
+                HTTP_AUTHORIZATION=token
+            )
+            self.assertEquals(response.status_code, 200)
+            result = json.loads(response.content.decode('utf-8'))
+            self.assertEqual(result['ok'], True)
+            activity = AuditActivity.objects.all()[0]
+            self.assertEqual(activity.state, AuditActivity.StateProcessing)
 
         steps = AuditStep.objects \
             .filter(activity=activity) \
@@ -158,6 +173,28 @@ class AuditTestCase(TestCase):
         self.assertEqual(steps[0].active, True)
         self.assertEqual(steps[1].active, False)
         self.assertEqual(steps[2].active, False)
+
+    def test_submit_draft_audit_activity(self):
+        self.audit_activity_normal_lifecycle([], submitDirectly=False)
+        activity = AuditActivity.objects.all()[0]
+        steps = activity.steps()
+        self.assertEqual(steps[0].active, True)
+        self.assertEqual(steps[1].active, False)
+        self.assertEqual(steps[2].active, False)
+
+    def test_submit_audit_activity_with_invalid_state(self):
+        self.audit_activity_normal_lifecycle([])
+        activity = AuditActivity.objects.all()[0]
+
+        token = generateToken(activity.creator)
+        client = Client()
+        response = client.post(
+            '/api/v1/audit-activities/{}/actions/submit-audit'.format(str(activity.pk)),
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(response.status_code, 400)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(result['errorId'], 'invalid-state')
 
     def test_query_mine_activities(self):
         self.audit_activity_normal_lifecycle([])
@@ -284,6 +321,25 @@ class AuditTestCase(TestCase):
 
         stepActive = [step.active for step in steps]
         self.assertListEqual(stepActive, [False, False, False])
+
+    def test_relaunch_activity(self):
+        self.audit_activity_normal_lifecycle(['approve', 'reject'])
+        activity = AuditActivity.objects.all()[0]
+
+        token = generateToken(activity.creator)
+        client = Client()
+        response = client.post(
+            '/api/v1/audit-activities/{}/actions/relaunch'.format(str(activity.pk)),
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+
+        activity = AuditActivity.objects.get(pk=activity.pk)
+        self.assertEqual(activity.archived, True)
+
+        activity = AuditActivity.objects.get(pk=result['id'])
+        self.assertEqual(activity.state, AuditActivity.StateDraft)
 
     def test_approve_rejected_step(self):
         self.audit_activity_normal_lifecycle(['approve', 'reject'])

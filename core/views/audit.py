@@ -3,6 +3,7 @@ import datetime
 import json
 
 from django.db import transaction
+from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
@@ -26,9 +27,10 @@ def submitActivityAudit(activity):
     activity.state = AuditActivity.StateProcessing
     activity.save()
 
-    step = AuditStep.objects.get(activity=activity, position=0)
+    steps = activity.steps()
+    step = steps[0]
     step.active = True
-    step.activated_at = datetime.datetime.now()
+    step.activated_at = datetime.datetime.now(tz=timezone.utc)
     step.save()
 
 
@@ -53,7 +55,7 @@ def createActivity(profile, data):
 
     activity = AuditActivity.objects \
         .create(config=config,
-                state=AuditActivity.StateProcessing if submit else AuditActivity.StateDraft,
+                state=AuditActivity.StateDraft,
                 creator=profile,
                 extra=data['extra'])
 
@@ -94,27 +96,23 @@ def createActivity(profile, data):
                     assigneePosition=step.assigneePosition,
                     position=step.position)
 
-        if submit:
-            submitActivityAudit(activity)
+    if submit:
+        submitActivityAudit(activity)
 
     return activity
 
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 @validateToken
 def activities(request):
     # TODO: validate user permission
     profile = request.profile
-    if request.method == 'POST':
-        data = json.loads(request.body.decode('utf-8'))
-        createActivity(profile, data)
-        return JsonResponse({'ok': True})
-    else:
-        # TODO
-        return JsonResponse({'ok': True})
+    data = json.loads(request.body.decode('utf-8'))
+    createActivity(profile, data)
+    return JsonResponse({'ok': True})
 
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['GET'])
 @validateToken
 def activity(request, activityId):
     # TODO: validate user permission
@@ -130,7 +128,7 @@ def cancel(request, activityId):
         activity = AuditActivity.objects.get(pk=activityId)
         if activity.isCancellable():
             activity.state = AuditActivity.StateCancelled
-            activity.finished_at = datetime.datetime.now()
+            activity.finished_at = datetime.datetime.now(tz=timezone.utc)
             activity.save()
             return JsonResponse({'ok': True})
         else:
@@ -220,7 +218,7 @@ def approveStep(request, stepId):
 
         step.state = AuditStep.StateApproved
         step.active = False
-        step.finished_at = datetime.datetime.now()
+        step.finished_at = datetime.datetime.now(tz=timezone.utc)
         step.desc = desc
         step.save()
         if step.nextStep() == None:
@@ -230,7 +228,7 @@ def approveStep(request, stepId):
         else:
             nextStep = step.nextStep()
             nextStep.active = True
-            nextStep.activated_at = datetime.datetime.now()
+            nextStep.activated_at = datetime.datetime.now(tz=timezone.utc)
             nextStep.save()
         return JsonResponse({'ok': True})
     except:
@@ -253,12 +251,12 @@ def rejectStep(request, stepId):
             return JsonResponse(err, status=400)
 
         step.state = AuditStep.StateRejected
-        step.finished_at = datetime.datetime.now()
+        step.finished_at = datetime.datetime.now(tz=timezone.utc)
         step.active = False
         step.desc = desc
         step.save()
         activity = step.activity
-        activity.finished_at = datetime.datetime.now()
+        activity.finished_at = datetime.datetime.now(tz=timezone.utc)
         activity.state = AuditActivity.StateRejected
         activity.save()
         return JsonResponse({'ok': True})
