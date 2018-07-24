@@ -42,10 +42,18 @@ def index(request):
         user.set_password(data['password'])
         user.save()
 
+        role = data.get('role', None)
+        if role is not None:
+            try:
+                role = Role.objects.get(pk=role)
+            except:
+                role = None
+
         department = Department.objects.get(pk=data['department'])
         position = Position.objects.get(pk=data['position'])
         Profile.objects.create(user=user,
                                name=username,
+                               role=role,
                                department=department,
                                position=position,
                                phone=data['phone'],
@@ -55,17 +63,28 @@ def index(request):
 
 @require_http_methods(['DELETE', 'PUT', 'GET'])
 @validateToken
+@transaction.atomic
 def detail(request, empId):
     if request.method == 'DELETE':
         Profile.objects.filter(pk=empId).update(archived=True)
         return JsonResponse({'ok': True})
     elif request.method == 'PUT':
         data = json.loads(request.body.decode('utf-8'))
+        emp = None
+        try:
+            emp = Profile.objects.get(pk=empId)
+        except:
+            return JsonResponse({'errorId': 'emp-not-found'}, status=400)
+
         partial = {}
         for prop in ['department', 'position', 'phone', 'desc', 'role']:
             if data.get(prop, None) != None:
                 partial[prop] = data.get(prop)
         Profile.objects.filter(pk=empId).update(**partial)
+        if 'password' in prop:
+            user = emp.user
+            user.set_password(prop['password'])
+            user.save()
         return JsonResponse({'ok': True})
     else:
         try:
