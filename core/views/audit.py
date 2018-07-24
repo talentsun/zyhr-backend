@@ -96,6 +96,8 @@ def createActivity(profile, data):
                 extra=data['extra'])
 
     logger.info('{} create steps'.format(taskId))
+
+    stepPos = 0
     for index, step in enumerate(configSteps):
         logger.info('{} resolve assignee for step#{}'.format(
             taskId, step.position))
@@ -105,24 +107,21 @@ def createActivity(profile, data):
             # 如果部门没有配置，那么就设置为发起者所在部门
             assigneeDepartment = profile.department
 
+        logger.info('{} resolve assignee for step#{}, dep: {}, pos: {}'.format(
+            taskId, step.position, assigneeDepartment.code, step.assigneePosition.code))
+
         profiles = Profile.objects \
             .filter(department=assigneeDepartment,
                     position=step.assigneePosition)
-        if profiles.count() != 1:
-            names = ', '.join([p.name for p in profiles])
-            logger.info('{} fail to resolve assignee for step#{}, dep: {}, pos: {}, candidates: {}'.format(taskId,
-                                                                                                           step.position,
-                                                                                                           assigneeDepartment.code,
-                                                                                                           step.assigneePosition.code,
-                                                                                                           names))
-            raise Exception('Can not resolve assignee')
 
+        if profiles.count() == 0:
+            logger.info('{} no candidates, skip'.format(taskId))
+            continue
+
+        names = ', '.join([p.name for p in profiles])
+        logger.info('{} candidates: {}'.format(taskId, names))
         assignee = profiles[0]
-        logger.info('{} assignee for step#{} resolved, dep: {}, pos: {}, assignee: {}'.format(taskId,
-                                                                                              step.position,
-                                                                                              assigneeDepartment.code,
-                                                                                              step.assigneePosition.code,
-                                                                                              assignee.name))
+        logger.info('{} assignee: {}'.format(taskId, assignee.name))
 
         AuditStep.objects \
             .create(activity=activity,
@@ -130,7 +129,8 @@ def createActivity(profile, data):
                     assignee=assignee,
                     assigneeDepartment=assigneeDepartment,
                     assigneePosition=step.assigneePosition,
-                    position=step.position)
+                    position=stepPos)
+        stepPos = stepPos + 1
 
     if submit:
         submitActivityAudit(activity)

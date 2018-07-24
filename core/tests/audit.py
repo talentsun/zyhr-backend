@@ -54,14 +54,15 @@ class AuditTestCase(TestCase):
         lucy.save()
         self.lucy = lucy
 
-    def audit_activity_normal_lifecycle(self, actions, submitDirectly=True):
+    def audit_activity_normal_lifecycle(self, actions, submitDirectly=True, noCandidatesSomeStep=False):
         self.perpareData()
+
         config = AuditActivityConfig.objects \
             .create(category='fin',
                     subtype='baoxiao')
         AuditActivityConfigStep.objects \
             .create(config=config,
-                    assigneeDepartment=self.biz,
+                    assigneeDepartment=None,
                     assigneePosition=self.pos_owner,
                     position=0)
         AuditActivityConfigStep.objects \
@@ -76,7 +77,13 @@ class AuditTestCase(TestCase):
                     position=2)
 
         client = Client()
-        token = generateToken(self.jack)
+
+        if noCandidatesSomeStep:
+            creator = self.ceo
+        else:
+            creator = self.jack
+
+        token = generateToken(creator)
         response = client.post(
             '/api/v1/audit-activities',
             json.dumps({
@@ -93,7 +100,7 @@ class AuditTestCase(TestCase):
         self.assertEqual(result['ok'], True)
 
         activity = AuditActivity.objects.all()[0]
-        self.assertEqual(activity.creator, self.jack)
+        self.assertEqual(activity.creator, creator)
         if submitDirectly:
             self.assertEqual(activity.state, AuditActivity.StateProcessing)
         else:
@@ -114,11 +121,17 @@ class AuditTestCase(TestCase):
         steps = AuditStep.objects \
             .filter(activity=activity) \
             .order_by('position')
-        expect_steps = [
-            {'assignee': self.lee},
-            {'assignee': self.lucy},
-            {'assignee': self.ceo}
-        ]
+        if noCandidatesSomeStep:
+            expect_steps = [
+                {'assignee': self.lucy},
+                {'assignee': self.ceo}
+            ]
+        else:
+            expect_steps = [
+                {'assignee': self.lee},
+                {'assignee': self.lucy},
+                {'assignee': self.ceo}
+            ]
         for step in steps:
             es = expect_steps[step.position]
             self.assertEqual(es['assignee'], step.assignee)
@@ -170,9 +183,20 @@ class AuditTestCase(TestCase):
         self.audit_activity_normal_lifecycle([])
         activity = AuditActivity.objects.all()[0]
         steps = activity.steps()
-        self.assertEqual(steps[0].active, True)
-        self.assertEqual(steps[1].active, False)
-        self.assertEqual(steps[2].active, False)
+        stepActive = [step.active for step in steps]
+        self.assertListEqual(stepActive, [True, False, False])
+        stepPosition = [step.position for step in steps]
+        self.assertListEqual(stepPosition, [0, 1, 2])
+
+    def test_create_audit_activity_with_no_candidates_in_some_step(self):
+        self.audit_activity_normal_lifecycle([], noCandidatesSomeStep=True)
+        activity = AuditActivity.objects.all()[0]
+        steps = activity.steps()
+        self.assertEqual(len(steps), 2)
+        stepActive = [step.active for step in steps]
+        self.assertListEqual(stepActive, [True, False])
+        stepPosition = [step.position for step in steps]
+        self.assertListEqual(stepPosition, [0, 1])
 
     def test_submit_draft_audit_activity(self):
         self.audit_activity_normal_lifecycle([], submitDirectly=False)
@@ -189,7 +213,8 @@ class AuditTestCase(TestCase):
         token = generateToken(activity.creator)
         client = Client()
         response = client.post(
-            '/api/v1/audit-activities/{}/actions/submit-audit'.format(str(activity.pk)),
+            '/api/v1/audit-activities/{}/actions/submit-audit'.format(
+                str(activity.pk)),
             HTTP_AUTHORIZATION=token
         )
         self.assertEqual(response.status_code, 400)
@@ -329,7 +354,8 @@ class AuditTestCase(TestCase):
         token = generateToken(activity.creator)
         client = Client()
         response = client.post(
-            '/api/v1/audit-activities/{}/actions/relaunch'.format(str(activity.pk)),
+            '/api/v1/audit-activities/{}/actions/relaunch'.format(
+                str(activity.pk)),
             HTTP_AUTHORIZATION=token
         )
         self.assertEqual(response.status_code, 200)
