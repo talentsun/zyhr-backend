@@ -250,3 +250,17 @@ class BankAccount(models.Model):
     name = models.CharField(max_length=255)
     number = models.CharField(max_length=255)
     bank = models.CharField(max_length=255)
+
+
+class Message(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    read = models.BooleanField(default=False)  # 是否已读
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    activity = models.ForeignKey(AuditActivity,
+                                 on_delete=models.CASCADE,
+                                 null=True)
+    category = models.CharField(max_length=255)  # hurry/finish
+    extra = JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

@@ -6,6 +6,7 @@ from core.views import audit
 from core.views import emps
 from core.views import organization
 from core.views import roles
+from core.views import message
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -33,6 +34,8 @@ urlpatterns = [
     path(r'assigned-audit-activities', audit.assignedActivities),
     path(r'processed-audit-activities', audit.processedActivities),
     path(r'audit-tasks', audit.auditTasks),
+
+    path(r'messages/<uuid:messageId>/actions/mark-read', message.markRead),
 
     # emps/deps/positions api
     path(r'emps', emps.index),

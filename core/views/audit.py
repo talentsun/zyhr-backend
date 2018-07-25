@@ -267,6 +267,11 @@ def approveStep(request, stepId):
             activity = step.activity
             activity.state = AuditActivity.StateApproved
             activity.save()
+
+            Message.objects.create(profile=activity.creator,
+                                   activity=activity,
+                                   category='finish',
+                                   extra={'state': 'approved'})
         else:
             nextStep = step.nextStep()
             nextStep.active = True
@@ -297,10 +302,16 @@ def rejectStep(request, stepId):
         step.active = False
         step.desc = desc
         step.save()
+
         activity = step.activity
         activity.finished_at = datetime.datetime.now(tz=timezone.utc)
         activity.state = AuditActivity.StateRejected
         activity.save()
+
+        Message.objects.create(profile=activity.creator,
+                                   activity=activity,
+                                   category='finish',
+                                   extra={'state': 'rejected'})
         return JsonResponse({'ok': True})
     except:
         return JsonResponse({

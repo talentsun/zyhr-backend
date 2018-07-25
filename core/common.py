@@ -32,6 +32,9 @@ def resolve_position(pos):
 
 def resolve_profile(profile):
     accounts = BankAccount.objects.filter(profile=profile)
+    messages = Message.objects\
+        .filter(profile=profile, read=False)\
+        .order_by('-updated_at')
 
     return {
         'id': str(profile.pk),
@@ -49,6 +52,17 @@ def resolve_profile(profile):
             'bank': account.bank,
             'number': account.number
         } for account in accounts],
+
+        'messages': [{
+            'id': str(m.pk),
+            'read': m.read,
+            'activity': {
+                'id': str(m.activity.pk),
+                'type': str(m.activity.config.subtype),
+            },
+            'category': m.category,
+            'extra': m.extra
+        } for m in messages],
 
         'created_at': profile.created_at.isoformat(),
         'updated_at': profile.updated_at.isoformat(),

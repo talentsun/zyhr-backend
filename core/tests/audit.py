@@ -400,6 +400,26 @@ class AuditTestCase(TestCase):
             AuditStep.StateApproved
         ])
 
+    def test_send_message_when_activity_approved(self):
+        self.audit_activity_normal_lifecycle(['approve', 'approve', 'approve'])
+
+        activity = AuditActivity.objects.all()[0]
+        message = Message.objects.get(activity=activity,
+                                      profile=activity.creator)
+        self.assertEqual(message.read, False)
+        self.assertEqual(message.category, 'finish')
+        self.assertEqual(message.extra['state'], 'approved')
+
+    def test_send_message_when_activity_rejected(self):
+        self.audit_activity_normal_lifecycle(['approve', 'approve', 'reject'])
+
+        activity = AuditActivity.objects.all()[0]
+        message = Message.objects.get(activity=activity,
+                                      profile=activity.creator)
+        self.assertEqual(message.read, False)
+        self.assertEqual(message.category, 'finish')
+        self.assertEqual(message.extra['state'], 'rejected')
+
     def test_reject_step_has_been_approved(self):
         self.audit_activity_normal_lifecycle(['approve', 'approve', 'approve'])
 
