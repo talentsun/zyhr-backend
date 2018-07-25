@@ -62,8 +62,8 @@ def generateActivitySN():
     now = datetime.datetime.now()
     start = now.date()
     end = start + datetime.timedelta(days=1)
-    count = AuditActivity.objects\
-        .filter(created_at__gte=start, created_at__lt=end)\
+    count = AuditActivity.objects \
+        .filter(created_at__gte=start, created_at__lt=end) \
         .count()
     sn = now.strftime('%Y%m%d') + str(count + 1).zfill(4)
     return sn
@@ -168,6 +168,9 @@ def cancel(request, activityId):
             activity.state = AuditActivity.StateCancelled
             activity.finished_at = datetime.datetime.now(tz=timezone.utc)
             activity.save()
+
+            # delete messages
+            Message.objects.filter(activity=activity).delete()
             return JsonResponse({'ok': True})
         else:
             return JsonResponse({
@@ -262,6 +265,14 @@ def approveStep(request, stepId):
         step.active = False
         step.finished_at = datetime.datetime.now(tz=timezone.utc)
         step.desc = desc
+
+        # delete hurry up message
+        Message.objects \
+            .filter(activity=step.activity,
+                    profile=step.assignee,
+                    category='hurryup') \
+            .delete()
+
         step.save()
         if step.nextStep() == None:
             activity = step.activity
@@ -303,15 +314,22 @@ def rejectStep(request, stepId):
         step.desc = desc
         step.save()
 
+        # delete hurry up message
+        Message.objects \
+            .filter(activity=step.activity,
+                    profile=step.assignee,
+                    category='hurryup') \
+            .delete()
+
         activity = step.activity
         activity.finished_at = datetime.datetime.now(tz=timezone.utc)
         activity.state = AuditActivity.StateRejected
         activity.save()
 
         Message.objects.create(profile=activity.creator,
-                                   activity=activity,
-                                   category='finish',
-                                   extra={'state': 'rejected'})
+                               activity=activity,
+                               category='finish',
+                               extra={'state': 'rejected'})
         return JsonResponse({'ok': True})
     except:
         return JsonResponse({
@@ -460,3 +478,28 @@ def auditTasks(request):
         'total': total,
         'activities': [resolve_activity(activity) for activity in activities]
     })
+
+
+@require_http_methods(['POST'])
+@validateToken
+def hurryup(request, activityId):
+    profile = request.profile
+    activity = AuditActivity.objects.get(pk=activityId)
+
+    if activity.creator.pk != profile.pk:
+        # nothing to do
+        return JsonResponse({'ok': True})
+    if activity.state != AuditActivity.StateProcessing:
+        # nothing to do
+        return JsonResponse({'ok': True})
+
+    step = activity.currentStep()
+    if activity.canHurryup \
+            and step is not None \
+            and step.assignee is not None:
+        Message.objects.create(activity=activity,
+                               category='hurryup',
+                               extra={},
+                               profile=step.assignee)
+
+    return JsonResponse({'ok': True})

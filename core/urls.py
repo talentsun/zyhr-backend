@@ -27,6 +27,8 @@ urlpatterns = [
     path(r'audit-activities/<str:activityId>/actions/update-data', audit.updateData),
     path(r'audit-activities/<str:activityId>/actions/submit-audit', audit.submitAudit),
     path(r'audit-activities/<str:activityId>/actions/relaunch', audit.relaunch),
+    path(r'audit-activities/<uuid:activityId>/actions/hurryup', audit.hurryup),
+
     path(r'audit-steps/<uuid:stepId>/actions/approve', audit.approveStep),
     path(r'audit-steps/<uuid:stepId>/actions/reject', audit.rejectStep),
 
@@ -35,6 +37,7 @@ urlpatterns = [
     path(r'processed-audit-activities', audit.processedActivities),
     path(r'audit-tasks', audit.auditTasks),
 
+    # message api
     path(r'messages/<uuid:messageId>/actions/mark-read', message.markRead),
 
     # emps/deps/positions api

@@ -1,7 +1,10 @@
+import datetime
 import uuid
 
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django.db import models
+
 from jsonfield import JSONField
 
 
@@ -191,6 +194,17 @@ class AuditActivity(models.Model):
             .filter(activity=self) \
             .order_by('position')
 
+    @property
+    def canHurryup(self):
+        now = datetime.datetime.now(tz=timezone.utc)
+        start = now - datetime.timedelta(days=1)
+        hurryupMsgs = Message.objects\
+            .filter(activity=self,
+                    category='hurryup',
+                    created_at__gte=start,
+                    created_at__lt=now)
+        return hurryupMsgs.count() == 0
+
 
 class AuditStep(models.Model):
     StatePending = 'pending'
@@ -255,11 +269,11 @@ class BankAccount(models.Model):
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     read = models.BooleanField(default=False)  # 是否已读
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)  # 消息接受者
     activity = models.ForeignKey(AuditActivity,
                                  on_delete=models.CASCADE,
                                  null=True)
-    category = models.CharField(max_length=255)  # hurry/finish
+    category = models.CharField(max_length=255)  # hurryup/finish
     extra = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -455,3 +455,69 @@ class AuditTestCase(TestCase):
         self.assertEquals(response.status_code, 400)
         result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(result['errorId'], 'invalid-assignee')
+
+    def test_hurryup(self):
+        self.audit_activity_normal_lifecycle(['approve'])
+        activity = AuditActivity.objects.all()[0]
+
+        token = generateToken(activity.creator)
+        client = Client()
+
+        response = client.get(
+            '/api/v1/mine-audit-activities',
+            content_type='application/json',
+            HTTP_AUTHORIZATION=token)
+        self.assertEquals(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        item = result['activities'][0]
+        self.assertEqual(item['canHurryup'], True)
+
+        response = client.post(
+            '/api/v1/audit-activities/{}/actions/hurryup'.format(activity.pk),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=token)
+
+        self.assertEquals(response.status_code, 200)
+        step = activity.currentStep()
+        message = Message.objects.get(profile=step.assignee,
+                                      category='hurryup',
+                                      activity=activity)
+        self.assertEqual(message.read, False)
+
+        response = client.get(
+            '/api/v1/mine-audit-activities',
+            content_type='application/json',
+            HTTP_AUTHORIZATION=token)
+        result = json.loads(response.content.decode('utf-8'))
+        item = result['activities'][0]
+        self.assertEqual(item['canHurryup'], False)
+
+    def test_hurryup_twice_one_day(self):
+        self.audit_activity_normal_lifecycle(['approve'])
+        activity = AuditActivity.objects.all()[0]
+
+        token = generateToken(activity.creator)
+        client = Client()
+        response = client.post(
+            '/api/v1/audit-activities/{}/actions/hurryup'.format(activity.pk),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=token)
+
+        self.assertEquals(response.status_code, 200)
+        step = activity.currentStep()
+        message = Message.objects.get(profile=step.assignee,
+                                      category='hurryup',
+                                      activity=activity)
+        self.assertEqual(message.read, False)
+
+        response = client.post(
+            '/api/v1/audit-activities/{}/actions/hurryup'.format(activity.pk),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=token)
+        self.assertEquals(response.status_code, 200)
+        msgs = Message.objects\
+            .filter(profile=step.assignee,
+                    category='hurryup',
+                    activity=activity)\
+            .count()
+        self.assertEqual(msgs, 1)

@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from core.models import *
 
 
@@ -59,6 +61,10 @@ def resolve_profile(profile):
             'activity': {
                 'id': str(m.activity.pk),
                 'type': str(m.activity.config.subtype),
+                'creator': {
+                    'id': str(m.activity.creator.pk),
+                    'name': m.activity.creator.name
+                }
             },
             'category': m.category,
             'extra': m.extra
@@ -79,6 +85,7 @@ def resolve_activity(activity):
         'type': activity.config.subtype,
         'state': activity.state,
         'extra': activity.extra,
+        'canHurryup': activity.canHurryup,
         'created_at': activity.created_at.isoformat(),
         'updated_at': activity.updated_at.isoformat(),
         'steps': [resolve_step(step) for step in steps]
