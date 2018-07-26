@@ -8,6 +8,6 @@ VOLUME /var/lib/hwbackend
 
 COPY . /src
 EXPOSE 8000
-RUN git log -1 HEAD --pretty=format:%s > /src/gitlog
+RUN git log -1 HEAD --pretty=format:%s > /src/.gitlog
 CMD sh launch.sh
 

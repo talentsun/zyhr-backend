@@ -2,7 +2,7 @@
 
 set -x
 
-cat ./gitlog | grep '@reset'
+cat ./.gitlog | grep '@reset'
 
 if [ $? -eq 0 ]; then
 	sh resetData4Dev.sh
