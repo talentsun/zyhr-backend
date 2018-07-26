@@ -3,6 +3,7 @@ import json
 import logging
 import datetime
 
+import iso8601
 from django.db import transaction
 from django.utils import timezone
 from django.http import JsonResponse
@@ -350,7 +351,8 @@ def resolveDateRange(created_at):
 def mineActivities(request):
     auditType = request.GET.get('type', None)
     state = request.GET.get('state', None)
-    created_at = request.GET.get('created_at', None)
+    created_at_start = request.GET.get('created_at_start', None)
+    created_at_end = request.GET.get('created_at_end', None)
 
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
@@ -360,12 +362,17 @@ def mineActivities(request):
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
+
     if notEmpty(state):
         activities = activities.filter(state=state)
-    if notEmpty(created_at):
-        _start, _to = resolveDateRange(created_at)
-        activities = activities.filter(created_at__gte=_start,
-                                       created_at__lt=_to)
+
+    if notEmpty(created_at_start):
+        date = iso8601.parse_date(created_at_start)
+        activities = activities.filter(created_at__gte=date)
+    if notEmpty(created_at_end):
+        date = iso8601.parse_date(created_at_end)
+        activities = activities.filter(created_at__lt=date)
+
     activities = activities.order_by('-updated_at')
     total = activities.count()
     activities = activities[start:start + limit]
@@ -384,7 +391,8 @@ def notEmpty(value):
 def assignedActivities(request):
     auditType = request.GET.get('type', None)
     creator_name = request.GET.get('creator', None)
-    created_at = request.GET.get('created_at', None)
+    created_at_start = request.GET.get('created_at_start', None)
+    created_at_end = request.GET.get('created_at_end', None)
 
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
@@ -398,10 +406,13 @@ def assignedActivities(request):
             activity__config__subtype__in=auditType.split(','))
     if notEmpty(creator_name):
         steps = steps.filter(activity__creator__name=creator_name)
-    if notEmpty(created_at):
-        _start, _to = resolveDateRange(created_at)
-        steps = steps.filter(activity__created_at__gte=_start,
-                             activity__created_at__lt=_to)
+
+    if notEmpty(created_at_start):
+        date = iso8601.parse_date(created_at_start)
+        steps = steps.filter(activity__created_at__gte=date)
+    if notEmpty(created_at_end):
+        date = iso8601.parse_date(created_at_end)
+        steps = steps.filter(created_at__lt=date)
 
     steps.order_by('-activity__updated_at')
     total = steps.count()
@@ -417,7 +428,8 @@ def assignedActivities(request):
 def processedActivities(request):
     auditType = request.GET.get('type', None)
     creator_name = request.GET.get('creator', None)
-    created_at = request.GET.get('created_at', None)
+    created_at_start = request.GET.get('created_at_start', None)
+    created_at_end = request.GET.get('created_at_end', None)
 
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
@@ -434,10 +446,13 @@ def processedActivities(request):
             activity__config__subtype__in=auditType.split(','))
     if notEmpty(creator_name):
         steps = steps.filter(activity__creator__name=creator_name)
-    if notEmpty(created_at):
-        _start, _to = resolveDateRange(created_at)
-        steps = steps.filter(activity__created_at__gte=_start,
-                             activity__created_at__lt=_to)
+
+    if notEmpty(created_at_start):
+        date = iso8601.parse_date(created_at_start)
+        steps = steps.filter(activity__created_at__gte=date)
+    if notEmpty(created_at_end):
+        date = iso8601.parse_date(created_at_end)
+        steps = steps.filter(created_at__lt=date)
 
     steps.order_by('-activity__updated_at')
     total = steps.count()
@@ -453,23 +468,27 @@ def processedActivities(request):
 def auditTasks(request):
     auditType = request.GET.get('type', None)
     state = request.GET.get('state', None)
-    created_at = request.GET.get('created_at', None)
+    created_at_start = request.GET.get('created_at_start', None)
+    created_at_end = request.GET.get('created_at_end', None)
 
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
     activities = AuditActivity.objects.filter(state=AuditActivity.StateApproved,
-                                              activity__archived=False,
+                                              archived=False,
                                               config__hasTask=True)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
     if notEmpty(state):
         activities = activities.filter(state=state)
-    if notEmpty(created_at):
-        _start, _to = resolveDateRange(created_at)
-        activities = activities.filter(created_at__gte=_start,
-                                       created_at__lt=_to)
+
+    if notEmpty(created_at_start):
+        date = iso8601.parse_date(created_at_start)
+        activities = activities.filter(created_at__gte=date)
+    if notEmpty(created_at_end):
+        date = iso8601.parse_date(created_at_end)
+        activities = activities.filter(created_at__lt=date)
 
     activities = activities.order_by('-updated_at')
     total = activities.count()
