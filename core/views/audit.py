@@ -61,6 +61,7 @@ def recordBankAccountIfNeed(profile, code, data):
 
 def generateActivitySN():
     now = datetime.datetime.now()
+    now = now + datetime.timedelta(hours=8)
     start = now.date()
     end = start + datetime.timedelta(days=1)
     count = AuditActivity.objects \
@@ -336,14 +337,6 @@ def rejectStep(request, stepId):
         return JsonResponse({
             'errorId': 'step-not-found'
         }, status=400)
-
-
-def resolveDateRange(created_at):
-    start = datetime.datetime.strptime(created_at, '%Y-%m-%d')
-    # start = start - datetime.timedelta(days=1) - datetime.timedelta(hours=8)
-    start = start - datetime.timedelta(hours=8)
-    to = start + datetime.timedelta(days=1)
-    return start, to
 
 
 @require_http_methods(['GET'])
