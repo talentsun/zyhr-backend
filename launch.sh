@@ -2,7 +2,7 @@
 
 set -x
 
-git log -1 HEAD --pretty=format:%s | grep '@reset'
+cat ./gitlog | grep '@reset'
 
 if [ $? -eq 0 ]; then
 	sh resetData4Dev.sh
