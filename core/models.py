@@ -24,6 +24,11 @@ class Position(models.Model):
     name = models.CharField(max_length=255)
 
 
+class DepPos(models.Model):
+    dep = models.ForeignKey(Department, on_delete=models.CASCADE)
+    pos = models.ForeignKey(Position, on_delete=models.CASCADE)
+
+
 # v1 权限常量
 P_V1_VIEW_HOME = 'view_home'  # 浏览首页
 P_V1_VIEW_HOME_MINE_AUDIT = 'view_home_mine_audit'  # 浏览我发起的
@@ -113,8 +118,9 @@ class Profile(models.Model):
     name = models.CharField(max_length=255, unique=True)
     email = models.CharField(max_length=255)
     phone = models.CharField(max_length=255, unique=True)
-    department = models.ForeignKey(
-        Department, on_delete=models.CASCADE, null=True)
+    department = models.ForeignKey(Department,
+                                   on_delete=models.CASCADE,
+                                   null=True)
     position = models.ForeignKey(Position, on_delete=models.CASCADE, null=True)
     blocked = models.BooleanField(default=False)
     desc = models.TextField(default='', null=True)

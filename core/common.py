@@ -15,10 +15,18 @@ def resolve_department(dep):
     if dep is None:
         return None
 
+    dps = DepPos.objects.filter(dep=dep)
+    positions = [i.pos for i in dps]
+
     return {
         'id': str(dep.pk),
         'code': dep.code,
-        'name': dep.name
+        'name': dep.name,
+        'positions': [{
+            'id': str(p.pk),
+            'name': p.name,
+            'code': p.code
+        } for p in positions]
     }
 
 
@@ -34,8 +42,8 @@ def resolve_position(pos):
 
 def resolve_profile(profile):
     accounts = BankAccount.objects.filter(profile=profile)
-    messages = Message.objects\
-        .filter(profile=profile, read=False)\
+    messages = Message.objects \
+        .filter(profile=profile, read=False) \
         .order_by('-updated_at')
 
     return {

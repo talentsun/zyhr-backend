@@ -55,13 +55,19 @@ class Command(BaseCommand):
             Position.objects.create(**pos)
 
         departments = [
-            {'name': '总部', 'code': 'root'},
-            {'name': '大宗商品事业部', 'code': 'dazong'},
-            {'name': '财务中心', 'code': 'fin'},
-            {'name': '人力行政中心', 'code': 'hr'},
+            {'name': '总部', 'code': 'root', 'positions': ['ceo']},
+            {'name': '大宗商品事业部', 'code': 'dazong', 'positions': ['owner', 'mgr', 'member']},
+            {'name': '财务中心', 'code': 'fin', 'positions': ['owner', 'accountant', 'cashier']},
+            {'name': '人力行政中心', 'code': 'hr', 'positions': ['owner', 'member']},
         ]
         for dep in departments:
-            Department.objects.create(**dep)
+            positions = dep['positions']
+            del dep['positions']
+
+            department = Department.objects.create(**dep)
+            for pos in positions:
+                position = Position.objects.get(code=pos)
+                DepPos.objects.create(pos=position, dep=department)
 
         profiles = [
             {'name': 'ceo', 'dep': 'root', 'pos': 'ceo'},
