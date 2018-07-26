@@ -216,7 +216,7 @@ class AuditActivity(models.Model):
         if 'contract' in subtype:
             category = '法务类'
 
-        return '{}的{}'.format(creatorName, category)
+        return '{}的{}审批'.format(creatorName, category)
 
     @property
     def appDisplayType(self):
