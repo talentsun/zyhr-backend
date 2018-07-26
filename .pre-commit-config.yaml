@@ -1,4 +1,0 @@
-- id: save-git-message
-  language: 'script'
-  entry: 'save-git-message.sh'
-
