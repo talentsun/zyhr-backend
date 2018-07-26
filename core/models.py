@@ -198,12 +198,46 @@ class AuditActivity(models.Model):
     def canHurryup(self):
         now = datetime.datetime.now(tz=timezone.utc)
         start = now - datetime.timedelta(days=1)
-        hurryupMsgs = Message.objects\
+        hurryupMsgs = Message.objects \
             .filter(activity=self,
                     category='hurryup',
                     created_at__gte=start,
                     created_at__lt=now)
         return hurryupMsgs.count() == 0
+
+    @property
+    def appDisplayName(self):
+        creatorName = self.creator.name
+        subtype = self.config.subtype
+
+        category = ''
+        if any([k in subtype for k in ['cost', 'money', 'loan', 'open_account', 'travel']]):
+            category = '财务类'
+        if 'contract' in subtype:
+            category = '法务类'
+
+        return '{}的{}'.format(creatorName, category)
+
+    @property
+    def appDisplayType(self):
+        r = ''
+        subtype = self.config.subtype
+        if 'cost' in subtype:
+            r = '费用报销'
+        elif 'loan' in subtype:
+            r = '借款申请'
+        elif 'money' in subtype:
+            r = '用款申请'
+        elif 'open_account' in subtype:
+            r = '银行开户'
+        elif 'travel' in subtype:
+            r = '差旅报销'
+        elif 'biz' in subtype:
+            r = '业务合同会签'
+        elif 'fn' in subtype:
+            r = '职能合同会签'
+
+        return r
 
 
 class AuditStep(models.Model):

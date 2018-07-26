@@ -5,6 +5,7 @@ import datetime
 
 import iso8601
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -339,11 +340,31 @@ def rejectStep(request, stepId):
         }, status=400)
 
 
+def searchActivities(activities, search):
+    parts = search.split(' ')
+    keywords = []
+    for part in parts:
+        if part != '':
+            keywords.append(part)
+
+    result = []
+    for activity in activities:
+        n = activity.appDisplayName
+        t = activity.appDisplayType
+        if any([k in t for k in keywords]):
+            result.append(activity)
+        elif any([k in n for k in keywords]):
+            result.append(activity)
+
+    return result, len(result)
+
+
 @require_http_methods(['GET'])
 @validateToken
 def mineActivities(request):
     auditType = request.GET.get('type', None)
     state = request.GET.get('state', None)
+    search = request.GET.get('search', None)
     created_at_start = request.GET.get('created_at_start', None)
     created_at_end = request.GET.get('created_at_end', None)
 
@@ -366,6 +387,15 @@ def mineActivities(request):
         date = iso8601.parse_date(created_at_end)
         activities = activities.filter(created_at__lt=date)
 
+    if notEmpty(search):
+        activities = activities.order_by('-updated_at')
+        activities, total = searchActivities(activities, search)
+        activities = activities[start:start + limit]
+        return JsonResponse({
+            'total': total,
+            'activities': [resolve_activity(activity) for activity in activities]
+        })
+
     activities = activities.order_by('-updated_at')
     total = activities.count()
     activities = activities[start:start + limit]
@@ -377,6 +407,61 @@ def mineActivities(request):
 
 def notEmpty(value):
     return value is not None and value != ''
+
+
+# 被分配给用户的所有审批（包含未审批和已审批的）
+@require_http_methods(['GET'])
+@validateToken
+def relatedActivities(request):
+    auditType = request.GET.get('type', None)
+    creator_name = request.GET.get('creator', None)
+    search = request.GET.get('search', None)
+    created_at_start = request.GET.get('created_at_start', None)
+    created_at_end = request.GET.get('created_at_end', None)
+
+    start = int(request.GET.get('start', '0'))
+    limit = int(request.GET.get('limit', '20'))
+
+    # TODO: 处理职位变更问题
+    steps = AuditStep.objects.filter(assignee=request.profile,
+                                     activity__archived=False)
+    steps = steps.filter(Q(active=True) |
+                         Q(state__in=[
+                             AuditStep.StateApproved,
+                             AuditStep.StateRejected
+                         ]))
+
+    if notEmpty(auditType):
+        steps = steps.filter(
+            activity__config__subtype__in=auditType.split(','))
+    if notEmpty(creator_name):
+        steps = steps.filter(activity__creator__name=creator_name)
+
+    if notEmpty(created_at_start):
+        date = iso8601.parse_date(created_at_start)
+        steps = steps.filter(activity__created_at__gte=date)
+    if notEmpty(created_at_end):
+        date = iso8601.parse_date(created_at_end)
+        steps = steps.filter(created_at__lt=date)
+
+    if notEmpty(search):
+        activityIdx = [s.activity.pk for s in steps]
+        activities = AuditActivity.objects.filter(pk__in=activityIdx)
+        activities = activities.order_by('-updated_at')
+        activities, total = searchActivities(activities, search)
+        activities = activities[start:start + limit]
+        return JsonResponse({
+            'total': total,
+            'activities': [resolve_activity(activity) for activity in activities]
+        })
+
+    steps.order_by('-activity__updated_at')
+    total = steps.count()
+    steps = steps[start:start + limit]
+    return JsonResponse({
+        'total': total,
+        'activities': [resolve_activity(step.activity) for step in steps]
+    })
 
 
 @require_http_methods(['GET'])
