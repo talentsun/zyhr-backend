@@ -206,7 +206,8 @@ def updateData(request, activityId):
 def submitAudit(request, activityId):
     # TODO: validate user permission
     activity = AuditActivity.objects.get(pk=activityId)
-    if activity.state != AuditActivity.StateDraft:
+    if activity.state != AuditActivity.StateDraft \
+            and activity.state != AuditActivity.StateCancelled:
         return JsonResponse({'errorId': 'invalid-state'}, status=400)
 
     submitActivityAudit(activity)

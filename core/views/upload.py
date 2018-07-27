@@ -39,7 +39,7 @@ def upload(request):
 
     return JsonResponse({
         'id': file.pk,
-        'url': 'http://{}/api/v1/assets/{}'.format(settings.HOST, path),
+        'url': 'https://{}/api/v1/assets/{}'.format(settings.HOST, path),
         'name': file.name,
         'size': file.size
     })
