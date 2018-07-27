@@ -1,3 +1,4 @@
+import re
 import logging
 import uuid
 import qiniu
@@ -47,4 +48,13 @@ def upload(request):
 @require_http_methods(["GET"])
 def assets(request, path):
     file = File.objects.get(path=path)
-    return sendfile(request, '{}/{}'.format(settings.DATA_DIR, file.path))
+    response = sendfile(request,
+                        '{}/{}'.format(settings.DATA_DIR, file.path))
+    response['Content-Disposition'] = "inline; filename={}".format(file.name)
+    if re.match('.*\.(jpg|jpeg)', file.name):
+        response['Content-Type'] = 'image/jpeg'
+    if re.match('.*\.png', file.name):
+        response['Content-Type'] = 'image/png'
+    if re.match('.*\.pdf', file.name):
+        response['Content-Type'] = 'application/pdf'
+    return response
