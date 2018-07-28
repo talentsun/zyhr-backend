@@ -250,6 +250,8 @@ class AuditTestCase(TestCase):
         self.audit_activity_normal_lifecycle(['cancel'])
         activity = AuditActivity.objects.all()[0]
         self.assertEqual(activity.state, AuditActivity.StateCancelled)
+        steps = activity.steps()
+        self.assertEqual(len(steps), 0)
 
     def test_cancel_audit_activity_with_approved_steps(self):
         self.audit_activity_normal_lifecycle(['approve'])

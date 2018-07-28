@@ -43,21 +43,24 @@ def recordBankAccountIfNeed(profile, code, data):
         accounts = [data['account']]
     if re.match('money', code):
         accounts = [data['inAccount'], data['outAccount']]
-        for account in accounts:
-            if 'company' in account:
-                account['name'] = account['company']
 
     for account in accounts:
+        name = account.get('name', None)
+        bank = account.get('bank', None)
+        number = account.get('number', None)
+        if name is None or bank is None or number is None:
+            continue
+
         if BankAccount.objects. \
                 filter(profile=profile,
-                       name=account['name'],
-                       bank=account['bank'],
-                       number=account['number']).count() == 0:
+                       name=name,
+                       bank=bank,
+                       number=number).count() == 0:
             BankAccount.objects. \
                 create(profile=profile,
-                       name=account['name'],
-                       bank=account['bank'],
-                       number=account['number'])
+                       name=name,
+                       bank=bank,
+                       number=number)
 
 
 def generateActivitySN():
@@ -165,10 +168,12 @@ def activity(request, activityId):
 @validateToken
 def cancel(request, activityId):
     # TODO: validate user permission
+    # TODO: delete steps
     try:
         activity = AuditActivity.objects.get(pk=activityId)
         if activity.isCancellable():
             activity.state = AuditActivity.StateCancelled
+            AuditStep.objects.filter(activity=activity).delete()
             activity.finished_at = datetime.datetime.now(tz=timezone.utc)
             activity.save()
 
