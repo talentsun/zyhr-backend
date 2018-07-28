@@ -75,33 +75,17 @@ def generateActivitySN():
     return sn
 
 
-@transaction.atomic
-def createActivity(profile, data):
-    # TODO: validate user permission
-    configId = data.get('config', None)  # audit acitivity config id
-    configCode = data.get('code', None)  # audit acitivity config code
-    submit = data.get('submit', False)  # 是否提交审核
-    if configId is not None:
-        config = AuditActivityConfig.objects.get(pk=configId)
-    else:
-        config = AuditActivityConfig.objects.get(subtype=configCode)
+def setupSteps(activity, taskId=None):
+    profile = activity.creator
 
-    taskId = uuid.uuid4()
-    logger.info('{} create activity base on config: {}'.format(
-        taskId, config.subtype))
-
-    configSteps = AuditActivityConfigStep.objects \
-        .filter(config=config) \
-        .order_by('position')
-
-    activity = AuditActivity.objects \
-        .create(config=config,
-                sn=generateActivitySN(),
-                state=AuditActivity.StateDraft,
-                creator=profile,
-                extra=data['extra'])
+    if taskId is None:
+        taskId = uuid.uuid4()
 
     logger.info('{} create steps'.format(taskId))
+
+    configSteps = AuditActivityConfigStep.objects \
+        .filter(config=activity.config) \
+        .order_by('position')
 
     stepPos = 0
     for index, step in enumerate(configSteps):
@@ -138,7 +122,31 @@ def createActivity(profile, data):
                     position=stepPos)
         stepPos = stepPos + 1
 
+
+@transaction.atomic
+def createActivity(profile, data):
+    # TODO: validate user permission
+    configId = data.get('config', None)  # audit acitivity config id
+    configCode = data.get('code', None)  # audit acitivity config code
+    submit = data.get('submit', False)  # 是否提交审核
+    if configId is not None:
+        config = AuditActivityConfig.objects.get(pk=configId)
+    else:
+        config = AuditActivityConfig.objects.get(subtype=configCode)
+
+    taskId = uuid.uuid4()
+    logger.info('{} create activity base on config: {}'.format(
+        taskId, config.subtype))
+
+    activity = AuditActivity.objects \
+        .create(config=config,
+                sn=generateActivitySN(),
+                state=AuditActivity.StateDraft,
+                creator=profile,
+                extra=data['extra'])
+
     if submit:
+        setupSteps(activity, taskId=taskId)
         submitActivityAudit(activity)
 
     recordBankAccountIfNeed(profile, activity.config.subtype, activity.extra)
@@ -215,6 +223,7 @@ def submitAudit(request, activityId):
             and activity.state != AuditActivity.StateCancelled:
         return JsonResponse({'errorId': 'invalid-state'}, status=400)
 
+    setupSteps(activity, taskId=uuid.uuid4())
     submitActivityAudit(activity)
     return JsonResponse({'ok': True})
 
