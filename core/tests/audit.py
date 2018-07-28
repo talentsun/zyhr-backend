@@ -105,6 +105,7 @@ class AuditTestCase(TestCase):
             self.assertEqual(activity.state, AuditActivity.StateProcessing)
         else:
             self.assertEqual(activity.state, AuditActivity.StateDraft)
+            self.assertEqual(len(activity.steps()), 0)
 
         if not submitDirectly:
             response = client.post(
