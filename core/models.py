@@ -318,3 +318,42 @@ class Message(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Customer(models.Model):
+    name = models.CharField(max_length=255)
+    rating = models.CharField(max_length=50)
+    shareholder = models.CharField(max_length=255)
+    faren = models.CharField(max_length=255)
+    capital = models.FloatField()
+    year = models.CharField(max_length=10)
+    category = models.CharField(max_length=255)
+    nature = models.CharField(max_length=255)  # 公司性质
+    address = models.CharField(max_length=255)
+    desc = models.CharField(max_length=255)  # 备注
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def displayCategory(self):
+        # TODO: refine category
+        return self.category
+
+    @property
+    def displayNature(self):
+        if self.nature == 'siqi':
+            return '私企'
+        if self.nature == 'guoqi':
+            return '国企'
+        if self.nature == 'yagnqi':
+            return '央企'
+        if self.nature == 'waiqi':
+            return '外企k'
+
+    @property
+    def nianxian(self):
+        r =  datetime.datetime.now(tz=timezone.utc).year - int(self.year)
+        if r <= 0:
+            r = 1
+        return r

@@ -131,3 +131,22 @@ def resolve_role(r):
         'desc': r.desc,
         'extra': r.extra
     }
+
+
+def resolve_customer(c):
+    return {
+        'id': c.pk,
+        'name': c.name,
+        'rating': c.rating,
+        'shareholder': c.shareholder,
+        'faren': c.faren,
+        'capital': c.capital,
+        'year': c.year,
+        'category': c.category,
+        'nature': c.nature,
+        'address': c.address,
+        'desc': c.desc,
+
+        'created_at': c.created_at.isoformat(),
+        'updated_at': c.updated_at.isoformat()
+    }

@@ -7,6 +7,7 @@ from core.views import emps
 from core.views import organization
 from core.views import roles
 from core.views import message
+from core.views import customer
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -48,6 +49,13 @@ urlpatterns = [
     path(r'emps/<uuid:empId>/actions/update-password', emps.updatePassword),
     path(r'departments', organization.departments),
     path(r'positions', organization.positions),
+
+
+    # customers api
+    path(r'customers', customer.index),
+    path(r'customers/<int:customerId>', customer.customer),
+    path(r'customers/actions/import', customer.importCustomers),
+    path(r'customers/actions/export', customer.exportCustomers),
 
     # roles api
     path(r'roles', roles.index),
