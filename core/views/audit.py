@@ -88,6 +88,7 @@ def setupSteps(activity, taskId=None):
         .order_by('position')
 
     stepPos = 0
+    prevStep = None
     for index, step in enumerate(configSteps):
         logger.info('{} resolve assignee for step#{}'.format(
             taskId, step.position))
@@ -113,7 +114,12 @@ def setupSteps(activity, taskId=None):
         assignee = profiles[0]
         logger.info('{} assignee: {}'.format(taskId, assignee.name))
 
-        AuditStep.objects \
+        if prevStep is not None and prevStep.assignee.pk == assignee.pk:
+            logger.info(
+                '{} assignee is also the prev step assignee, skip this step'.format(taskId))
+            continue
+
+        s = AuditStep.objects \
             .create(activity=activity,
                     active=False,
                     assignee=assignee,
@@ -121,6 +127,7 @@ def setupSteps(activity, taskId=None):
                     assigneePosition=step.assigneePosition,
                     position=stepPos)
         stepPos = stepPos + 1
+        prevStep = s
 
 
 @transaction.atomic
@@ -459,10 +466,11 @@ def relatedActivities(request):
         date = iso8601.parse_date(created_at_end)
         steps = steps.filter(created_at__lt=date)
 
+    activityIdx = [s.activity.pk for s in steps]
+    activities = AuditActivity.objects.filter(pk__in=activityIdx)
+    activities = activities.order_by('-updated_at')
+
     if notEmpty(search):
-        activityIdx = [s.activity.pk for s in steps]
-        activities = AuditActivity.objects.filter(pk__in=activityIdx)
-        activities = activities.order_by('-updated_at')
         activities, total = searchActivities(activities, search)
         activities = activities[start:start + limit]
         return JsonResponse({
@@ -470,12 +478,11 @@ def relatedActivities(request):
             'activities': [resolve_activity(activity) for activity in activities]
         })
 
-    steps.order_by('-activity__updated_at')
-    total = steps.count()
-    steps = steps[start:start + limit]
+    total = activities.count()
+    activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(step.activity) for step in steps]
+        'activities': [resolve_activity(activity) for activity in activities]
     })
 
 
@@ -507,12 +514,15 @@ def assignedActivities(request):
         date = iso8601.parse_date(created_at_end)
         steps = steps.filter(created_at__lt=date)
 
-    steps.order_by('-activity__updated_at')
-    total = steps.count()
-    steps = steps[start:start + limit]
+    activityIdx = [s.activity.pk for s in steps]
+    activities = AuditActivity.objects.filter(pk__in=activityIdx)
+    activities = activities.order_by('-updated_at')
+
+    total = activities.count()
+    activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(step.activity) for step in steps]
+        'activities': [resolve_activity(activity) for activity in activities]
     })
 
 
@@ -547,12 +557,15 @@ def processedActivities(request):
         date = iso8601.parse_date(created_at_end)
         steps = steps.filter(created_at__lt=date)
 
-    steps.order_by('-activity__updated_at')
-    total = steps.count()
-    steps = steps[start:start + limit]
+    activityIdx = [s.activity.pk for s in steps]
+    activities = AuditActivity.objects.filter(pk__in=activityIdx)
+    activities = activities.order_by('-updated_at')
+
+    total = activities.count()
+    activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(step.activity) for step in steps]
+        'activities': [resolve_activity(activity) for activity in activities]
     })
 
 

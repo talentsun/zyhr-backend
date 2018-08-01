@@ -2,6 +2,7 @@ import json
 from django.test import TestCase
 from django.test import Client
 
+from core import specs
 from core.models import *
 from core.auth import generateToken
 from core.tests import helpers
@@ -13,19 +14,20 @@ class AuditTestCase(TestCase):
         self.generateToken = generateToken(self.profile)
 
     def perpareData(self):
-        pos_member = Position.objects.create(name='member')
-        pos_owner = Position.objects.create(name='owner')
-        pos_accountant = Position.objects.create(name='accountant')
-        pos_cashier = Position.objects.create(name='cashier')
-        pos_ceo = Position.objects.create(name='ceo')
+        pos_member = Position.objects.create(name='member', code='member')
+        pos_owner = Position.objects.create(name='owner', code='owner')
+        pos_accountant = Position.objects.create(
+            name='accountant', code='accountant')
+        pos_cashier = Position.objects.create(name='cashier', code='cashier')
+        pos_ceo = Position.objects.create(name='ceo', code='ceo')
         self.pos_member = pos_member
         self.pos_owner = pos_owner
         self.pos_accountant = pos_accountant
         self.pos_ceo = pos_ceo
 
-        root = Department.objects.create(name='root')
-        biz = Department.objects.create(name='biz', parent=root)
-        fin = Department.objects.create(name='fin', parent=root)
+        root = Department.objects.create(name='root', code='root')
+        biz = Department.objects.create(name='biz', parent=root, code='biz')
+        fin = Department.objects.create(name='fin', parent=root, code='fin')
         self.root = root
         self.biz = biz
         self.fin = fin
@@ -54,32 +56,33 @@ class AuditTestCase(TestCase):
         lucy.save()
         self.lucy = lucy
 
-    def audit_activity_normal_lifecycle(self, actions, submitDirectly=True, noCandidatesSomeStep=False):
+        neo = helpers.prepareProfile('neo', 'neo', '13333333338')
+        neo.department = fin
+        neo.position = pos_owner
+        neo.save()
+        self.neo = neo
+
+    def audit_activity_normal_lifecycle(self,
+                                        actions,
+                                        config=None,
+                                        submitDirectly=True,
+                                        creator=None):
         self.perpareData()
 
-        config = AuditActivityConfig.objects \
-            .create(category='fin',
-                    subtype='baoxiao')
-        AuditActivityConfigStep.objects \
-            .create(config=config,
-                    assigneeDepartment=None,
-                    assigneePosition=self.pos_owner,
-                    position=0)
-        AuditActivityConfigStep.objects \
-            .create(config=config,
-                    assigneeDepartment=self.fin,
-                    assigneePosition=self.pos_accountant,
-                    position=1)
-        AuditActivityConfigStep.objects \
-            .create(config=config,
-                    assigneeDepartment=self.root,
-                    assigneePosition=self.pos_ceo,
-                    position=2)
+        open_account_config = specs.createAuditConfig(
+            spec='fin.open_account:_.owner->fin.owner->root.ceo...')
+        baoxiao_config = specs.createAuditConfig(
+            spec='fin.baoxiao:_.owner->fin.accountant->root.ceo')
+
+        if config is None:
+            config = baoxiao_config
+        else:
+            config = AuditActivityConfig.objects.get(subtype=config)
 
         client = Client()
 
-        if noCandidatesSomeStep:
-            creator = self.ceo
+        if creator is not None:
+            creator = Profile.objects.get(name=creator)
         else:
             creator = self.jack
 
@@ -122,17 +125,32 @@ class AuditTestCase(TestCase):
         steps = AuditStep.objects \
             .filter(activity=activity) \
             .order_by('position')
-        if noCandidatesSomeStep:
-            expect_steps = [
-                {'assignee': self.lucy},
-                {'assignee': self.ceo}
-            ]
+
+        if config.subtype == 'baoxiao':
+            if creator.name == 'ceo':
+                expect_steps = [
+                    {'assignee': self.lucy},
+                    {'assignee': self.ceo}
+                ]
+            else:
+                expect_steps = [
+                    {'assignee': self.lee},
+                    {'assignee': self.lucy},
+                    {'assignee': self.ceo}
+                ]
         else:
-            expect_steps = [
-                {'assignee': self.lee},
-                {'assignee': self.lucy},
-                {'assignee': self.ceo}
-            ]
+            if creator.department.code == 'fin':
+                expect_steps = [
+                    {'assignee': self.neo},
+                    {'assignee': self.ceo}
+                ]
+            else:
+                expect_steps = [
+                    {'assignee': self.lee},
+                    {'assignee': self.neo},
+                    {'assignee': self.ceo}
+                ]
+
         for step in steps:
             es = expect_steps[step.position]
             self.assertEqual(es['assignee'], step.assignee)
@@ -178,7 +196,7 @@ class AuditTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(len(result['configs']), 1)
+        self.assertEqual(len(result['configs']), 2)
 
     def test_create_audit_activity(self):
         self.audit_activity_normal_lifecycle([])
@@ -189,8 +207,18 @@ class AuditTestCase(TestCase):
         stepPosition = [step.position for step in steps]
         self.assertListEqual(stepPosition, [0, 1, 2])
 
+    def test_create_audit_activity_with_same_assignee_in_some_steps(self):
+        self.audit_activity_normal_lifecycle(
+            [], creator='lucy', config='open_account')
+        activity = AuditActivity.objects.all()[0]
+        steps = activity.steps()
+        stepActive = [step.active for step in steps]
+        self.assertListEqual(stepActive, [True, False])
+        stepPosition = [step.position for step in steps]
+        self.assertListEqual(stepPosition, [0, 1])
+
     def test_create_audit_activity_with_no_candidates_in_some_step(self):
-        self.audit_activity_normal_lifecycle([], noCandidatesSomeStep=True)
+        self.audit_activity_normal_lifecycle([], creator='ceo')
         activity = AuditActivity.objects.all()[0]
         steps = activity.steps()
         self.assertEqual(len(steps), 2)

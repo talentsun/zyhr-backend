@@ -50,7 +50,9 @@ def assets(request, path):
     file = File.objects.get(path=path)
     response = sendfile(request,
                         '{}/{}'.format(settings.DATA_DIR, file.path))
-    response['Content-Disposition'] = "inline; filename={}".format(file.name)
+    # response['Content-Disposition'] = "inline; filename={}".format(file.name)
+    del response['Content-Disposition']
+
     if re.match('.*\.(jpg|jpeg)', file.name):
         response['Content-Type'] = 'image/jpeg'
     if re.match('.*\.png', file.name):
