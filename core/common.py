@@ -147,6 +147,23 @@ def resolve_customer(c):
         'address': c.address,
         'desc': c.desc,
 
+        'creator': resolve_profile(c.creator) if c.creator is not None else None,
+
         'created_at': c.created_at.isoformat(),
         'updated_at': c.updated_at.isoformat()
+    }
+
+
+def resolve_account(a):
+    return {
+        'id': a.pk,
+        'name': a.name,
+        'bank': a.bank,
+        'number': a.number,
+        'currency': a.currency,
+
+        'creator': resolve_profile(a.creator) if a.creator is not None else None,
+
+        'created_at': a.created_at.isoformat(),
+        'updated_at': a.updated_at.isoformat()
     }

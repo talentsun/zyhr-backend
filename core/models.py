@@ -130,6 +130,16 @@ class Profile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def owner(self):
+        if self.department is None:
+            return None
+
+        return Profile.objects \
+            .filter(department=self.department,
+                    position__code='owner') \
+            .first()
+
 
 # TODO: 支持待处理任务的生成
 class AuditActivityConfig(models.Model):
@@ -320,14 +330,30 @@ class Message(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+CustomerCatgetories = (
+    ('c1', '大型生产商/终端用户'),
+    ('c2', '中型生产商/终端、大型生产商直属贸易商、大型贸易商'),
+    ('c3', '小型生产商/终端、实体贸易商'),
+    ('c4', '中小型纯贸易商'),
+)
+
+CustomerNatures = (
+    ('yangqi', '央企'),
+    ('guoqi', '国企'),
+    ('siqi', '私企'),
+    ('waiqi', '外企'),
+)
+
+
 class Customer(models.Model):
     name = models.CharField(max_length=255)
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     rating = models.CharField(max_length=50)
     shareholder = models.CharField(max_length=255)
     faren = models.CharField(max_length=255)
     capital = models.FloatField()
     year = models.CharField(max_length=10)
-    category = models.CharField(max_length=255)
+    category = models.CharField(max_length=255, choices=CustomerCatgetories)
     nature = models.CharField(max_length=255)  # 公司性质
     address = models.CharField(max_length=255)
     desc = models.CharField(max_length=255)  # 备注
@@ -339,21 +365,44 @@ class Customer(models.Model):
     def displayCategory(self):
         # TODO: refine category
         return self.category
+        categories = [cc[0] for cc in CustomerCatgetories]
+        index = categories.index(self.category)
+        return CustomerCatgetories[index][1]
 
     @property
     def displayNature(self):
-        if self.nature == 'siqi':
-            return '私企'
-        if self.nature == 'guoqi':
-            return '国企'
-        if self.nature == 'yagnqi':
-            return '央企'
-        if self.nature == 'waiqi':
-            return '外企k'
+        natures = [cn[0] for cn in CustomerNatures]
+        index = natures.index(self.nature)
+        return CustomerNatures[index][1]
 
     @property
     def nianxian(self):
-        r =  datetime.datetime.now(tz=timezone.utc).year - int(self.year)
-        if r <= 0:
-            r = 1
+        r = datetime.datetime.now(tz=timezone.utc).year - int(self.year)
         return r
+
+
+CurrencyChoices = (
+    ('rmb', '人民币'),
+    ('hkd', '港币'),
+    ('dollar', '人民币'),
+)
+
+
+class FinAccount(models.Model):
+    name = models.CharField(max_length=255)
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    number = models.CharField(max_length=255)
+    bank = models.CharField(max_length=255)
+    currency = models.CharField(max_length=255, choices=CurrencyChoices)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def displayCurrency(self):
+        if self.currency == 'rmb':
+            return '人民币'
+        elif self.currency == 'hkd':
+            return '港币'
+        else:
+            return '美元'

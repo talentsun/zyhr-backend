@@ -8,6 +8,7 @@ from core.views import organization
 from core.views import roles
 from core.views import message
 from core.views import customer
+from core.views import finAccount
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -25,6 +26,7 @@ urlpatterns = [
     path(r'audit-activities', audit.activities),
     path(r'audit-activities/<uuid:activityId>', audit.activity),
     path(r'audit-activities/<str:activityId>/actions/cancel', audit.cancel),
+    path(r'audit-activities/<str:activityId>/actions/export', audit.export),
     path(r'audit-activities/<str:activityId>/actions/update-data', audit.updateData),
     path(r'audit-activities/<str:activityId>/actions/submit-audit', audit.submitAudit),
     path(r'audit-activities/<str:activityId>/actions/relaunch', audit.relaunch),
@@ -50,12 +52,17 @@ urlpatterns = [
     path(r'departments', organization.departments),
     path(r'positions', organization.positions),
 
-
     # customers api
     path(r'customers', customer.index),
     path(r'customers/<int:customerId>', customer.customer),
     path(r'customers/actions/import', customer.importCustomers),
     path(r'customers/actions/export', customer.exportCustomers),
+
+    # finAccount api
+    path(r'fin-accounts', finAccount.index),
+    path(r'fin-accounts/<int:accountId>', finAccount.account),
+    path(r'fin-accounts/actions/import', finAccount.importAccounts),
+    path(r'fin-accounts/actions/export', finAccount.exportAccounts),
 
     # roles api
     path(r'roles', roles.index),

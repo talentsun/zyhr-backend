@@ -34,6 +34,7 @@ def index(request):
         if rating is not None and rating != '':
             customers = customers.filter(rating=rating)
 
+        customers = customers.order_by('-id')
         total = customers.count()
         customers = customers[start:start + limit]
         return JsonResponse({
@@ -41,7 +42,9 @@ def index(request):
             'customers': [resolve_customer(c) for c in customers]
         })
     elif request.method == 'POST':
+        profile = request.profile
         data = json.loads(request.body.decode('utf-8'))
+        data['creator'] = profile
         Customer.objects.create(**data)
         return JsonResponse({'ok': True})
 
@@ -61,11 +64,12 @@ def customer(request, customerId):
     elif request.method == 'PUT':
         data = json.loads(request.body.decode('utf-8'))
         del data['id']
+        del data['creator']
         Customer.objects.filter(pk=customerId).update(**data)
         return JsonResponse({'ok': True})
 
 
-def createCustomerByTuple(tuple):
+def createCustomerByTuple(tuple, profile):
     logger.info(tuple)
 
     name = tuple[1]
@@ -78,6 +82,7 @@ def createCustomerByTuple(tuple):
     nature = tuple[9]
     address = tuple[10]
     desc = tuple[11]
+    creator = profile
 
     if rating not in ['A+', 'A', 'B', 'C']:
         raise Exception('invalid rating')
@@ -86,11 +91,20 @@ def createCustomerByTuple(tuple):
     if year > now.year or year < 1949:
         raise Exception('invalid year')
 
-    if nature not in ['yangqi', 'guoqi', 'siqi', 'waiqi']:
+    validNatures = [cn[1] for cn in CustomerNatures]
+    if nature not in validNatures:
         raise Exception('invalid nature')
+    cni = validNatures.index(nature)
+    nature = CustomerNatures[cni][0]
 
-    # TODO: validate category
+    validCategories = [cc[1] for cc in CustomerCatgetories]
+    if category not in validCategories:
+        raise Exception('invalid category')
+    cci = validCategories.index(category)
+    category = CustomerCatgetories[cci][0]
+
     Customer.objects.create(
+        creator=creator,
         name=name,
         rating=rating,
         shareholder=shareholder,
@@ -107,6 +121,7 @@ def createCustomerByTuple(tuple):
 @require_http_methods(['POST'])
 @validateToken
 def importCustomers(request):
+    profile = request.profile
     data = json.loads(request.body.decode('utf-8'))
     fileId = data['file']
     f = File.objects.get(pk=fileId)
@@ -115,7 +130,7 @@ def importCustomers(request):
     for t in ex_data.itertuples():
         total = total + 1
         try:
-            createCustomerByTuple(t)
+            createCustomerByTuple(t, profile)
             success = success + 1
         except:
             logger.exception("fail to import customer")
