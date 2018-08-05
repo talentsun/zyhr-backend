@@ -3,6 +3,7 @@ from django.urls import path
 from core.views import upload
 from core.views import session
 from core.views import audit
+from core.views import auditExport
 from core.views import emps
 from core.views import organization
 from core.views import roles
@@ -26,7 +27,7 @@ urlpatterns = [
     path(r'audit-activities', audit.activities),
     path(r'audit-activities/<uuid:activityId>', audit.activity),
     path(r'audit-activities/<str:activityId>/actions/cancel', audit.cancel),
-    path(r'audit-activities/<str:activityId>/actions/export', audit.export),
+    path(r'audit-activities/<str:activityId>/actions/export', auditExport.export),
     path(r'audit-activities/<str:activityId>/actions/update-data', audit.updateData),
     path(r'audit-activities/<str:activityId>/actions/submit-audit', audit.submitAudit),
     path(r'audit-activities/<str:activityId>/actions/relaunch', audit.relaunch),

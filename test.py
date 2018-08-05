@@ -1,3 +1,5 @@
+import os
+import uuid
 from openpyxl import load_workbook
 from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
 
@@ -55,7 +57,6 @@ def daxie(n):
 
 daxieUnit = ['佰', '拾', '万', '仟', '佰', '拾', '元', '角', '分']
 
-import os
 
 items = 5
 itemTotal = paddingAmount(1024)
@@ -72,19 +73,23 @@ cwd = os.getcwd()
 wb = load_workbook(cwd + '/xlsx-templates/{}'.format(path))
 ws = wb.active
 
+## 报销项目
 for i in range(items):
     r = str(i + 5)
     ws['B' + r] = 'hello'
+    ws['B' + r].alignment = Alignment(horizontal='center', vertical='center')
     ws['C' + r] = 'world'
     for j, ch in enumerate(itemTotal):
         col = chr(ord('E') + j)
         ws[col + r] = ch
 
+## 合计
 r = 5 + row
 for j, ch in enumerate(total):
     col = chr(ord('E') + j)
     ws[col + str(r)] = ch
 
+## 大写金额
 r = r + 1
 daxieText = '金额大写：'
 first = True
@@ -98,4 +103,45 @@ for index, ch in enumerate(total):
 
 ws['B' + str(r)] = daxieText
 
-wb.save('/Users/yangchen/Downloads/export_cost.xlsx')
+## 原借款/退补款
+ws['D' + str(r)] = '原借款：{} 元'.format(str(10))
+ws['D' + str(r)].alignment = Alignment(horizontal='left', vertical='center')
+ws['N' + str(r)] = '退（补）款：{} 元'.format(str(10))
+
+# 报销人/部分负责人/财务负责人
+ws['C' + str(r + 1)] = '报销人：hello'
+ws['C' + str(r + 2)] = '部门负责人：hello'
+ws['C' + str(r + 3)] = '财务负责人：hello'
+
+## 财务会计/人力行政负责人/公司负责人
+ws['D' + str(r + 1)] = '财务会计：hello'
+ws['D' + str(r + 2)] = '人力行政负责人：hello'
+ws['D' + str(r + 3)] = '公司负责人：hello'
+
+## 表头信息
+ws['B2'] = '报销部门：{}                {}                      单据及附件共 {} 页'.format('xxxx', 'xxxx', 'xxxx')
+
+## 账号信息系
+ws['O3'] = '户名：xxxx\n收款账号:xxxxx \n开户行：xxxxx'
+ws['O3'].alignment = Alignment(vertical='center', wrapText=True)
+
+## fix border tyle
+thin = Side(border_style="thin", color="000000")
+medium = Side(border_style="medium", color="000000")
+style_range(ws, 'B3:B4', Border(top=medium, left=medium, right=thin, bottom=thin))
+style_range(ws, 'C3:C4', Border(top=medium, left=thin, right=thin, bottom=thin))
+style_range(ws, 'E3:M3', Border(top=medium, left=thin, right=thin, bottom=thin))
+
+style_range(ws, 'N3:N' + str(5 + row), Border(top=medium, left=thin, right=thin, bottom=thin))
+style_range(ws, 'O3:O' + str(5 + row), Border(top=medium, left=thin, right=medium, bottom=thin))
+
+style_range(ws, 'D{}:M{}'.format(r, r), Border(top=thin, left=thin, right=thin, bottom=thin))
+style_range(ws, 'N{}:O{}'.format(r, r), Border(top=thin, left=thin, right=medium, bottom=thin))
+
+style_range(ws, 'D{}:O{}'.format(r + 1, r + 1), Border(top=thin, left=thin, right=medium, bottom=thin))
+style_range(ws, 'D{}:O{}'.format(r + 2, r + 2), Border(top=thin, left=thin, right=medium, bottom=thin))
+style_range(ws, 'D{}:O{}'.format(r + 3, r + 3), Border(top=thin, left=thin, right=medium, bottom=medium))
+
+style_range(ws, 'B{}:B{}'.format(r + 1, r + 3), Border(top=thin, left=medium, right=thin, bottom=medium))
+
+wb.save('/Users/yangchen/Downloads/export_cost{}.xlsx'.format(str(uuid.uuid4())))
