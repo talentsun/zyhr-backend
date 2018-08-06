@@ -10,6 +10,7 @@ from core.views import roles
 from core.views import message
 from core.views import customer
 from core.views import finAccount
+from core.views import stats
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -64,6 +65,12 @@ urlpatterns = [
     path(r'fin-accounts/<int:accountId>', finAccount.account),
     path(r'fin-accounts/actions/import', finAccount.importAccounts),
     path(r'fin-accounts/actions/export', finAccount.exportAccounts),
+
+    # transactionRecord api
+    path(r'transaction-records', stats.transactionRecords),
+    path(r'transaction-records/<int:recordId>', stats.transactionRecord),
+    path(r'transaction-records/actions/import', stats.importTransactionRecords),
+    path(r'transaction-records/actions/export', stats.exportRecords),
 
     # roles api
     path(r'roles', roles.index),

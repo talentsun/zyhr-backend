@@ -406,3 +406,29 @@ class FinAccount(models.Model):
             return '港币'
         else:
             return '美元'
+
+
+class StatsTransactionRecord(models.Model):
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    date = models.CharField(max_length=50)
+    number = models.CharField(max_length=255)
+    income = models.FloatField(null=True)
+    outcome = models.FloatField(null=True)
+    desc = models.CharField(max_length=255, default='')
+    balance = models.FloatField()
+    other = models.CharField(max_length=255)  # 对方账号名称
+    archived = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class StatsTransactionRecordOps(models.Model):
+    record = models.ForeignKey(StatsTransactionRecord, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    op = models.CharField(max_length=50)  # create/modify/delete
+    extra = JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

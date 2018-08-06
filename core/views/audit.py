@@ -105,7 +105,8 @@ def setupSteps(activity, taskId=None):
             taskId, step.position, assigneeDepartment.code, step.assigneePosition.code))
 
         profiles = Profile.objects \
-            .filter(department=assigneeDepartment,
+            .filter(archived=False,
+                    department=assigneeDepartment,
                     position=step.assigneePosition)
 
         if profiles.count() == 0:
@@ -631,6 +632,3 @@ def hurryup(request, activityId):
                                profile=step.assignee)
 
     return JsonResponse({'ok': True})
-
-
-
