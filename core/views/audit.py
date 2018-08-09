@@ -634,3 +634,12 @@ def hurryup(request, activityId):
                                profile=step.assignee)
 
     return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+def markTaskFinished(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.taskState = 'finished'
+    activity.save()
+    return JsonResponse({'ok': True})
