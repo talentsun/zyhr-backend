@@ -306,6 +306,8 @@ def approveStep(request, stepId):
         if step.nextStep() == None:
             activity = step.activity
             activity.state = AuditActivity.StateApproved
+            if activity.config.hasTask:
+                activity.taskState = 'pending'
             activity.save()
 
             Message.objects.create(profile=activity.creator,

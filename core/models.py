@@ -183,6 +183,7 @@ class AuditActivity(models.Model):
     extra = JSONField()  # 审批相关数据，不同类型的审批，相关数据不一样，暂时使用 json 保存
     finished_at = models.DateTimeField(null=True)
     archived = models.BooleanField(default=False)  # 逻辑删除标志
+    taskState = models.CharField(null=True, max_length=255)  # None or (pending / finished)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
