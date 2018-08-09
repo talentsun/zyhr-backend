@@ -587,8 +587,8 @@ def auditTasks(request):
     limit = int(request.GET.get('limit', '20'))
 
     activities = AuditActivity.objects.filter(state=AuditActivity.StateApproved,
-                                              archived=False,
-                                              taskState='pending')
+                                              config__hasTask=True,
+                                              archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))

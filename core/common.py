@@ -99,6 +99,7 @@ def resolve_activity(activity):
         'creator': resolve_profile(activity.creator),
         'type': activity.config.subtype,
         'state': activity.state,
+        'taskState': activity.taskState,
         'extra': activity.extra,
         'canHurryup': activity.canHurryup,
         'created_at': activity.created_at.isoformat(),
