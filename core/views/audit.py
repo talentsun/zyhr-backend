@@ -588,7 +588,7 @@ def auditTasks(request):
 
     activities = AuditActivity.objects.filter(state=AuditActivity.StateApproved,
                                               archived=False,
-                                              config__hasTask=True)
+                                              taskState='pending')
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
