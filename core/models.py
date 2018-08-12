@@ -416,7 +416,7 @@ class StatsTransactionRecord(models.Model):
     number = models.CharField(max_length=255)
     income = models.FloatField(null=True)
     outcome = models.FloatField(null=True)
-    desc = models.CharField(max_length=255, default='')
+    desc = models.CharField(max_length=255, default='', null=True)
     balance = models.FloatField()
     other = models.CharField(max_length=255)  # 对方账号名称
     archived = models.BooleanField(default=False)
@@ -429,6 +429,7 @@ class StatsTransactionRecordOps(models.Model):
     record = models.ForeignKey(StatsTransactionRecord, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     op = models.CharField(max_length=50)  # create/modify/delete
+    prop = models.CharField(max_length=50, null=True)
     extra = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)

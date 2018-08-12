@@ -72,6 +72,8 @@ urlpatterns = [
     path(r'transaction-records/<int:recordId>', stats.transactionRecord),
     path(r'transaction-records/actions/import', stats.importTransactionRecords),
     path(r'transaction-records/actions/export', stats.exportRecords),
+    path(r'transaction-record-ops', stats.ops),
+    path(r'transaction-record-stats', stats.stats),
 
     # roles api
     path(r'roles', roles.index),
