@@ -306,6 +306,8 @@ def approveStep(request, stepId):
         if step.nextStep() == None:
             activity = step.activity
             activity.state = AuditActivity.StateApproved
+            if activity.config.hasTask:
+                activity.taskState = 'pending'
             activity.save()
 
             Message.objects.create(profile=activity.creator,
@@ -585,8 +587,8 @@ def auditTasks(request):
     limit = int(request.GET.get('limit', '20'))
 
     activities = AuditActivity.objects.filter(state=AuditActivity.StateApproved,
-                                              archived=False,
-                                              config__hasTask=True)
+                                              config__hasTask=True,
+                                              archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
@@ -631,4 +633,13 @@ def hurryup(request, activityId):
                                extra={},
                                profile=step.assignee)
 
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+def markTaskFinished(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.taskState = 'finished'
+    activity.save()
     return JsonResponse({'ok': True})

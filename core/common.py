@@ -46,6 +46,12 @@ def resolve_profile(profile):
         .filter(profile=profile, read=False) \
         .order_by('-updated_at')
 
+    pendingTasks = AuditActivity.objects \
+        .filter(state=AuditActivity.StateApproved,
+                archived=False,
+                taskState='pending') \
+        .count()
+
     return {
         'id': str(profile.pk),
         'name': profile.name,
@@ -56,6 +62,7 @@ def resolve_profile(profile):
         'role': resolve_role(profile.role),
         'department': resolve_department(profile.department),
         'position': resolve_position(profile.position),
+        'pendingTasks': pendingTasks,
 
         'accounts': [{
             'name': account.name,
@@ -92,6 +99,7 @@ def resolve_activity(activity):
         'creator': resolve_profile(activity.creator),
         'type': activity.config.subtype,
         'state': activity.state,
+        'taskState': activity.taskState,
         'extra': activity.extra,
         'canHurryup': activity.canHurryup,
         'created_at': activity.created_at.isoformat(),
