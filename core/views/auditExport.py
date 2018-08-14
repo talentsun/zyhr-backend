@@ -130,7 +130,7 @@ def exportOpenAccountAuditDoc(activity):
 
     ws['B5'].value = activity.creator.name
     owner = activity.creator.owner
-    ceo = Profile.objects.filter(position__code='ceo').first()
+    ceo = Profile.objects.filter(position__code='ceo', archived=False).first()
     ws['D5'].value = owner.name if owner is not None else ''
     ws['F5'].value = ceo.name if ceo is not None else ''
 
@@ -208,10 +208,10 @@ def exportCostAuditDoc(activity):
 
     creator = activity.creator
     owner = creator.owner
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner').first()
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='accountant').first()
-    hrOwner = Profile.objects.filter(department__code='hr', position__code='owner').first()
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo').first()
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
+    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
 
     # 报销人/部分负责人/财务负责人
     ws['C' + str(r + 1)] = '报销人：{}'.format(getattr(creator, 'name', ''))
@@ -295,11 +295,11 @@ def exportLoanAuditDoc(activity):
     ws['F11'] = getattr(creator.owner, 'name', '')
     ws['F11'].alignment = Alignment(vertical='center', horizontal='center')
 
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner').first()
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['I11'] = getattr(finOwner, 'name', '')
     ws['I11'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo').first()
+    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     ws['M11'] = getattr(ceo, 'name', '')
     ws['M11'].alignment = Alignment(vertical='center', horizontal='center')
 
@@ -362,11 +362,11 @@ def exportMoneyAuditDoc(activity):
     ws['H10'] = getattr(creator.owner, 'name', '')
     ws['H10'].alignment = Alignment(vertical='center', horizontal='center')
 
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner').first()
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['B12'] = getattr(finOwner, 'name', '')
     ws['B12'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo').first()
+    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     ws['H12'] = getattr(ceo, 'name', '')
     ws['H12'].alignment = Alignment(vertical='center', horizontal='center')
 
@@ -413,9 +413,9 @@ def exportBizContractAuditDoc(activity):
     ws['B12'] = creator.name
     ws['E12'] = getattr(creator.owner, 'name', '')
     # TODO: 法务负责人
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner').first()
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['E13'] = getattr(finOwner, 'name', '')
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo').first()
+    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     ws['E14'] = getattr(ceo, 'name', '')
 
     for cell in ws.merged_cells:
