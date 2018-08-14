@@ -59,6 +59,7 @@ class Command(BaseCommand):
             {'name': '大宗商品事业部', 'code': 'dazong', 'positions': ['owner', 'mgr', 'member']},
             {'name': '财务中心', 'code': 'fin', 'positions': ['owner', 'accountant', 'cashier']},
             {'name': '人力行政中心', 'code': 'hr', 'positions': ['owner', 'member']},
+            {'name': '地产事业部', 'code': 'dichan', 'positions': ['owner']},
         ]
         for dep in departments:
             positions = dep['positions']

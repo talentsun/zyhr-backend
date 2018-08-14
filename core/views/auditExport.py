@@ -25,7 +25,16 @@ empty = Side(border_style=None, color=None)
 medium = Side(border_style="medium", color="000000")
 
 
-# FIXME: 获取审批流当中负责审批的各个职位的人员信息
+# FIXME: 获取审批流当中负责审批的各个职位的人员信息，部分审批单里面的人员信息没有参与审批
+def resolveUser(activity, dep, pos):
+    steps = activity.steps()
+    for step in steps:
+        assignee = step.assignee
+        if assignee.department.code == dep and \
+                        assignee.position.code == pos:
+            return assignee
+
+    return None
 
 
 def style_range(ws, cell_range, border=Border(), fill=None, font=None, alignment=None):
@@ -362,17 +371,21 @@ def exportMoneyAuditDoc(activity):
     ws['H10'] = getattr(creator.owner, 'name', '')
     ws['H10'].alignment = Alignment(vertical='center', horizontal='center')
 
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    ws['B12'] = getattr(finOwner, 'name', '')
+    accountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    ws['B12'] = getattr(accountant, 'name', '')
     ws['B12'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
-    ws['H12'] = getattr(ceo, 'name', '')
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    ws['H12'] = getattr(finOwner, 'name', '')
     ws['H12'].alignment = Alignment(vertical='center', horizontal='center')
+
+    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    ws['H13'] = getattr(ceo, 'name', '')
+    ws['H13'].alignment = Alignment(vertical='center', horizontal='center')
 
     # A3:M3
     for cell in ws.merged_cells:
-        if not inBounds('A3:M12', cell):
+        if not inBounds('A3:M13', cell):
             logger.info('ignore cell: {}'.format(cell.coord))
             continue
 
@@ -396,27 +409,28 @@ def exportBizContractAuditDoc(activity):
     ws['A3'] = '合同类型：{}                                                    {}'.format(
         '大宗类' if base['type'] == 'dazong' else '其他类',
         datetime.datetime.now().strftime('%Y-%m-%d'))
-    # FIXME 签订公司名称
-    ws['B4'] = base['name']
+    ws['B4'] = getattr(base, 'company', '')
 
     ws['B5'] = info['upstream']
     ws['F5'] = info['downstream']
     ws['B6'] = info['asset']
-    ws['F6'] = info['tonnage']
-    ws['B7'] = info['proportion']
-    ws['F7'] = info['profitsPerTon'] + '%'
-    ws['B8'] = info['buyPrice']
-    ws['F8'] = info['sellPrice']
-    ws['B9'] = '现金' if info['settlementType'] == 'cash' else '转账'
-    ws['B10'] = info['grossMargin'] + '%'
-    ws['B11'] = info.get('desc', '')
-    ws['B12'] = creator.name
-    ws['E12'] = getattr(creator.owner, 'name', '')
+    ws['B7'] = str(info['tonnage']) + '吨'
+    ws['F7'] = str(info['buyPrice']) + '元/吨'
+
+    ws['B8'] = '现金' if info['settlementType'] == 'cash' else '转账'
+    ws['F8'] = str(getattr(info, 'sellPrice', '')) + '元/吨'
+    ws['B9'] = info['profitsPerTon'] + '%'
+    ws['F9'] = info['grossMargin'] + '%'
+    ws['B10'] = info.get('desc', '')
+    ws['B11'] = creator.name
+    ws['F11'] = getattr(creator.owner, 'name', '')
+    accountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    ws['F12'] = getattr(accountant, 'name', '')
     # TODO: 法务负责人
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    ws['E13'] = getattr(finOwner, 'name', '')
+    ws['B13'] = getattr(finOwner, 'name', '')
     ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
-    ws['E14'] = getattr(ceo, 'name', '')
+    ws['B14'] = getattr(ceo, 'name', '')
 
     for cell in ws.merged_cells:
         if not inBounds('A4:F19', cell):
@@ -511,16 +525,16 @@ def exportTravelAuditDoc(activity):
     t = 0
     for index, item in enumerate(items):
         def parseDate(str):
-            return datetime.datetime.strptime(str, '%Y-%m-%d')
+            return datetime.datetime.strptime(str, '%Y-%m-%d %H:%M:%S')
 
         startDate, endDate = parseDate(item['startTime']), parseDate(item['endTime'])
         row = str(firstItemRow + index)
         ws['C' + row] = startDate.month
         ws['D' + row] = startDate.day
-        ws['E' + row] = startDate.year
+        ws['E' + row] = startDate.hour
         ws['F' + row] = endDate.month
         ws['G' + row] = endDate.day
-        ws['H' + row] = endDate.year
+        ws['H' + row] = endDate.hour
         days = (endDate - startDate).days + 1
         ws['I' + row] = days
 
