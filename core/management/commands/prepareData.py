@@ -137,6 +137,8 @@ class Command(BaseCommand):
             spec='fin.purchase_gt_5000:_.owner->fin.owner->root.ceo...')
 
         # 用款申请
+        specs.createAuditConfig(spec='fin.money_caigou_or_other_lte_5k:_.owner->fin.owner...')
+        specs.createAuditConfig(spec='fin.money_caigou_or_other:_.owner->fin.owner->root.ceo...')
         specs.createAuditConfig(spec='fin.money_lte_50k:_.owner->fin.owner...')
         specs.createAuditConfig(
             spec='fin.money_gt_50k:_.owner->fin.owner->root.ceo...')
