@@ -109,12 +109,14 @@ class Command(BaseCommand):
 
         # 差旅报销流程（总额<=5000）
         specs.createAuditConfig(spec='fin.travel_lte_5000:\
+                                hr.member->\
                                 fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner...')
         # 差旅报销流程（总额>5000）
         specs.createAuditConfig(spec='fin.travel_gt_5000:\
+                                hr.member->\
                                 fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
