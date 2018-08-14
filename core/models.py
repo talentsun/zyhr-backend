@@ -434,3 +434,91 @@ class StatsTransactionRecordOps(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Taizhang(models.Model):
+    auditId = models.UUIDField(null=True)
+    archived = models.BooleanField(default=False)
+
+    date = models.CharField(max_length=255)  # 月份 YYYY-MM
+    # TODO: 公司名称
+    asset = models.CharField(max_length=255)  # 货物标的
+    upstream = models.CharField(max_length=255)  # 上游供方
+    upstream_dunwei = models.DecimalField(max_digits=19, decimal_places=2)  # 上游合同吨位
+    buyPrice = models.DecimalField(max_digits=19, decimal_places=2)  # 采购单价
+
+    kaipiao_dunwei = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 开票吨位，用户填写
+    upstream_jiesuan_price = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 上游结算价格，用户填写
+
+    downstream = models.CharField(max_length=255)  # 现有单位
+    downstream_dunwei = models.DecimalField(max_digits=19, decimal_places=2)  # 下游合同吨位
+    sellPrice = models.DecimalField(max_digits=19, decimal_places=2)  # 销售价格
+
+    kaipiao_dunwei_trade = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 开票吨位（贸易量），用户填写
+    downstream_jiesuan_price = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 下游结算价格，用户填写
+
+    '''
+    cangchu_gongsi = models.CharField(max_length=255, null=True)  # 仓储公司
+    '''
+
+    # 上游供方资金占压，用户填写
+    shangyou_zijin_zhanya = models.DecimalField(null=True, max_digits=19, decimal_places=2)
+
+    '''
+    # 下游需方资金占压，用户填写
+    xiayou_zijin_zhanya = models.DecimalField(null=True, max_digits=19, decimal_places=2)
+    # 付款日期，用户填写
+    fukuan_riqi = models.CharField(null=True, max_length=255)
+    # 付款金额，用户填写
+    fukuan_jine = models.DecimalField(null=True, max_digits=19, decimal_places=2)
+    # 收款日期，用户填写
+    shoukuan_riqi = models.CharField(max_length=255, null=True)
+    # 收款金额，用户填写
+    shoukuan_jine = models.DecimalField(null=True, max_digits=19, decimal_places=2)
+    # 结算周期，用户填写
+    jiesuan_zhouqi = models.CharField(null=True, max_length=255)
+    # 年化毛利率，用户填写
+    nianhua_maolilv = models.CharField(null=True, max_length=255)
+    # 库存上游供方，用户填写
+    kuchun_shangyou_gongfang = models.CharField(null=True, max_length=255)
+    # 上游库存合同数量，用户填写
+    shangyou_kuchun_hetongshu = models.CharField(null=True, max_length=255)
+    # 上游库存付款日期，用户填写
+    shangyou_kuchun_fukuan_riqi = models.CharField(null=True, max_length=255)
+    # 上游库存付款金额，用户填写
+    shangyou_kuchun_fukuan_jine = models.CharField(null=True, max_length=255)
+    '''
+
+    # 上游库存数量，用户填写
+    shangyou_kuchun_liang = models.DecimalField(null=True, max_digits=19, decimal_places=2)
+    # 上游库存预计单价，用户填写
+    shangyou_kuchun_yuji_danjia = models.DecimalField(null=True, max_digits=19, decimal_places=2)
+
+    '''
+    # 下游库存合同数量
+    xiayou_kuchun_hetongshu = models.CharField(max_length=255, null=True)
+    # 下游库存收款日期
+    xiayou_kuchun_shoukuan_riqi = models.CharField(max_length=255, null=True)
+    # 下游库存收款金额
+    xiayou_kuchun_shoukuan_jine = models.CharField(max_length=255, null=True)
+    # 下游库存暂估利润
+    xiayou_kuchun_yugu_lirun = models.CharField(max_length=255, null=True)
+    # 下游库存实际利润
+    xiayou_kuchun_shiji_lirun = models.CharField(max_length=255, null=True)
+    # 库存货物
+    kuchun_huowu = models.CharField(max_length=255, null=True)
+    '''
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class TaizhangOps(models.Model):
+    record = models.ForeignKey(Taizhang, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    op = models.CharField(max_length=50)  # create/modify/delete
+    prop = models.CharField(max_length=50, null=True)
+    extra = JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

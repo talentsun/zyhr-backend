@@ -11,6 +11,7 @@ from core.views import message
 from core.views import customer
 from core.views import finAccount
 from core.views import stats
+from core.views import taizhang
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -74,6 +75,11 @@ urlpatterns = [
     path(r'transaction-records/actions/export', stats.exportRecords),
     path(r'transaction-record-ops', stats.ops),
     path(r'transaction-record-stats', stats.stats),
+
+    # taizhang api
+    path(r'taizhang', taizhang.taizhang),
+    path(r'taizhang/<int:id>', taizhang.taizhangDetail),
+    path(r'taizhang-ops', taizhang.ops),
 
     # roles api
     path(r'roles', roles.index),

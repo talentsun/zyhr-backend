@@ -310,6 +310,21 @@ def approveStep(request, stepId):
                 activity.taskState = 'pending'
             activity.save()
 
+            if activity.config.subtype == 'biz_contract':
+                info = activity.extra['info']
+                Taizhang.objects.create(
+                    auditId=activity.pk,
+                    date=activity.created_at.strftime('%Y-%m'),
+                    asset=info['asset'],
+                    upstream=info['upstream'],
+                    upstream_dunwei=info['tonnage'],
+                    buyPrice=info['buyPrice'],
+
+                    downstream=info['downstream'],
+                    downstream_dunwei=info['tonnage'],
+                    sellPrice=info['sellPrice'],
+                )
+
             Message.objects.create(profile=activity.creator,
                                    activity=activity,
                                    category='finish',
@@ -321,8 +336,9 @@ def approveStep(request, stepId):
             nextStep.save()
         return JsonResponse({'ok': True})
     except:
+        logger.exception("fail to approve step")
         return JsonResponse({
-            'errorId': 'step-not-found'
+            'errorId': 'approve-step-error'
         }, status=400)
 
 
