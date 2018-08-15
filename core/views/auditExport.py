@@ -409,7 +409,7 @@ def exportBizContractAuditDoc(activity):
     ws['A3'] = '合同类型：{}                                                    {}'.format(
         '大宗类' if base['type'] == 'dazong' else '其他类',
         datetime.datetime.now().strftime('%Y-%m-%d'))
-    ws['B4'] = getattr(base, 'company', '')
+    ws['B4'] = base.get('company', '')
 
     ws['B5'] = info['upstream']
     ws['F5'] = info.get('downstream', '')
