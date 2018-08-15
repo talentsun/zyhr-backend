@@ -51,9 +51,9 @@ def resolve_profile(profile):
                 archived=False,
                 taskState='pending')
 
-    if profile.department.code == 'hr':
+    if profile.department is not None and profile.department.code == 'hr':
         pendingTasks = pendingTasks.filter(config__category='law')
-    elif profile.department.code == 'fin':
+    elif profile.department is not None and profile.department.code == 'fin':
         pendingTasks = pendingTasks.filter(config__category='fin')
 
     pendingTasks = pendingTasks.count()

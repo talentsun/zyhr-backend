@@ -39,6 +39,11 @@ def submitActivityAudit(activity):
     step.activated_at = datetime.datetime.now(tz=timezone.utc)
     step.save()
 
+    Message.objects.create(activity=activity,
+                           category='progress',
+                           extra={},
+                           profile=step.assignee)
+
 
 def recordBankAccountIfNeed(profile, code, data):
     accounts = []
@@ -301,6 +306,11 @@ def approveStep(request, stepId):
                     profile=step.assignee,
                     category='hurryup') \
             .delete()
+        Message.objects \
+            .filter(activity=step.activity,
+                    profile=step.assignee,
+                    category='progress') \
+            .delete()
 
         step.save()
         if step.nextStep() == None:
@@ -320,7 +330,7 @@ def approveStep(request, stepId):
             nextStep.activated_at = datetime.datetime.now(tz=timezone.utc)
             nextStep.save()
             Message.objects.create(activity=step.activity,
-                                   category='hurryup',
+                                   category='progress',
                                    extra={},
                                    profile=nextStep.assignee)
         return JsonResponse({'ok': True})
@@ -354,6 +364,11 @@ def rejectStep(request, stepId):
             .filter(activity=step.activity,
                     profile=step.assignee,
                     category='hurryup') \
+            .delete()
+        Message.objects \
+            .filter(activity=step.activity,
+                    profile=step.assignee,
+                    category='progress') \
             .delete()
 
         activity = step.activity

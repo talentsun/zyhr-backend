@@ -324,7 +324,7 @@ class Message(models.Model):
     activity = models.ForeignKey(AuditActivity,
                                  on_delete=models.CASCADE,
                                  null=True)
-    category = models.CharField(max_length=255)  # hurryup/finish
+    category = models.CharField(max_length=255)  # hurryup/finish/progress
     extra = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)
