@@ -412,7 +412,7 @@ def exportBizContractAuditDoc(activity):
     ws['B4'] = getattr(base, 'company', '')
 
     ws['B5'] = info['upstream']
-    ws['F5'] = info['downstream']
+    ws['F5'] = info.get('downstream', '')
     ws['B6'] = info['asset']
     ws['B7'] = str(info['tonnage']) + '吨'
     ws['F7'] = str(info['buyPrice']) + '元/吨'
