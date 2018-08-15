@@ -45,21 +45,37 @@ class Command(BaseCommand):
 
         positions = [
             {'name': '总裁', 'code': 'ceo'},
-            {'name': '负责人', 'code': 'owner'},
-            {'name': '会计', 'code': 'accountant'},
-            {'name': '出纳', 'code': 'cashier'},
-            {'name': '组员', 'code': 'member'},  # 各部门一般成员职位
-            {'name': '业务经理', 'code': 'mgr'}  # 只在大宗商品事业部
+            {'name': '负责人', 'code': 'owner'},  # 每个部门都也负责人
+
+            # 财务中心
+            {'name': '会计', 'code': 'fin_accountant'},
+            {'name': '出纳', 'code': 'fin_cashier'},
+
+            # 行政中心
+            {'name': '行政专员', 'code': 'hr_admin_member'},  # 行政专员
+            {'name': '人事经理', 'code': 'hr_mgr'},  # 人事经理
+            {'name': '人事专员', 'code': 'hr_member'},  # 人事专员
+
+            # 大宗事业部岗位
+            {'name': '业务经理', 'code': 'dazong_mgr'},  # 业务经理
+            {'name': '业务专员', 'code': 'dazong_member'},  # 业务专员
         ]
         for pos in positions:
             Position.objects.create(**pos)
 
         departments = [
             {'name': '总部', 'code': 'root', 'positions': ['ceo']},
-            {'name': '大宗商品事业部', 'code': 'dazong', 'positions': ['owner', 'mgr', 'member']},
-            {'name': '财务中心', 'code': 'fin', 'positions': ['owner', 'accountant', 'cashier']},
-            {'name': '人力行政中心', 'code': 'hr', 'positions': ['owner', 'member']},
+            {'name': '大宗商品事业部', 'code': 'dazong',
+             'positions': ['owner', 'dazong_mgr', 'dazong_member']
+             },
+            {'name': '财务中心', 'code': 'fin',
+             'positions': ['owner', 'fin_accountant', 'fin_cashier']
+             },
+            {'name': '人力行政中心', 'code': 'hr',
+             'positions': ['owner', 'hr_mgr', 'hr_admin_member', 'hr_member']
+             },
             {'name': '地产事业部', 'code': 'dichan', 'positions': ['owner']},
+            {'name': '金融事业部', 'code': 'jinrong', 'positions': []},
         ]
         for dep in departments:
             positions = dep['positions']
@@ -72,16 +88,25 @@ class Command(BaseCommand):
 
         profiles = [
             {'name': 'ceo', 'dep': 'root', 'pos': 'ceo'},
+
+            # 大宗事业部
             {'name': 'jack', 'dep': 'dazong', 'pos': 'owner'},
-            {'name': 'mike', 'dep': 'dazong', 'pos': 'mgr'},
-            {'name': 'tez', 'dep': 'dazong', 'pos': 'member'},
+            {'name': 'mike', 'dep': 'dazong', 'pos': 'dazong_mgr'},
+            {'name': 'tez', 'dep': 'dazong', 'pos': 'dazong_member'},
 
+            # 财务中心
             {'name': 'tom', 'dep': 'fin', 'pos': 'owner'},
-            {'name': 'telez', 'dep': 'fin', 'pos': 'accountant'},
-            {'name': 'messi', 'dep': 'fin', 'pos': 'cashier'},
+            {'name': 'telez', 'dep': 'fin', 'pos': 'fin_accountant'},
+            {'name': 'messi', 'dep': 'fin', 'pos': 'fin_cashier'},
 
+            # 人力行政中心
             {'name': 'jarvis', 'dep': 'hr', 'pos': 'owner'},
-            {'name': 'young', 'dep': 'hr', 'pos': 'member'},
+            {'name': 'young', 'dep': 'hr', 'pos': 'hr_member'},
+            {'name': 'lufy', 'dep': 'hr', 'pos': 'hr_admin_member'},
+            {'name': 'mina', 'dep': 'hr', 'pos': 'hr_mgr'},
+
+            # 地产
+            {'name': 'dollars', 'dep': 'dichan', 'pos': 'owner'},
         ]
         for profile in profiles:
             dep = Department.objects.get(code=profile['dep'])
@@ -96,13 +121,13 @@ class Command(BaseCommand):
 
         # 费用报销流程（总额<=5000）
         specs.createAuditConfig(spec='fin.cost_lte_5000:\
-                                fin.accountant->\
+                                fin.fin_accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner...')
         # 费用报销流程（总额>5000）
         specs.createAuditConfig(spec='fin.cost_gt_5000:\
-                                fin.accountant->\
+                                fin.fin_accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner->\
@@ -110,15 +135,15 @@ class Command(BaseCommand):
 
         # 差旅报销流程（总额<=5000）
         specs.createAuditConfig(spec='fin.travel_lte_5000:\
-                                hr.member->\
-                                fin.accountant->\
+                                hr.hr_member->\
+                                fin.fin_accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner...')
         # 差旅报销流程（总额>5000）
         specs.createAuditConfig(spec='fin.travel_gt_5000:\
-                                hr.member->\
-                                fin.accountant->\
+                                hr.hr_member->\
+                                fin.fin_accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner->\
@@ -152,7 +177,7 @@ class Command(BaseCommand):
 
         # 业务合同会签
         specs.createAuditConfig(
-            spec='law.biz_contract:_.owner->fin.accountant->fin.owner->root.ceo...')
+            spec='law.biz_contract:_.owner->fin.fin_accountant->fin.owner->root.ceo...')
 
         # 职能类合同会签
         specs.createAuditConfig(
