@@ -319,6 +319,10 @@ def approveStep(request, stepId):
             nextStep.active = True
             nextStep.activated_at = datetime.datetime.now(tz=timezone.utc)
             nextStep.save()
+            Message.objects.create(activity=step.activity,
+                                   category='hurryup',
+                                   extra={},
+                                   profile=nextStep.assignee)
         return JsonResponse({'ok': True})
     except:
         return JsonResponse({
