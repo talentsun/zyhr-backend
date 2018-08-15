@@ -317,6 +317,12 @@ class BankAccount(models.Model):
     bank = models.CharField(max_length=255)
 
 
+class Company(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+
+
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     read = models.BooleanField(default=False)  # 是否已读

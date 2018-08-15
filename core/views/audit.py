@@ -71,6 +71,14 @@ def recordBankAccountIfNeed(profile, code, data):
                        number=number)
 
 
+def recordCompanyIfNeed(profile, code, data):
+    if re.match('biz', code):
+        company = data['base'].get('company')
+        count = Company.objects.filter(profile=profile, name=company).count()
+        if count == 0:
+            Company.objects.create(profile=profile, name=company)
+
+
 def generateActivitySN():
     now = datetime.datetime.now()
     now = now + datetime.timedelta(hours=8)
@@ -166,6 +174,7 @@ def createActivity(profile, data):
         submitActivityAudit(activity)
 
     recordBankAccountIfNeed(profile, activity.config.subtype, activity.extra)
+    recordCompanyIfNeed(profile, activity.config.subtype, activity.extra)
 
     return activity
 
@@ -226,6 +235,7 @@ def updateData(request, activityId):
     activity.save()
 
     recordBankAccountIfNeed(request.profile, activity.config.subtype, data)
+    recordCompanyIfNeed(request.profile, activity.config.subtype, activity.extra)
 
     return JsonResponse({'ok': True})
 
