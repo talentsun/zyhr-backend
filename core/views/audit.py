@@ -602,6 +602,12 @@ def auditTasks(request):
         date = iso8601.parse_date(created_at_end)
         activities = activities.filter(created_at__lt=date)
 
+    profile = request.profile
+    if profile.department.code == 'hr':
+        activities = activities.filter(config__category='law')
+    elif profile.department.code == 'fin':
+        activities = activities.filter(config__category='fin')
+
     activities = activities.order_by('-updated_at')
     total = activities.count()
     activities = activities[start:start + limit]
