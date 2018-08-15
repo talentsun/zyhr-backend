@@ -49,8 +49,14 @@ def resolve_profile(profile):
     pendingTasks = AuditActivity.objects \
         .filter(state=AuditActivity.StateApproved,
                 archived=False,
-                taskState='pending') \
-        .count()
+                taskState='pending')
+
+    if profile.department.code == 'hr':
+        pendingTasks = pendingTasks.filter(config__category='law')
+    elif profile.department.code == 'fin':
+        pendingTasks = pendingTasks.filter(config__category='fin')
+
+    pendingTasks = pendingTasks.count()
 
     return {
         'id': str(profile.pk),
