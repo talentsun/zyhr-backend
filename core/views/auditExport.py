@@ -503,7 +503,7 @@ def exportTravelAuditDoc(activity):
     creator = activity.creator
 
     wb = load_workbook(os.getcwd() + '/xlsx-templates/travel.xlsx')
-    ws = wb.active
+    ws = wb.worksheets[0]
     ws['C3'] = '姓名: {}                 部门: {}                    {}'.format(
         creator.name,
         getattr(creator.department, 'name', ''),
@@ -605,6 +605,63 @@ def exportTravelAuditDoc(activity):
 
     for cell in ws.merged_cells:
         if not inBounds('C4:W20', cell):
+            logger.info('ignore cell: {}'.format(cell.coord))
+            continue
+
+        logger.info('fix border style {}'.format(cell.coord))
+        style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+
+    # 费用报销
+    ws = wb.worksheets[1]
+    info = auditData['info']
+    dp = creator.department.name if creator.department is not None else ''
+    date = datetime.datetime.now().strftime('%Y-%m-%d')
+    ws['B2'] = '报销部门：{}                        {}                      单据及附件共 1 页' \
+        .format(dp, date)
+
+    ws['B5'] = '差旅报销'
+    ws['C5'] = getattr(info, 'reason', '')
+    amount = paddingAmount(t)
+    for j, ch in enumerate(amount):
+        col = chr(ord('E') + j)
+        ws[col + '5'] = ch
+
+    ## 合计
+    for j, ch in enumerate(amount):
+        col = chr(ord('E') + j)
+        ws[col + '8'] = ch
+
+    ## 金额大写
+    ws['B9'] = '金额大写：{}'.format(convertToDaxieAmount(t))
+
+    ws['D9'] = '原借款：{} 元'.format(amountFixed(float(info['yuanjiekuan'])))
+    if getattr(info, 'tuibukuan', None) is not None:
+        ws['N9'] = '退补款：{} 元'.format(amountFixed(float(getattr(info, 'tuibukuan'))))
+
+    creator = activity.creator
+    owner = creator.owner
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
+    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    # 报销人/部分负责人/财务负责人
+    ws['C10'] = '报销人：{}'.format(getattr(creator, 'name', ''))
+    ws['C11'] = '部门负责人：{}'.format(getattr(owner, 'name', ''))
+    ws['C12'] = '财务负责人：{}'.format(getattr(finOwner, 'name'))
+
+    ## 财务会计/人力行政负责人/公司负责人
+    ws['D10'] = '财务会计：{}'.format(getattr(finAccountant, 'name', ''))
+    ws['D11'] = '人力行政负责人：{}'.format(getattr(hrOwner, 'name', ''))
+    ws['D12'] = '公司负责人：{}'.format(getattr(ceo, 'name', ''))
+
+    ## 账号信息系
+    account = auditData['account']
+    ws['O3'] = '户名：{}\n收款账号:{} \n开户行：{}' \
+        .format(account['name'], account['number'], account['bank'])
+    ws['O3'].alignment = Alignment(vertical='center', wrapText=True)
+
+    for cell in ws.merged_cells:
+        if not inBounds('A3:O12', cell):
             logger.info('ignore cell: {}'.format(cell.coord))
             continue
 
