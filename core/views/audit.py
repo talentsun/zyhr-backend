@@ -593,7 +593,7 @@ def auditTasks(request):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
     if notEmpty(state):
-        activities = activities.filter(state=state)
+        activities = activities.filter(taskState=state)
 
     if notEmpty(created_at_start):
         date = iso8601.parse_date(created_at_start)
