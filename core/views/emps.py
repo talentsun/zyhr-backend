@@ -80,6 +80,7 @@ def detail(request, empId):
         for prop in ['department', 'position', 'phone', 'desc', 'role']:
             if data.get(prop, None) != None:
                 partial[prop] = data.get(prop)
+        partial['updated_at'] = timezone.now()
         Profile.objects.filter(pk=empId).update(**partial)
         if 'password' in prop:
             user = emp.user

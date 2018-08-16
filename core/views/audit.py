@@ -39,6 +39,11 @@ def submitActivityAudit(activity):
     step.activated_at = datetime.datetime.now(tz=timezone.utc)
     step.save()
 
+    Message.objects.create(activity=activity,
+                           category='progress',
+                           extra={},
+                           profile=step.assignee)
+
 
 def recordBankAccountIfNeed(profile, code, data):
     accounts = []
@@ -64,6 +69,14 @@ def recordBankAccountIfNeed(profile, code, data):
                        name=name,
                        bank=bank,
                        number=number)
+
+
+def recordCompanyIfNeed(profile, code, data):
+    if re.match('biz', code):
+        company = data['base'].get('company')
+        count = Company.objects.filter(profile=profile, name=company).count()
+        if count == 0:
+            Company.objects.create(profile=profile, name=company)
 
 
 def generateActivitySN():
@@ -161,6 +174,7 @@ def createActivity(profile, data):
         submitActivityAudit(activity)
 
     recordBankAccountIfNeed(profile, activity.config.subtype, activity.extra)
+    recordCompanyIfNeed(profile, activity.config.subtype, activity.extra)
 
     return activity
 
@@ -221,6 +235,7 @@ def updateData(request, activityId):
     activity.save()
 
     recordBankAccountIfNeed(request.profile, activity.config.subtype, data)
+    recordCompanyIfNeed(request.profile, activity.config.subtype, activity.extra)
 
     return JsonResponse({'ok': True})
 
@@ -301,6 +316,11 @@ def approveStep(request, stepId):
                     profile=step.assignee,
                     category='hurryup') \
             .delete()
+        Message.objects \
+            .filter(activity=step.activity,
+                    profile=step.assignee,
+                    category='progress') \
+            .delete()
 
         step.save()
         if step.nextStep() == None:
@@ -334,6 +354,10 @@ def approveStep(request, stepId):
             nextStep.active = True
             nextStep.activated_at = datetime.datetime.now(tz=timezone.utc)
             nextStep.save()
+            Message.objects.create(activity=step.activity,
+                                   category='progress',
+                                   extra={},
+                                   profile=nextStep.assignee)
         return JsonResponse({'ok': True})
     except:
         logger.exception("fail to approve step")
@@ -366,6 +390,11 @@ def rejectStep(request, stepId):
             .filter(activity=step.activity,
                     profile=step.assignee,
                     category='hurryup') \
+            .delete()
+        Message.objects \
+            .filter(activity=step.activity,
+                    profile=step.assignee,
+                    category='progress') \
             .delete()
 
         activity = step.activity
@@ -609,7 +638,7 @@ def auditTasks(request):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
     if notEmpty(state):
-        activities = activities.filter(state=state)
+        activities = activities.filter(taskState=state)
 
     if notEmpty(created_at_start):
         date = iso8601.parse_date(created_at_start)
@@ -617,6 +646,12 @@ def auditTasks(request):
     if notEmpty(created_at_end):
         date = iso8601.parse_date(created_at_end)
         activities = activities.filter(created_at__lt=date)
+
+    profile = request.profile
+    if profile.department.code == 'hr':
+        activities = activities.filter(config__category='law')
+    elif profile.department.code == 'fin':
+        activities = activities.filter(config__category='fin')
 
     activities = activities.order_by('-updated_at')
     total = activities.count()

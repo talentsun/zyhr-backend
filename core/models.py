@@ -317,6 +317,12 @@ class BankAccount(models.Model):
     bank = models.CharField(max_length=255)
 
 
+class Company(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+
+
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     read = models.BooleanField(default=False)  # 是否已读
@@ -324,7 +330,7 @@ class Message(models.Model):
     activity = models.ForeignKey(AuditActivity,
                                  on_delete=models.CASCADE,
                                  null=True)
-    category = models.CharField(max_length=255)  # hurryup/finish
+    category = models.CharField(max_length=255)  # hurryup/finish/progress
     extra = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)
