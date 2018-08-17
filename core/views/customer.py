@@ -4,7 +4,9 @@ import json
 import pandas
 import xlwt
 import xlrd
+from decimal import Decimal
 
+from django.db.models import Q
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -160,3 +162,44 @@ def exportCustomers(request):
 
     xf.save(f)
     return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+
+
+@require_http_methods(['GET'])
+def stats(request):
+    name = request.GET.get('name', None)
+    rating = request.GET.get('rating', None)
+    start = int(request.GET.get('start', '0'))
+    limit = int(request.GET.get('limit', '20'))
+
+    customers = Customer.objects.all()
+    if name is not None and name != '':
+        customers = customers.filter(name__contains=name)
+    if rating is not None and rating != '':
+        customers = customers.filter(rating=rating)
+
+    customers = customers.order_by('-id')
+    total = customers.count()
+    customers = customers[start:start + limit]
+    customers = [resolve_customer(c) for c in customers]
+    for c in customers:
+        # 本月业务量
+        now = timezone.now()
+        month = now.strftime('%Y-%m')
+        records = Taizhang.objects.filter(Q(upstream=c['name']) | Q(downstream=c['name']),
+                                          date=month)
+        month_yewuliang = Decimal('0.00')
+        for r in records:
+            month_yewuliang = month_yewuliang + r.hetong_jine
+        c['month_yewuliang'] = month_yewuliang
+
+        # 累计业务量
+        records = Taizhang.objects.filter(Q(upstream=c['name']) | Q(downstream=c['name']))
+        yewuliang = Decimal('0.00')
+        for r in records:
+            yewuliang = yewuliang + r.hetong_jine
+        c['yewuliang'] = yewuliang
+
+    return JsonResponse({
+        'total': total,
+        'customers': customers
+    })

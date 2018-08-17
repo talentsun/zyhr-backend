@@ -340,7 +340,7 @@ def approveStep(request, stepId):
                     upstream_dunwei=info['tonnage'],
                     buyPrice=info['buyPrice'],
 
-                    downstream=info['downstream'],
+                    downstream=info.get('downstream', ''),
                     downstream_dunwei=info['tonnage'],
                     sellPrice=info['sellPrice'],
                 )

@@ -58,6 +58,7 @@ urlpatterns = [
 
     # customers api
     path(r'customers', customer.index),
+    path(r'customer-stats', customer.stats),
     path(r'customers/<int:customerId>', customer.customer),
     path(r'customers/actions/import', customer.importCustomers),
     path(r'customers/actions/export', customer.exportCustomers),
@@ -80,6 +81,7 @@ urlpatterns = [
     path(r'taizhang', taizhang.taizhang),
     path(r'taizhang/<int:id>', taizhang.taizhangDetail),
     path(r'taizhang-ops', taizhang.ops),
+    path(r'taizhang-stats', taizhang.stats),
 
     # roles api
     path(r'roles', roles.index),

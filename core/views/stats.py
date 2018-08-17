@@ -225,6 +225,7 @@ def ops(request):
     name = request.GET.get('name', None)
     other = request.GET.get('other', None)
     prop = request.GET.get('prop', None)
+    id = request.GET.get('id', None)
 
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
@@ -238,7 +239,10 @@ def ops(request):
         ops = ops.filter(record__other__contains=other)
     if prop is not None and prop != '':
         ops = ops.filter(prop=prop)
+    if id is not None and id != '':
+        ops = ops.filter(record=id)
 
+    ops = ops.order_by('-created_at')
     total = ops.count()
     ops = ops[start:start + limit]
     return JsonResponse({
