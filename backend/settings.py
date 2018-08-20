@@ -83,23 +83,23 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
 DATA_DIR = '/var/lib/zyhr'
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(DATA_DIR, 'db.sqlite3'),
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': os.getenv('MYSQL_DATABASE', 'zyhroa'),
-#         'USER': os.getenv('MYSQL_USERNAME', 'root'),
-#         'PASSWORD': os.getenv('MYSQL_PASSWORD'),
-#         'HOST': os.getenv('MYSQL_HOST', '172.18.0.1'),
-#         'PORT': os.getenv('MYSQL_PORT', '3306')
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(DATA_DIR, 'db.sqlite3'),
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('MYSQL_DATABASE', 'zyhroa'),
+        'USER': os.getenv('MYSQL_USERNAME', 'root'),
+        'PASSWORD': os.getenv('MYSQL_PASSWORD', 'zyhr2018'),
+        'HOST': os.getenv('MYSQL_HOST', '172.18.0.1'),
+        'PORT': os.getenv('MYSQL_PORT', '3306')
+    }
+}
 
 CACHES = {
     'default': {
