@@ -344,6 +344,7 @@ def approveStep(request, stepId):
                     downstream_dunwei=info['tonnage'],
                     sellPrice=info['sellPrice'],
                 )
+                StatsEvent.objects.create(source='taizhang', event='invalidate')
 
             Message.objects.create(profile=activity.creator,
                                    activity=activity,

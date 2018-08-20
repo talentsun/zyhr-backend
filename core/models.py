@@ -353,6 +353,7 @@ CustomerNatures = (
 
 
 class Customer(models.Model):
+    archived = models.BooleanField(default=False)
     name = models.CharField(max_length=255)
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     rating = models.CharField(max_length=50)
@@ -396,6 +397,7 @@ CurrencyChoices = (
 
 
 class FinAccount(models.Model):
+    archived = models.BooleanField(default=False)
     name = models.CharField(max_length=255)
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     number = models.CharField(max_length=255)
@@ -450,22 +452,22 @@ class Taizhang(models.Model):
     company = models.CharField(null=True, default='中阅和瑞', max_length=255)  # 公司名称
     asset = models.CharField(max_length=255)  # 货物标的
     upstream = models.CharField(max_length=255)  # 上游供方
-    upstream_dunwei = models.DecimalField(max_digits=19, decimal_places=2)  # 上游合同吨位
-    buyPrice = models.DecimalField(max_digits=19, decimal_places=2)  # 采购单价
+    upstream_dunwei = models.DecimalField(max_digits=32, decimal_places=4)  # 上游合同吨位
+    buyPrice = models.DecimalField(max_digits=32, decimal_places=4)  # 采购单价
 
-    kaipiao_dunwei = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 开票吨位，用户填写
-    upstream_jiesuan_price = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 上游结算价格，用户填写
+    kaipiao_dunwei = models.DecimalField(null=True, max_digits=32, decimal_places=4)  # 开票吨位，用户填写
+    upstream_jiesuan_price = models.DecimalField(null=True, max_digits=32, decimal_places=4)  # 上游结算价格，用户填写
 
     downstream = models.CharField(max_length=255, null=True)  # 现有单位
-    downstream_dunwei = models.DecimalField(max_digits=19, decimal_places=2)  # 下游合同吨位
-    sellPrice = models.DecimalField(max_digits=19, decimal_places=2)  # 销售价格
+    downstream_dunwei = models.DecimalField(max_digits=32, decimal_places=4)  # 下游合同吨位
+    sellPrice = models.DecimalField(max_digits=32, decimal_places=4)  # 销售价格
 
-    kaipiao_dunwei_trade = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 开票吨位（贸易量），用户填写
-    downstream_jiesuan_price = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 下游结算价格，用户填写
+    kaipiao_dunwei_trade = models.DecimalField(null=True, max_digits=32, decimal_places=4)  # 开票吨位（贸易量），用户填写
+    downstream_jiesuan_price = models.DecimalField(null=True, max_digits=32, decimal_places=4)  # 下游结算价格，用户填写
 
-    shangyou_zijin_zhanya = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 上游资金占压
-    shangyou_kuchun_liang = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 上游库存量
-    shangyou_kuchun_yuji_danjia = models.DecimalField(null=True, max_digits=19, decimal_places=2)  # 上游库存预计单价
+    shangyou_zijin_zhanya = models.DecimalField(null=True, max_digits=32, decimal_places=4)  # 上游资金占压
+    shangyou_kuchun_liang = models.DecimalField(null=True, max_digits=32, decimal_places=4)  # 上游库存量
+    shangyou_kuchun_yuji_danjia = models.DecimalField(null=True, max_digits=32, decimal_places=4)  # 上游库存预计单价
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -512,3 +514,43 @@ class TaizhangOps(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class StatsEvent(models.Model):
+    source = models.CharField(max_length=255)  # customer/taizhang/funds
+    event = models.CharField(max_length=255)  # invalidate
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+# 资金信息统计数据
+class TransactionStat(models.Model):
+    account = models.ForeignKey(FinAccount, on_delete=models.CASCADE)
+
+    category = models.CharField(max_length=255)  # week / total
+    startDayOfWeek = models.CharField(max_length=255, null=True)
+
+    income = models.DecimalField(decimal_places=2, max_digits=19)
+    outcome = models.DecimalField(decimal_places=2, max_digits=19)
+    balance = models.DecimalField(decimal_places=2, max_digits=19)
+
+
+class TaizhangStat(models.Model):
+    category = models.CharField(max_length=255)  # month / total
+
+    month = models.CharField(max_length=255, null=True)
+    company = models.CharField(max_length=255)
+    asset = models.CharField(max_length=255, null=True)
+
+    xiaoshoue = models.DecimalField(decimal_places=2, max_digits=19)
+    lirune = models.DecimalField(decimal_places=2, max_digits=19)
+    kuchun_liang = models.DecimalField(decimal_places=2, max_digits=19)
+    zijin_zhanya = models.DecimalField(decimal_places=2, max_digits=19)
+
+
+class CustomerStat(models.Model):
+    category = models.CharField(max_length=255)  # month / total
+    month = models.CharField(max_length=255, null=True)
+
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
+    yewuliang = models.DecimalField(decimal_places=2, max_digits=19)

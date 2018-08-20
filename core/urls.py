@@ -12,6 +12,7 @@ from core.views import customer
 from core.views import finAccount
 from core.views import stats
 from core.views import taizhang
+from core.views import charts
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -82,6 +83,16 @@ urlpatterns = [
     path(r'taizhang/<int:id>', taizhang.taizhangDetail),
     path(r'taizhang-ops', taizhang.ops),
     path(r'taizhang-stats', taizhang.stats),
+
+    # charts api
+    path(r'charts/taizhang/line', charts.taizhang_line),
+    path(r'charts/taizhang/bar', charts.taizhang_bar),
+    path(r'charts/taizhang/pie', charts.taizhang_pie),
+    path(r'charts/taizhang/companies', charts.taizhang_companies),
+    path(r'charts/funds/line', charts.funds_line),
+    path(r'charts/funds/bar', charts.funds_bar),
+    path(r'charts/customers/line', charts.customers_line),
+    path(r'charts/customers/bar', charts.customers_bar),
 
     # roles api
     path(r'roles', roles.index),

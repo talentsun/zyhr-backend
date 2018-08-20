@@ -171,35 +171,25 @@ def stats(request):
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    customers = Customer.objects.all()
+    stats = CustomerStat.objects.filter(category='total')
     if name is not None and name != '':
-        customers = customers.filter(name__contains=name)
+        stats = stats.filter(customer__name__contains=name)
     if rating is not None and rating != '':
-        customers = customers.filter(rating=rating)
+        stats = stats.filter(customer__rating=rating)
 
-    customers = customers.order_by('-id')
-    total = customers.count()
-    customers = customers[start:start + limit]
-    customers = [resolve_customer(c) for c in customers]
-    for c in customers:
-        # 本月业务量
-        now = timezone.now()
-        month = now.strftime('%Y-%m')
-        records = Taizhang.objects.filter(Q(upstream=c['name']) | Q(downstream=c['name']),
-                                          date=month)
-        month_yewuliang = Decimal('0.00')
-        for r in records:
-            month_yewuliang = month_yewuliang + r.hetong_jine
-        c['month_yewuliang'] = month_yewuliang
+    stats = stats.order_by('customer__name')
+    total = stats.count()
+    stats = stats[start:start + limit]
 
-        # 累计业务量
-        records = Taizhang.objects.filter(Q(upstream=c['name']) | Q(downstream=c['name']))
-        yewuliang = Decimal('0.00')
-        for r in records:
-            yewuliang = yewuliang + r.hetong_jine
-        c['yewuliang'] = yewuliang
+    def resolveStat(s):
+        d = resolve_customer(s.customer)
+        d['yewuliang'] = s.yewuliang
+        # TODO: 本月业务量还是平均价格
+        d['month_yewuliang'] = s.yewuliang
+        return d
 
+    stats = [resolveStat(s) for s in stats]
     return JsonResponse({
         'total': total,
-        'customers': customers
+        'customers': stats
     })

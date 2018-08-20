@@ -132,6 +132,9 @@ def importTransactionRecords(request):
             logger.exception("fail to import customer, stop")
             break
 
+    if success > 0:
+        StatsEvent.objects.create(source='funds', event='invalidate')
+
     return JsonResponse({'success': success, 'fail': total - success})
 
 
@@ -178,6 +181,8 @@ def transactionRecord(request, recordId):
                                    },
                                    profile=request.profile,
                                    op='modify')
+            if len(modifiedProps) > 0:
+                StatsEvent.objects.create(source='funds', event='invalidate')
         except:
             logger.exception("fail to modify record")
             return JsonResponse({'errorId': 'internal-server-error'}, status=500)
@@ -251,32 +256,16 @@ def ops(request):
     })
 
 
-def resolve_account(account):
-    record = StatsTransactionRecord.objects \
-        .filter(number=account.number) \
-        .order_by('-created_at').first()
-    balance = None
-    if record:
-        balance = record.balance
-
-    records = StatsTransactionRecord.objects.filter(number=account.number)
-    income = Decimal(0.0)
-    outcome = Decimal(0.0)
-    for r in records:
-        if r.income is not None:
-            income = income + Decimal(r.income)
-        if r.outcome is not None:
-            outcome = outcome + Decimal(r.outcome)
-
+def resolve_ts(r):
     return {
-        'id': account.pk,
-        'name': account.name,
-        'number': account.number,
-        'currency': account.currency,
-        'bank': account.bank,
-        'balance': balance,
-        'income': income,
-        'outcome': outcome
+        'id': r.account.pk,
+        'name': r.account.name,
+        'number': r.account.number,
+        'currency': r.account.currency,
+        'bank': r.account.bank,
+        'balance': r.balance,
+        'income': r.income,
+        'outcome': r.outcome
     }
 
 
@@ -285,19 +274,19 @@ def stats(request):
     name = request.GET.get('name', None)
     number = request.GET.get('number', None)
 
-    accounts = FinAccount.objects.all()
+    tss = TransactionStat.objects.filter(category='total')
     if name is not None and name != '':
-        accounts = accounts.filter(name__contains=name)
+        tss = tss.filter(account__name__contains=name)
     if number is not None and number != '':
-        accounts = accounts.filter(number__contains=number)
+        tss = tss.filter(account__number__contains=number)
 
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    total = accounts.count()
-    accounts = accounts[start:start + limit]
-    accounts = [resolve_account(account) for account in accounts]
+    total = tss.count()
+    records = tss[start:start + limit]
+    records = [resolve_ts(r) for r in records]
     return JsonResponse({
-        'records': accounts,
+        'records': records,
         'total': total
     })

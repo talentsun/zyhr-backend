@@ -115,6 +115,8 @@ def taizhangDetail(request, id):
                                        },
                                        profile=request.profile,
                                        op='modify')
+        if len(modifiedProps) > 0:
+            StatsEvent.objects.create(source='taizhang', event='invalidate')
     except:
         logger.exception("fail to modify record")
         return JsonResponse({'errorId': 'internal-server-error'}, status=500)
@@ -171,93 +173,31 @@ def ops(request):
 
 @require_http_methods(['GET'])
 def stats(request):
-    # TODO: 解决性能问题，改成定时统计模块
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
     company_param = request.GET.get('company', '')
     asset_param = request.GET.get('asset', '')
 
-    companies = set()
-    records = Taizhang.objects.filter(archived=False).values('upstream').distinct()
-    for r in records:
-        companies.add(r['upstream'])
-    records = Taizhang.objects.filter(archived=False).values('downstream').distinct()
-    for r in records:
-        downstream = r.get('downstream', None)
-        if downstream is not None and downstream != '':
-            companies.add(downstream)
+    records = TaizhangStat.objects.filter(category='total')
+    if company_param is not None and company_param != '':
+        records = records.filter(company__contains=company_param)
+    if asset_param:
+        records = records.filter(asset__contains=asset_param)
 
-    allCompanies = list(companies)
-    companies = filter(lambda c: company_param in c, companies)
+    records = records.order_by('company', 'asset')
+    total = records.count()
+    records = records[start:start + limit]
+    records = [{
+        'company': r.company,
+        'asset': r.asset,
+        'xiaoshoue': r.xiaoshoue,
+        'lirune': r.lirune,
+        'kuchun_liang': r.kuchun_liang,
+        'zijin_zhanya': r.zijin_zhanya
+    } for r in records]
 
-    allAssets = set()
-    records = Taizhang.objects.all().values('asset').distinct()
-    for r in records:
-        allAssets.add(r['asset'])
-    allAssets = list(allAssets)
-
-    stats = []
-    for company in companies:
-        assets = Taizhang.objects \
-            .filter(Q(upstream=company) | Q(downstream=company)) \
-            .values('asset') \
-            .distinct()
-        for asset in assets:
-            if asset_param not in asset.get('asset'):
-                continue
-
-            stat = {'company': company, 'asset': asset.get('asset')}
-
-            # 统计销售金额
-            xiaoshou_jine = Decimal(0)
-            records = Taizhang.objects \
-                .filter(Q(upstream=company) | Q(downstream=company),
-                        kaipiao_dunwei_trade__isnull=False,
-                        downstream_jiesuan_price__isnull=False)
-            for r in records:
-                xiaoshou_jine = r.xiaoshou_jine + xiaoshou_jine
-            stat['xiaoshou_jine'] = xiaoshou_jine
-
-            # 采购金额
-            caigou_jine = Decimal(0)
-            records = Taizhang.objects \
-                .filter(Q(upstream=company) | Q(downstream=company),
-                        kaipiao_dunwei__isnull=False,
-                        upstream_jiesuan_price__isnull=False)
-            for r in records:
-                caigou_jine = r.caigou_jine + caigou_jine
-            stat['caigou_jine'] = caigou_jine
-
-            # 利润额
-            stat['lirune'] = stat['xiaoshou_jine'] - stat['caigou_jine']
-
-            # 库存量
-            kuchun_liang = Decimal(0)
-            records = Taizhang.objects \
-                .filter(Q(upstream=company) | Q(downstream=company),
-                        shangyou_kuchun_liang__isnull=False,
-                        shangyou_kuchun_yuji_danjia__isnull=False)
-            for r in records:
-                kuchun_liang = r.kuchun_jine + kuchun_liang
-            stat['kuchun_liang'] = kuchun_liang
-
-            # 资金占压
-            zijin_zhanya = Decimal(0)
-            records = Taizhang.objects \
-                .filter(Q(upstream=company) | Q(downstream=company),
-                        shangyou_zijin_zhanya__isnull=False)
-            for r in records:
-                zijin_zhanya = r.shangyou_zijin_zhanya + zijin_zhanya
-            stat['zijin_zhanya'] = str(zijin_zhanya)
-
-            stats.append(stat)
-
-    total = len(stats)
-    stats = stats[start:start + limit]
     return JsonResponse({
-        'companies': allCompanies,
-        'assets': allAssets,
         'total': total,
-        'stats': stats
+        'stats': records
     })
