@@ -117,7 +117,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, unique=True)
     email = models.CharField(max_length=255)
-    phone = models.CharField(max_length=255, unique=True)
+    phone = models.CharField(max_length=255, unique=True, null=True)
     department = models.ForeignKey(Department,
                                    on_delete=models.CASCADE,
                                    null=True)
