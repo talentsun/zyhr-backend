@@ -66,7 +66,7 @@ def index(request):
 @transaction.atomic
 def detail(request, empId):
     if request.method == 'DELETE':
-        Profile.objects.filter(pk=empId).update(archived=True)
+        Profile.objects.filter(pk=empId).update(phone=None, archived=True)
         return JsonResponse({'ok': True})
     elif request.method == 'PUT':
         data = json.loads(request.body.decode('utf-8'))
