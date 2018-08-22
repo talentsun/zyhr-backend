@@ -181,6 +181,7 @@ def exportCostAuditDoc(activity):
         ws['B' + r] = item['name']
         ws['B' + r].alignment = Alignment(horizontal='center', vertical='center')
         ws['C' + r] = item['desc']
+        ws['C' + r].alignment = Alignment(horizontal='center', vertical='center')
         ws['B' + r].alignment = Alignment(horizontal='center', vertical='center')
 
         amount = float(item['amount'])
@@ -218,7 +219,7 @@ def exportCostAuditDoc(activity):
     creator = activity.creator
     owner = creator.owner
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
     hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
     ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
 
