@@ -219,7 +219,8 @@ def exportCostAuditDoc(activity):
     creator = activity.creator
     owner = creator.owner
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant',
+                                           archived=False).first()
     hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
     ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
 
@@ -359,6 +360,7 @@ def exportMoneyAuditDoc(activity):
     # 出款信息
     outAccount = auditData['outAccount']
     ws['B6'] = outAccount['name']
+    ws['B6'].alignment = Alignment(vertical='center', horizontal='center')
     ws['k6'] = '现金' if outAccount['type'] == 'cash' else '转账'
     ws['B7'] = outAccount['bank']
     ws['H7'] = outAccount['number']
@@ -372,7 +374,7 @@ def exportMoneyAuditDoc(activity):
     ws['H10'] = getattr(creator.owner, 'name', '')
     ws['H10'].alignment = Alignment(vertical='center', horizontal='center')
 
-    accountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    accountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
     ws['B12'] = getattr(accountant, 'name', '')
     ws['B12'].alignment = Alignment(vertical='center', horizontal='center')
 
