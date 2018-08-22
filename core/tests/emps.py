@@ -50,12 +50,15 @@ class EmpsTestCase(TestCase):
 
     def test_delete_emp(self):
         client = Client()
+        originName = self.profile.name
         response = client.delete('/api/v1/emps/{}'.format(self.profile.pk),
                                  HTTP_AUTHORIZATION=self.generateToken)
 
         self.assertEquals(response.status_code, 200)
         count = Profile.objects.filter(archived=False).count()
         self.assertEqual(count, 0)
+        profile = Profile.objects.get(pk=self.profile.pk)
+        self.assertEqual(profile.name, '已删除-{}'.format(originName))
 
     def test_modify_emp(self):
         client = Client()

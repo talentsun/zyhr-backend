@@ -22,8 +22,8 @@ def index(request):
     if request.method == 'GET':
         start = int(request.GET.get('start', '0'))
         limit = int(request.GET.get('limit', '20'))
-        profiles = Profile.objects\
-            .filter(archived=False)\
+        profiles = Profile.objects \
+            .filter(archived=False) \
             .order_by('-updated_at')
         total = profiles.count()
         profiles = profiles[start:start + limit]
@@ -66,7 +66,10 @@ def index(request):
 @transaction.atomic
 def detail(request, empId):
     if request.method == 'DELETE':
-        Profile.objects.filter(pk=empId).update(phone=None, archived=True)
+        profile = Profile.objects.get(pk=empId)
+        Profile.objects \
+            .filter(pk=empId) \
+            .update(phone=None, archived=True, name='已删除-{}'.format(profile.name))
         return JsonResponse({'ok': True})
     elif request.method == 'PUT':
         data = json.loads(request.body.decode('utf-8'))
