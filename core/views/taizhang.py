@@ -275,7 +275,7 @@ def exportRecords(request):
         "jinglirun=maolirun-yinhuashui-fujiashui-yugu_cangchufei",
         'tongdaofei=xiayou_hetong_jine*Decimal(0.002)',
         "shangyou_kuchun_jine=shangyou_kuchun_liang*shangyou_kuchun_yuji_danjia"
-    ];
+    ]
 
     calPathMapping = {}
     calProps = []

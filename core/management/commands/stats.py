@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand
 
 from core.models import *
 
-logger = logging.getLogger('app.core.views.audit')
+logger = logging.getLogger('app.core.views.stats')
 
 
 class Command(BaseCommand):
@@ -254,9 +254,14 @@ class Command(BaseCommand):
             nextMonth = self.calNextMonth(month)
 
     def _stats(self):
-        self.calTransactionStats()
-        self.calTaizhangStats()
-        self.calCustomerStats()
+        try:
+            logger.info('cal stats')
+            self.calTransactionStats()
+            self.calTaizhangStats()
+            self.calCustomerStats()
+            logger.info('cal stats done')
+        except:
+            logger.exception("some error happend")
 
     def handle(self, *args, **kwargs):
         def job():
