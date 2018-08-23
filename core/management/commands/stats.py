@@ -267,7 +267,7 @@ class Command(BaseCommand):
         def job():
             self._stats()
 
-        schedule.every().hour().do(job)
+        schedule.every().hour.do(job)
 
         while True:
             schedule.run_pending()
