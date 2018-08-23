@@ -154,6 +154,9 @@ def exportOpenAccountAuditDoc(activity):
     style_range(ws, 'B6:F6', border=Border(top=thin, left=thin, right=thin, bottom=thin))
     style_range(ws, 'B7:F7', border=Border(top=thin, left=thin, right=thin, bottom=thin))
 
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
     path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
     wb.save(path)
     return path
@@ -263,6 +266,9 @@ def exportCostAuditDoc(activity):
 
     style_range(ws, 'B{}:B{}'.format(r + 1, r + 3), Border(top=thin, left=medium, right=thin, bottom=medium))
 
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
     path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
     wb.save(path)
     return path
@@ -333,6 +339,9 @@ def exportLoanAuditDoc(activity):
     style_range(ws, 'M10:P10', Border(top=thin, left=thin, right=medium, bottom=thin))
     style_range(ws, 'M11:P11', Border(top=thin, left=thin, right=medium, bottom=medium))
 
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
     path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
     wb.save(path)
     return path
@@ -395,6 +404,9 @@ def exportMoneyAuditDoc(activity):
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
 
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
     path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
     wb.save(path)
     return path
@@ -446,6 +458,9 @@ def exportBizContractAuditDoc(activity):
 
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
 
     path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
     wb.save(path)
@@ -499,6 +514,9 @@ def exportFnContractAuditDoc(activity):
 
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
 
     path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
     wb.save(path)
@@ -618,6 +636,9 @@ def exportTravelAuditDoc(activity):
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
 
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
     # 费用报销
     ws = wb.worksheets[1]
     info = auditData['info']
@@ -674,6 +695,9 @@ def exportTravelAuditDoc(activity):
 
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
 
     path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
     wb.save(path)
