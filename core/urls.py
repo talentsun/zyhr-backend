@@ -83,6 +83,7 @@ urlpatterns = [
     path(r'taizhang/<int:id>', taizhang.taizhangDetail),
     path(r'taizhang-ops', taizhang.ops),
     path(r'taizhang-stats', taizhang.stats),
+    path(r'taizhang/actions/export', taizhang.exportRecords),
 
     # charts api
     path(r'charts/taizhang/line', charts.taizhang_line),
