@@ -67,6 +67,9 @@ def index(request):
 def detail(request, empId):
     if request.method == 'DELETE':
         profile = Profile.objects.get(pk=empId)
+        user = profile.user
+        user.username = '已删除-{}'.format(profile.name)
+        user.save()
         Profile.objects \
             .filter(pk=empId) \
             .update(phone=None, archived=True, name='已删除-{}'.format(profile.name))
