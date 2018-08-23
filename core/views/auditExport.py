@@ -415,19 +415,23 @@ def exportBizContractAuditDoc(activity):
     ws['B4'] = base.get('company', '')
 
     ws['B5'] = info['upstream']
+    ws['B5'].alignment = Alignment(vertical='center', horizontal='center')
+
     ws['F5'] = info.get('downstream', '')
     ws['B6'] = info['asset']
     ws['B7'] = str(info['tonnage']) + '吨'
     ws['F7'] = str(info['buyPrice']) + '元/吨'
 
     ws['B8'] = '现金' if info['settlementType'] == 'cash' else '转账'
-    ws['F8'] = str(getattr(info, 'sellPrice', '')) + '元/吨'
-    ws['B9'] = info['profitsPerTon'] + '%'
+    ws['F8'] = str(info.get('sellPrice', '')) + '元/吨'
+    ws['B9'] = info['profitsPerTon']
     ws['F9'] = info['grossMargin'] + '%'
     ws['B10'] = info.get('desc', '')
     ws['B11'] = creator.name
     ws['F11'] = getattr(creator.owner, 'name', '')
-    accountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    accountant = Profile.objects \
+        .filter(department__code='fin', position__code='fin_accountant', archived=False) \
+        .first()
     ws['F12'] = getattr(accountant, 'name', '')
     # TODO: 法务负责人
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
