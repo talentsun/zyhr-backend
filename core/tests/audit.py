@@ -216,6 +216,8 @@ class AuditTestCase(TestCase):
         self.assertListEqual(stepActive, [True, False])
         stepPosition = [step.position for step in steps]
         self.assertListEqual(stepPosition, [0, 1])
+        stepAssigneeNames = [step.assignee.name for step in steps]
+        self.assertListEqual(stepAssigneeNames, ['neo', 'ceo'])
 
     def test_create_audit_activity_with_no_candidates_in_some_step(self):
         self.audit_activity_normal_lifecycle([], creator='ceo')

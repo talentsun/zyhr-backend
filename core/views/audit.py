@@ -103,8 +103,8 @@ def setupSteps(activity, taskId=None):
         .filter(config=activity.config) \
         .order_by('position')
 
-    stepPos = 0
-    prevStep = None
+    logger.info('{} resolve assignee for every step'.format(taskId))
+    stepAssigneeTuples = []
     for index, step in enumerate(configSteps):
         logger.info('{} resolve assignee for step#{}'.format(
             taskId, step.position))
@@ -131,20 +131,40 @@ def setupSteps(activity, taskId=None):
         assignee = profiles[0]
         logger.info('{} assignee: {}'.format(taskId, assignee.name))
 
-        if prevStep is not None and prevStep.assignee.pk == assignee.pk:
-            logger.info(
-                '{} assignee is also the prev step assignee, skip this step'.format(taskId))
+        stepAssigneeTuples.append((step, assignee,))
+
+    logger.info('{} filter steps with the same assignee'.format(taskId))
+    mapping = {}
+    stepAssigneeTuples.reverse()
+    filteredTuples = []
+    for t in stepAssigneeTuples:
+        step, assignee = t
+        key = str(assignee.pk)
+        if key in mapping:
+            logger.info('{} remove step#{}'.format(taskId, step.position))
             continue
 
-        s = AuditStep.objects \
+        mapping[key] = True
+        filteredTuples.append(t)
+
+    filteredTuples.reverse()
+    pos = 0
+    for t in filteredTuples:
+        step, assignee = t
+
+        assigneeDepartment = step.assigneeDepartment
+        if assigneeDepartment is None:
+            # 如果部门没有配置，那么就设置为发起者所在部门
+            assigneeDepartment = profile.department
+
+        AuditStep.objects \
             .create(activity=activity,
                     active=False,
                     assignee=assignee,
                     assigneeDepartment=assigneeDepartment,
                     assigneePosition=step.assigneePosition,
-                    position=stepPos)
-        stepPos = stepPos + 1
-        prevStep = s
+                    position=pos)
+        pos = pos + 1
 
 
 @transaction.atomic
