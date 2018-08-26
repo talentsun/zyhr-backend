@@ -529,7 +529,16 @@ def exportTravelAuditDoc(activity):
     auditData = activity.extra
     creator = activity.creator
 
-    wb = load_workbook(os.getcwd() + '/xlsx-templates/travel.xlsx')
+    items = auditData['items']
+    availableRows = 5
+    if len(items) > 5:
+        availableRows = 10
+
+    if availableRows == 5:
+        wb = load_workbook(os.getcwd() + '/xlsx-templates/travel.xlsx')
+    else:
+        wb = load_workbook(os.getcwd() + '/xlsx-templates/travel-10.xlsx')
+
     ws = wb.worksheets[0]
     ws['C3'] = '姓名: {}                 部门: {}                    {}'.format(
         creator.name,
@@ -538,7 +547,6 @@ def exportTravelAuditDoc(activity):
     )
 
     firstItemRow = 8
-    items = auditData['items']
     total = {
         'normal': 0,
         'train': 0,
@@ -609,29 +617,30 @@ def exportTravelAuditDoc(activity):
 
         t = amount2 + t
 
-    ws['k16'] = amountFixed(total['normal'])
-    ws['N16'] = amountFixed(total['train'])
-    ws['O16'] = amountFixed(total['car'])
-    ws['P16'] = amountFixed(total['ship'])
-    ws['Q16'] = amountFixed(total['plane'])
-    ws['R16'] = '0.00'
-    ws['S16'] = amountFixed(total['traffic'])
-    ws['T16'] = amountFixed(total['other'])
-    ws['U16'] = '0'
-    ws['V16'] = amountFixed(total['amount2'])
-    ws['W16'] = amountFixed(t)
+    r = firstItemRow + availableRows
+    ws['k' + str(r)] = amountFixed(total['normal'])
+    ws['N' + str(r)] = amountFixed(total['train'])
+    ws['O' + str(r)] = amountFixed(total['car'])
+    ws['P' + str(r)] = amountFixed(total['ship'])
+    ws['Q' + str(r)] = amountFixed(total['plane'])
+    ws['R' + str(r)] = '0.00'
+    ws['S' + str(r)] = amountFixed(total['traffic'])
+    ws['T' + str(r)] = amountFixed(total['other'])
+    ws['U' + str(r)] = '0'
+    ws['V' + str(r)] = amountFixed(total['amount2'])
+    ws['W' + str(r)] = amountFixed(t)
 
-    ws['C17'] = '合计人民币（大写）    {}'.format(convertToDaxieAmount(t))
+    ws['C' + str(r + 1)] = '合计人民币（大写）    {}'.format(convertToDaxieAmount(t))
     info = auditData['info']
-    ws['C18'] = '原借差旅费 {} 元                 剩余交回 {} 元'.format(
+    ws['C' + str(r + 2)] = '原借差旅费 {} 元                 剩余交回 {} 元'.format(
         amountFixed(float(info['yuanjiekuan'])),
         amountFixed(float(info.get('shengyu', '0')))
     )
-    ws['D19'] = info.get('reason', '')
+    ws['D' + str(r + 3)] = info.get('reason', '')
     ws['X4'] = '附件共（{}）张'.format(len(auditData.get('attachments', [])))
 
     for cell in ws.merged_cells:
-        if not inBounds('C4:W20', cell):
+        if not inBounds('C4:W' + str(r + 4), cell):
             logger.info('ignore cell: {}'.format(cell.coord))
             continue
 
