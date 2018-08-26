@@ -137,7 +137,8 @@ class Profile(models.Model):
 
         return Profile.objects \
             .filter(department=self.department,
-                    position__code='owner') \
+                    position__code='owner',
+                    archived=False) \
             .first()
 
 
