@@ -570,8 +570,8 @@ def exportTravelAuditDoc(activity):
         ws['F' + row] = endDate.month
         ws['G' + row] = endDate.day
         ws['H' + row] = endDate.hour
-        days = (endDate - startDate).days + 1
-        ws['I' + row] = item['days']
+        days = item['days']
+        ws['I' + row] = days
 
         ws['J' + row] = item['place']
         ws['K' + row] = days
