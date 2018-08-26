@@ -530,11 +530,11 @@ def exportTravelAuditDoc(activity):
     creator = activity.creator
 
     items = auditData['items']
-    availableRows = 5
-    if len(items) > 5:
+    availableRows = 4
+    if len(items) > availableRows:
         availableRows = 10
 
-    if availableRows == 5:
+    if availableRows == 4:
         wb = load_workbook(os.getcwd() + '/xlsx-templates/travel.xlsx')
     else:
         wb = load_workbook(os.getcwd() + '/xlsx-templates/travel-10.xlsx')
