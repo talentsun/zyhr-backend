@@ -495,17 +495,19 @@ def exportFnContractAuditDoc(activity):
             dp = step.assigneeDepartment.code
         pos = step.assigneePosition.code
 
+        desc = step.desc
+
         if dp is None and pos == 'owner':
-            ws['B7'] = step.desc if step.desc is not None else ''
+            ws['B7'] = step.desc if desc is not None and desc != '' else '同意'
 
         if template == 'fn_contract':
             if dp == 'fin' and pos == 'owner':
-                ws['B9'] = step.desc if step.desc is not None else ''
+                ws['B9'] = step.desc if step.desc is not None and desc != '' else '同意'
             if dp == 'root' and pos == 'ceo':
-                ws['B10'] = step.desc if step.desc is not None else ''
+                ws['B10'] = step.desc if step.desc is not None and desc != '' else '同意'
         else:
             if dp == 'root' and pos == 'ceo':
-                ws['B9'] = step.desc if step.desc is not None else ''
+                ws['B9'] = step.desc if step.desc is not None and desc != '' else '同意'
 
     for cell in ws.merged_cells:
         if not inBounds('A3:D11', cell):
