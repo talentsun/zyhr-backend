@@ -644,7 +644,7 @@ def exportTravelAuditDoc(activity):
     ws['D' + str(r + 3)] = info.get('reason', '')
     ws['X4'] = '附件共（{}）张'.format(len(auditData.get('attachments', [])))
 
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
     hr = Profile.objects.filter(department__code='hr', position__code='hr_member', archived=False).first()
     ws['C' + str(r + 5)] = '会计：{}              人资专员：{}              出差人员签字：{}'.format(
         getattr(finAccountant, 'name', ''), getattr(hr, 'name', ''), creator.name)
