@@ -486,7 +486,8 @@ def exportFnContractAuditDoc(activity):
     ws['B3'] = base['name']
     ws['D3'] = base['other']
 
-    ws['B4'] = amountFixed(float(info['amount']))
+    ws['B4'] = float(info['amount'])
+    ws['B4'].number_format= '#,##0.00'
     ws['D4'] = info.get('date', '')
     ws['B5'] = info['count']
     ws['D5'] = info['sn']
