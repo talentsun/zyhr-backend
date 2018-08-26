@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 import re
 import json
@@ -177,6 +178,8 @@ def exportCostAuditDoc(activity):
     # cost items
     first_item_row = 5
     totalAmount = 0
+    tuibukuan = Decimal('0')
+    yuanjiekuan = Decimal('0')
     for i in range(len(items)):
         item = items[i]
 
@@ -186,6 +189,8 @@ def exportCostAuditDoc(activity):
         ws['C' + r] = item['desc']
         ws['C' + r].alignment = Alignment(horizontal='center', vertical='center')
         ws['B' + r].alignment = Alignment(horizontal='center', vertical='center')
+        tuibukuan = tuibukuan + Decimal(item['tuibukuan'])
+        yuanjiekuan = yuanjiekuan + Decimal(item['yuanjiekuan'])
 
         amount = float(item['amount'])
         totalAmount = amount + totalAmount
@@ -215,9 +220,9 @@ def exportCostAuditDoc(activity):
     ws['B' + str(r)] = daxieText
 
     # FIXME: 原借款/退补款
-    ws['D' + str(r)] = '原借款：{} 元'.format('')
+    ws['D' + str(r)] = '原借款：{} 元'.format(yuanjiekuan)
     ws['D' + str(r)].alignment = Alignment(horizontal='left', vertical='center')
-    ws['N' + str(r)] = '退（补）款：{} 元'.format('')
+    ws['N' + str(r)] = '退（补）款：{} 元'.format(tuibukuan)
 
     creator = activity.creator
     owner = creator.owner
