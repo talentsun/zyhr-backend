@@ -733,8 +733,8 @@ def export(request, activityId):
         path = exportTravelAuditDoc(activity)
         filename = '差旅费用报销审批单.xlsx'
 
-    activity.taskState = 'finished'
-    activity.save()
+    # activity.taskState = 'finished'
+    # activity.save()
 
     return sendfile(request, path,
                     attachment=True,
