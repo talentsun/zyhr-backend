@@ -13,7 +13,6 @@ from core.models import *
 from core.auth import validateToken
 from core.common import *
 
-
 logger = logging.getLogger('app.core.views.upload')
 
 
@@ -50,7 +49,11 @@ def assets(request, path):
     file = File.objects.get(path=path)
     response = sendfile(request,
                         '{}/{}'.format(settings.DATA_DIR, file.path))
-    response['Content-Disposition'] = "inline; filename={}".format(file.name)
+    import urllib
+    values = {'name': file.name}
+    filename = urllib.parse.urlencode(values)
+    filename = filename[5:]
+    response['Content-Disposition'] = "inline; filename={}".format(filename)
     # del response['Content-Disposition']
 
     if re.match('.*\.(jpg|jpeg)', file.name):
