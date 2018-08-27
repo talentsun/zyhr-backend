@@ -23,6 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '91^%o!%y$urzqu*b9$thr32)o$m+i1)$+m%0$co-f#rdydp1sj'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
