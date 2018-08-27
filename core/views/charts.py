@@ -34,8 +34,14 @@ def taizhang_companies(request):
 def taizhang_line(request):
     company = request.GET.get('company', None)
     prop = request.GET.get('prop', None)
+    fromMonth = request.GET.get('fromMonth', None)
+    toMonth = request.GET.get('toMonth', None)
 
     tss = TaizhangStat.objects.filter(category='month', company=company)
+    if fromMonth is not None and fromMonth != '':
+        tss = tss.filter(month__gte=fromMonth)
+    if toMonth is not None and toMonth != '':
+        tss = tss.filter(month__lte=toMonth)
 
     months = tss.values('month').distinct().order_by('month')
     months = [w['month'] for w in months]
@@ -61,8 +67,14 @@ def taizhang_line(request):
 @validateToken
 def taizhang_bar(request):
     company = request.GET.get('company', None)
+    fromMonth = request.GET.get('fromMonth', None)
+    toMonth = request.GET.get('toMonth', None)
 
     tss = TaizhangStat.objects.filter(category='month', company=company)
+    if fromMonth is not None and fromMonth != '':
+        tss = tss.filter(month__gte=fromMonth)
+    if toMonth is not None and toMonth != '':
+        tss = tss.filter(month__lte=toMonth)
 
     months = tss.values('month').distinct().order_by('month')
     months = [w['month'] for w in months]
@@ -86,8 +98,15 @@ def taizhang_bar(request):
 @validateToken
 def taizhang_pie(request):
     company = request.GET.get('company', None)
+    fromMonth = request.GET.get('fromMonth', None)
+    toMonth = request.GET.get('toMonth', None)
 
     tss = TaizhangStat.objects.filter(category='month', company=company)
+    if fromMonth is not None and fromMonth != '':
+        tss = tss.filter(month__gte=fromMonth)
+    if toMonth is not None and toMonth != '':
+        tss = tss.filter(month__lte=toMonth)
+
     assets = tss.values('asset').distinct()
     assets = [a['asset'] for a in assets]
 
@@ -108,17 +127,36 @@ def taizhang_pie(request):
     return JsonResponse(assetData, safe=False)
 
 
+def last_day_of_month(date):
+    if date.month == 12:
+        return date.replace(day=31)
+    return date.replace(month=date.month + 1, day=1) - datetime.timedelta(days=1)
+
+
 @require_http_methods(['GET'])
 @validateToken
 def funds_line(request):
     name = request.GET.get('name', None)
     number = request.GET.get('number', None)
+    fromMonth = request.GET.get('fromMonth', None)
+    toMonth = request.GET.get('toMonth', None)
 
     tss = TransactionStat.objects.filter(category='week')
     if name is not None and name != '':
         tss = tss.filter(account__name__contains=name)
     if number is not None and number != '':
         tss = tss.filter(account__number__contains=number)
+    if toMonth is not None and toMonth != '':
+        originMonth = toMonth
+        d = datetime.datetime.strptime(toMonth, '%Y-%m')
+        d = last_day_of_month(d)
+        toMonth = d.strftime('%Y-%m-%d')
+        logger.info('filter funds line data by toMonth: {} origin: {}'.format(toMonth, originMonth))
+        tss = tss.filter(startDayOfWeek__lte=toMonth)
+    if fromMonth is not None and fromMonth != '':
+        fromMonth = fromMonth + '-01'
+        logger.info('filter funds line data by fromMonth: {} '.format(fromMonth))
+        tss = tss.filter(startDayOfWeek__gte=fromMonth)
 
     accounts = tss.values('account__pk', 'account__name').distinct()
     accountNames = [a['account__name'] for a in accounts]
@@ -149,12 +187,25 @@ def funds_line(request):
 def funds_bar(request):
     name = request.GET.get('name', None)
     number = request.GET.get('number', None)
+    fromMonth = request.GET.get('fromMonth', None)
+    toMonth = request.GET.get('toMonth', None)
 
     tss = TransactionStat.objects.filter(category='week')
     if name is not None and name != '':
         tss = tss.filter(account__name__contains=name)
     if number is not None and number != '':
         tss = tss.filter(account__number__contains=number)
+    if toMonth is not None and toMonth != '':
+        originMonth = toMonth
+        d = datetime.datetime.strptime(toMonth, '%Y-%m')
+        d = last_day_of_month(d)
+        toMonth = d.strftime('%Y-%m-%d')
+        logger.info('filter funds bar data by toMonth: {} origin: {}'.format(toMonth, originMonth))
+        tss = tss.filter(startDayOfWeek__lte=toMonth)
+    if fromMonth is not None and fromMonth != '':
+        fromMonth = fromMonth + '-01'
+        logger.info('filter funds bar data by fromMonth: {} '.format(fromMonth))
+        tss = tss.filter(startDayOfWeek__gte=fromMonth)
 
     weeks = tss.values('startDayOfWeek').distinct().order_by('startDayOfWeek')
     weeks = [w['startDayOfWeek'] for w in weeks]
@@ -181,7 +232,17 @@ def funds_bar(request):
 @require_http_methods(['GET'])
 @validateToken
 def customers_line(request):
+    name = request.GET.get('name', None)
+    fromMonth = request.GET.get('fromMonth', None)
+    toMonth = request.GET.get('toMonth', None)
+
     css = CustomerStat.objects.filter(category='month')
+    if name is not None and name != '':
+        css = css.filter(customer__name__contains=name)
+    if fromMonth is not None and fromMonth != '':
+        css = css.filter(month__gte=fromMonth)
+    if toMonth is not None and toMonth != '':
+        css = css.filter(month__lte=toMonth)
 
     months = css.values('month').distinct().order_by('month')
     months = [w['month'] for w in months]
@@ -210,7 +271,17 @@ def customers_line(request):
 @require_http_methods(['GET'])
 @validateToken
 def customers_bar(request):
+    name = request.GET.get('name', None)
+    fromMonth = request.GET.get('fromMonth', None)
+    toMonth = request.GET.get('toMonth', None)
+
     css = CustomerStat.objects.filter(category='month')
+    if name is not None and name != '':
+        css = css.filter(customer__name__contains=name)
+    if fromMonth is not None and fromMonth != '':
+        css = css.filter(month__gte=fromMonth)
+    if toMonth is not None and toMonth != '':
+        css = css.filter(month__lte=toMonth)
 
     months = css.values('month').distinct().order_by('month')
     months = [w['month'] for w in months]

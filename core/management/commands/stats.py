@@ -221,10 +221,17 @@ class Command(BaseCommand):
             records = records.filter(date=month)
 
         yewuliang = Decimal('0.00')
+        dunwei = Decimal('0.00')
         for r in records:
             yewuliang = yewuliang + r.hetong_jine
+            dunwei = dunwei + r.upstream_dunwei
 
-        return {'yewuliang': yewuliang}
+        r = {'yewuliang': yewuliang}
+        if dunwei != 0:
+            r['avg_price'] = yewuliang / dunwei
+        else:
+            r['avg_price'] = 0
+        return r
 
     def calCustomerStats(self):
         CustomerStat.objects.all().delete()

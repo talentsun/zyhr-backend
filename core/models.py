@@ -555,3 +555,4 @@ class CustomerStat(models.Model):
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     yewuliang = models.DecimalField(decimal_places=2, max_digits=19)
+    avg_price = models.DecimalField(max_digits=32, decimal_places=4)  # 平均结算价格
