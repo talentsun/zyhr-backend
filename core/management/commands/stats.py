@@ -145,7 +145,10 @@ class Command(BaseCommand):
 
         # 资金占压
         for r in records:
-            zijin_zhanya = r.shangyou_zijin_zhanya + zijin_zhanya
+            s = r.shangyou_zijin_zhanya
+            if s is None:
+                s = 0
+            zijin_zhanya = s + zijin_zhanya
 
         return {
             'xiaoshoue': xiaoshoue,
