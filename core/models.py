@@ -372,8 +372,6 @@ class Customer(models.Model):
 
     @property
     def displayCategory(self):
-        # TODO: refine category
-        return self.category
         categories = [cc[0] for cc in CustomerCatgetories]
         index = categories.index(self.category)
         return CustomerCatgetories[index][1]
