@@ -146,6 +146,7 @@ def exportOpenAccountAuditDoc(activity):
 
     ws['B6'].value = activity.created_at.strftime('%Y-%m-%d')
     ws['B7'].value = account.get('desc', '')
+    ws['B7'].alignment = Alignment(horizontal='center', vertical='center')
 
     # fix border style
     style_range(ws, 'B2:F2', border=Border(top=thin, left=thin, right=thin, bottom=thin))
@@ -380,6 +381,7 @@ def exportMoneyAuditDoc(activity):
     ws['H7'] = outAccount['number']
 
     ws['B8'] = info['desc']
+    ws['B8'].alignment = Alignment(horizontal='center', vertical='center')
 
     # 借款人、部门负责人、财务负责人、公司负责人
     ws['B10'] = creator.name
@@ -444,6 +446,7 @@ def exportBizContractAuditDoc(activity):
     ws['B9'] = info['profitsPerTon']
     ws['F9'] = info['grossMargin'] + '%'
     ws['B10'] = info.get('desc', '')
+    ws['B10'].alignment = Alignment(horizontal='center', vertical='center')
     ws['B11'] = creator.name
     ws['F11'] = getattr(creator.owner, 'name', '')
     accountant = Profile.objects \
@@ -487,11 +490,12 @@ def exportFnContractAuditDoc(activity):
     ws['D3'] = base['other']
 
     ws['B4'] = float(info['amount'])
-    ws['B4'].number_format= '#,##0.00'
+    ws['B4'].number_format = '#,##0.00'
     ws['D4'] = info.get('date', '')
     ws['B5'] = info['count']
     ws['D5'] = info['sn']
     ws['B6'] = info.get('desc', '')
+    ws['B6'].alignment = Alignment(horizontal='center', vertical='center')
 
     # FIXME: 法务负责人
     steps = activity.steps()
@@ -645,7 +649,8 @@ def exportTravelAuditDoc(activity):
     ws['D' + str(r + 3)] = info.get('reason', '')
     ws['X4'] = '附件共（{}）张'.format(len(auditData.get('attachments', [])))
 
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant',
+                                           archived=False).first()
     hr = Profile.objects.filter(department__code='hr', position__code='hr_member', archived=False).first()
     ws['C' + str(r + 5)] = '会计：{}              人资专员：{}              出差人员签字：{}'.format(
         getattr(finAccountant, 'name', ''), getattr(hr, 'name', ''), creator.name)
