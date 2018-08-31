@@ -48,6 +48,7 @@ P_V1_CANCEL_AUDIT = 'cancel_audit'  # 撤回审批
 P_V1_EDIT_AUDIT = 'edit_audit'  # 编辑审批
 
 P_V1_VIEW_TASKS = 'view_tasks'
+P_V1_MARK_TASK_FINISHED = 'mark_task_finished'
 
 P_V1_VIEW_PROFILE = 'view_profile'  # 浏览个人中心
 P_V1_CHANE_PHONE = 'change_phone'  # 浏览个人中心
@@ -79,6 +80,7 @@ P_V1 = [
     P_V1_EDIT_AUDIT,
 
     P_V1_VIEW_TASKS,
+    P_V1_MARK_TASK_FINISHED,
 
     P_V1_VIEW_PROFILE,
     P_V1_CHANE_PHONE,
