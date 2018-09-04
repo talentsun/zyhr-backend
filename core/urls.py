@@ -94,6 +94,10 @@ urlpatterns = [
     path(r'charts/funds/bar', charts.funds_bar),
     path(r'charts/customers/line', charts.customers_line),
     path(r'charts/customers/bar', charts.customers_bar),
+    path(r'charts/app/home', charts.app_home),
+    path(r'charts/app/taizhang', charts.app_taizhang),
+    path(r'charts/app/funds', charts.app_funds),
+    path(r'charts/app/customers', charts.app_customers),
 
     # roles api
     path(r'roles', roles.index),

@@ -13,6 +13,9 @@ logger = logging.getLogger('app.core.views.stats')
 
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument('--once', action='store_true')
+
     def calTransactionStatsForAccountTotal(self, account, startDate=None, endDate=None):
         # calculate balance
         records = StatsTransactionRecord.objects.filter(number=account.number, archived=False)
@@ -276,6 +279,10 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         def job():
             self._stats()
+
+        if kwargs['once']:
+            self._stats()
+            return
 
         schedule.every().hour.do(job)
 
