@@ -311,11 +311,14 @@ def resolve_prev_month(d):
     return prevMonth
 
 
-def resolve_recent_months():
-    now = timezone.now()
-    m1 = resolve_prev_month(now)
+def resolve_recent_months(date=None):
+    if date == None:
+        d = timezone.now()
+    else:
+        d = datetime.datetime.strptime(date, '%Y-%m')
+    m1 = resolve_prev_month(d)
     m2 = resolve_prev_month(m1)
-    return [m2.strftime('%Y-%m'), m1.strftime('%Y-%m'), now.strftime('%Y-%m')]
+    return [m2.strftime('%Y-%m'), m1.strftime('%Y-%m'), d.strftime('%Y-%m')]
 
 
 def resolve_recent_weeks():
@@ -414,8 +417,10 @@ def app_home(request):
 @require_http_methods(['GET'])
 @validateToken
 def app_taizhang(request):
+    time = request.GET.get('time', None)
+
     result = {}
-    months = resolve_recent_months()
+    months = resolve_recent_months(date=time)
     result['months'] = months
 
     tss = TaizhangStat.objects.filter(category='month', month__in=months)
@@ -438,8 +443,7 @@ def app_taizhang(request):
         values = []
         for month in months:
             tss = TaizhangStat.objects.filter(category='month', month=month, company=company['name'])
-            s = tss.first()
-            if s is None:
+            if tss.count() == 0:
                 valueItem = {
                     'xiaoshoue': 0,
                     'lirune': 0,
@@ -447,24 +451,33 @@ def app_taizhang(request):
                     'kuchun)liang': 0,
                 }
             else:
+                s = tss.aggregate(
+                    sum_xiaoshoue=Sum('xiaoshoue'),
+                    sum_lirune=Sum('lirune'),
+                    sum_zijin_zhanya=Sum('zijin_zhanya'),
+                    sum_kuchun_liang=Sum('kuchun_liang'),
+                )
                 valueItem = {
-                    'xiaoshoue': s.xiaoshoue / Decimal(10000),
-                    'lirune': s.lirune / Decimal(10000),
-                    'zijin_zhanya': s.zijin_zhanya / Decimal(10000),
-                    'kuchun_liang': s.kuchun_liang / Decimal(10000),
+                    'xiaoshoue': s['sum_xiaoshoue'] / Decimal(10000),
+                    'lirune': s['sum_lirune'] / Decimal(10000),
+                    'zijin_zhanya': s['sum_zijin_zhanya'] / Decimal(10000),
+                    'kuchun_liang': s['sum_kuchun_liang'] / Decimal(10000),
                 }
             values.append(valueItem)
         data['values'] = values
 
         # assetValues
         assetValues = []
-        tss = TaizhangStat.objects.filter(category='month', month__in=months, company=company)
+        tss = TaizhangStat.objects \
+            .filter(category='month',
+                    month__in=months,
+                    company=company['name'])
         tss = tss.values('asset') \
             .annotate(sum_xiaoshoue=Sum('xiaoshoue'))
         for t in tss:
             assetValues.append({
                 'name': t['asset'],
-                'value': t['sum_xiaoshoue']
+                'value': t['sum_xiaoshoue'] / Decimal(10000)
             })
         data['assetValues'] = assetValues
 
@@ -535,7 +548,8 @@ def app_funds(request):
 @validateToken
 def app_customers(request):
     result = {}
-    months = resolve_recent_months()
+    time = request.GET.get('time', None)
+    months = resolve_recent_months(date=time)
     result['months'] = months
 
     css = CustomerStat.objects.filter(category='month', month__in=months)
