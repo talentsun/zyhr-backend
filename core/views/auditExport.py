@@ -230,12 +230,14 @@ def exportCostAuditDoc(activity):
         for j, ch in enumerate(amount):
             col = chr(ord('E') + j)
             ws[col + r] = ch
+            ws[col + r].alignment = Alignment(horizontal='center', vertical='center')
 
     # 统计
     r = 5 + row
     for j, ch in enumerate(paddingAmount(totalAmount)):
         col = chr(ord('E') + j)
         ws[col + str(r)] = ch
+        ws[col + str(r)].alignment = Alignment(horizontal='center', vertical='center')
 
     # 大写金额
     r = r + 1
