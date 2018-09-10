@@ -361,6 +361,9 @@ def exportMoneyAuditDoc(activity):
     wb = load_workbook(os.getcwd() + '/xlsx-templates/money.xlsx')
     ws = wb.active
 
+    ws['A1'] = '用 款 申 请 单'
+    ws['A1'].alignment = Alignment(vertical='center', horizontal='center')
+
     auditData = activity.extra
     creator = activity.creator
     ws['A2'] = '   用款部门:{}                                                       {}'. \
@@ -579,55 +582,75 @@ def exportTravelAuditDoc(activity):
         startDate, endDate = parseDate(item['startTime']), parseDate(item['endTime'])
         row = str(firstItemRow + index)
         ws['C' + row] = startDate.month
+        ws['C' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['D' + row] = startDate.day
+        ws['D' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['E' + row] = startDate.hour
+        ws['E' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['F' + row] = endDate.month
+        ws['F' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['G' + row] = endDate.day
+        ws['G' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['H' + row] = endDate.hour
+        ws['H' + row].alignment = Alignment(vertical='center', horizontal='center')
         days = item['days']
         ws['I' + row] = days
+        ws['I' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         ws['J' + row] = item['place']
+        ws['J' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['K' + row] = days
+        ws['K' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['L' + row] = item['spec']
+        ws['L' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         normal = float(item['spec']) * days
         total['normal'] = total['normal'] + normal
         ws['M' + row] = normal
+        ws['M' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         train = float(item.get('train', '0'))
         total['train'] = total['train'] + train
         ws['N' + row] = amountFixed(train)
+        ws['N' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         car = float(item.get('car', '0'))
         total['car'] = total['car'] + car
         ws['O' + row] = amountFixed(car)
+        ws['O' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         ship = float(item.get('ship', '0'))
         total['ship'] = total['ship'] + ship
         ws['P' + row] = amountFixed(ship)
+        ws['P' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         plane = float(item.get('plane', '0'))
         total['plane'] = total['plane'] + plane
         ws['Q' + row] = amountFixed(plane)
+        ws['Q' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         ws['R' + row] = '0.00'
+        ws['R' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         traffic = float(item.get('traffic', '0'))
         total['traffic'] = total['traffic'] + traffic
         ws['S' + row] = amountFixed(traffic)
+        ws['S' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         other = float(item.get('other', '0'))
         total['other'] = total['other'] + other
         ws['T' + row] = amountFixed(other)
+        ws['T' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         # FIXME: 单据张数
         amount1 = train + car + ship + plane + traffic + other
         ws['V' + row] = amountFixed(amount1)
+        ws['V' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         amount2 = normal + amount1
         total['amount2'] = amount2 + total['amount2']
         ws['W' + row] = amountFixed(amount2)
+        ws['W' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         t = amount2 + t
 
