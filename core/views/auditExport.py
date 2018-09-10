@@ -79,7 +79,7 @@ def style_range(ws, cell_range, border=Border(), fill=None, font=None, alignment
 
 
 def amountFixed(amount):
-    return "{:.2f}".format(amount)
+    return "{0:,.2f}".format(amount)
 
 
 def paddingAmount(amount):
@@ -395,7 +395,7 @@ def exportMoneyAuditDoc(activity):
 
     auditData = activity.extra
     creator = activity.creator
-    ws['A2'] = '   用款部门:{}                                                       {}'. \
+    ws['A2'] = '  用款部门:{}                                                                                   {}'. \
         format(getattr(creator.department, 'name', ''),
                datetime.datetime.now().strftime('%Y-%m-%d'))
 
@@ -406,7 +406,7 @@ def exportMoneyAuditDoc(activity):
     ws['B4'] = inAccount['bank']
     ws['H4'] = inAccount['number']
     ws['B5'] = '（大写）{}'.format(convertToDaxieAmount(float(info['amount'])))
-    ws['J5'] = '￥{}'.format(amountFixed(float(info['amount'])))
+    ws['J5'] = '￥' + amountFixed(float(info['amount']))
 
     # 出款信息
     outAccount = auditData['outAccount']
@@ -600,6 +600,7 @@ def exportTravelAuditDoc(activity):
         'car': 0,
         'ship': 0,
         'plane': 0,
+        'hotel': 0,
         'traffic': 0,
         'other': 0,
         'amount2': 0
@@ -659,7 +660,9 @@ def exportTravelAuditDoc(activity):
         ws['Q' + row] = amountFixed(plane)
         ws['Q' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        ws['R' + row] = '0.00'
+        hotel = float(item.get('hotel', '0'))
+        total['hotel'] = total['hotel'] + hotel
+        ws['R' + row] = amountFixed(hotel)
         ws['R' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         traffic = float(item.get('traffic', '0'))
@@ -672,8 +675,7 @@ def exportTravelAuditDoc(activity):
         ws['T' + row] = amountFixed(other)
         ws['T' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        # FIXME: 单据张数
-        amount1 = train + car + ship + plane + traffic + other
+        amount1 = train + car + ship + plane + traffic + other + hotel
         ws['V' + row] = amountFixed(amount1)
         ws['V' + row].alignment = Alignment(vertical='center', horizontal='center')
 
@@ -690,7 +692,7 @@ def exportTravelAuditDoc(activity):
     ws['O' + str(r)] = amountFixed(total['car'])
     ws['P' + str(r)] = amountFixed(total['ship'])
     ws['Q' + str(r)] = amountFixed(total['plane'])
-    ws['R' + str(r)] = '0.00'
+    ws['R' + str(r)] = amountFixed(total['hotel'])
     ws['S' + str(r)] = amountFixed(total['traffic'])
     ws['T' + str(r)] = amountFixed(total['other'])
     ws['U' + str(r)] = '0'
