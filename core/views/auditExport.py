@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from decimal import Decimal
 import os
 import re
@@ -79,7 +80,7 @@ def style_range(ws, cell_range, border=Border(), fill=None, font=None, alignment
 
 
 def amountFixed(amount):
-    return "{:.2f}".format(amount)
+    return "{0:,.2f}".format(amount)
 
 
 def paddingAmount(amount):
@@ -101,6 +102,35 @@ def convertToDaxieAmountV2(amount):
 
 
 def convertToDaxieAmount(amount):
+    return convertToDaxieAmountV2(amount)
+
+
+def convertToDaxieAmountV2(n):
+    units = ['', '万', '亿']
+    nums = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖']
+    decimal_label = ['角', '分']
+    small_int_label = ['', '拾', '佰', '仟']
+    int_part, decimal_part = str(int(n)), str(n - int(n))[2:]  # 分离整数和小数部分
+
+    res = []
+    if decimal_part:
+        res.append(''.join([nums[int(x)] + y for x, y in list(zip(decimal_part, decimal_label)) if x != '0']))
+
+    if int_part != '0':
+        res.append('圆')
+        while int_part:
+            small_int_part, int_part = int_part[-4:], int_part[:-4]
+            tmp = ''.join([nums[int(x)] + (y if x != '0' else '') for x, y in
+                           list(zip(small_int_part[::-1], small_int_label))[::-1]])
+            tmp = tmp.rstrip('零').replace('零零零', '零').replace('零零', '零')
+            unit = units.pop(0)
+            if tmp:
+                tmp += unit
+                res.append(tmp)
+    return ''.join(res[::-1])
+
+
+def convertToDaxieAmountV1(amount):
     first = True
     text = ''
 
@@ -134,31 +164,61 @@ def exportOpenAccountAuditDoc(activity):
     wb = load_workbook(cwd + '/xlsx-templates/open_account.xlsx')
     ws = wb.active
 
-    ws['B2'].value = '厘米脚印（北京）科技有限公司'
-    ws['B2'].value = account['name']
+    ws['B2'].value = activity.creator.department.name
+    ws['B2'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B3'].value = account['bank']
-    ws['E3'].value = account.get('time', '')
+    ws['D2'].value = activity.created_at.strftime('%Y-%m-%d')
+    ws['D2'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B4'].value = account['reason']
+    ws['B3'].value = account['name']
+    ws['B3'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B5'].value = activity.creator.name
+    ws['B4'].value = account['bank']
+    ws['B4'].alignment = Alignment(horizontal='center', vertical='center')
+    natures = [
+        {'value': "basic", 'label': "基本账户"},
+        {'value': "normal", 'label': "一般账户"},
+        {'value': "temporary", 'label': "临时账户"},
+        {'value': "special", 'label': "专用账户"}
+    ]
+    nature = account['nature']
+    for n in natures:
+        if n['value'] == nature:
+            ws['D4'].value = n['label']
+            ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws['B5'].value = account['reason']
+    ws['B5'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws['B6'].value = activity.creator.name
+    ws['B6'].alignment = Alignment(horizontal='center', vertical='center')
     owner = activity.creator.owner
     ceo = Profile.objects.filter(position__code='ceo', archived=False).first()
-    ws['D5'].value = owner.name if owner is not None else ''
-    ws['F5'].value = ceo.name if ceo is not None else ''
+    ws['D6'].value = owner.name if owner is not None else ''
+    ws['D6'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B6'].value = activity.created_at.strftime('%Y-%m-%d')
-    ws['B7'].value = account.get('desc', '')
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    ws['B7'].value = finOwner.name if finOwner is not None else ''
     ws['B7'].alignment = Alignment(horizontal='center', vertical='center')
 
+    ws['D7'].value = ceo.name if ceo is not None else ''
+    ws['D7'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws['B8'].value = activity.created_at.strftime('%Y-%m-%d')
+    ws['B8'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B9'].value = account.get('desc', '')
+    ws['B9'].alignment = Alignment(horizontal='center', vertical='center')
+
     # fix border style
-    style_range(ws, 'B2:F2', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B3:C3', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'E3:F3', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B4:F4', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B6:F6', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B7:F7', border=Border(top=thin, left=thin, right=thin, bottom=thin))
+    for cell in ws.merged_cells:
+        if not inBounds('A2:D9', cell):
+            logger.info('ignore cell: {}'.format(cell.coord))
+            continue
+
+        logger.info('fix border style {}'.format(cell.coord))
+        style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+
+    set_border(ws, 'A2:D9', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
@@ -204,12 +264,14 @@ def exportCostAuditDoc(activity):
         for j, ch in enumerate(amount):
             col = chr(ord('E') + j)
             ws[col + r] = ch
+            ws[col + r].alignment = Alignment(horizontal='center', vertical='center')
 
     # 统计
     r = 5 + row
     for j, ch in enumerate(paddingAmount(totalAmount)):
         col = chr(ord('E') + j)
         ws[col + str(r)] = ch
+        ws[col + str(r)].alignment = Alignment(horizontal='center', vertical='center')
 
     # 大写金额
     r = r + 1
@@ -357,13 +419,45 @@ def exportLoanAuditDoc(activity):
     return path
 
 
+def set_border(ws, cell_range, border_style):
+    rows = ws[cell_range]
+    side = Side(border_style=border_style, color="00000000")
+
+    rows = list(rows)  # we convert iterator to list for simplicity, but it's not memory efficient solution
+    max_y = len(rows) - 1  # index of the last row
+    for pos_y, cells in enumerate(rows):
+        max_x = len(cells) - 1  # index of the last cell
+        for pos_x, cell in enumerate(cells):
+            border = Border(
+                left=cell.border.left,
+                right=cell.border.right,
+                top=cell.border.top,
+                bottom=cell.border.bottom
+            )
+            if pos_x == 0:
+                border.left = side
+            if pos_x == max_x:
+                border.right = side
+            if pos_y == 0:
+                border.top = side
+            if pos_y == max_y:
+                border.bottom = side
+
+            # set new border only if it's one of the edge cells
+            if pos_x == 0 or pos_x == max_x or pos_y == 0 or pos_y == max_y:
+                cell.border = border
+
+
 def exportMoneyAuditDoc(activity):
     wb = load_workbook(os.getcwd() + '/xlsx-templates/money.xlsx')
     ws = wb.active
 
+    ws['A1'] = '用 款 申 请 单'
+    ws['A1'].alignment = Alignment(vertical='center', horizontal='center')
+
     auditData = activity.extra
     creator = activity.creator
-    ws['A2'] = '   用款部门:{}                                                       {}'. \
+    ws['A2'] = '  用款部门:{}                                                                                   {}'. \
         format(getattr(creator.department, 'name', ''),
                datetime.datetime.now().strftime('%Y-%m-%d'))
 
@@ -374,7 +468,7 @@ def exportMoneyAuditDoc(activity):
     ws['B4'] = inAccount['bank']
     ws['H4'] = inAccount['number']
     ws['B5'] = '（大写）{}'.format(convertToDaxieAmount(float(info['amount'])))
-    ws['J5'] = '￥{}'.format(amountFixed(float(info['amount'])))
+    ws['J5'] = '￥' + amountFixed(float(info['amount']))
 
     # 出款信息
     outAccount = auditData['outAccount']
@@ -414,6 +508,7 @@ def exportMoneyAuditDoc(activity):
 
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+    set_border(ws, 'A1:M13', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
@@ -452,16 +547,21 @@ def exportBizContractAuditDoc(activity):
     ws['B10'] = info.get('desc', '')
     ws['B10'].alignment = Alignment(horizontal='center', vertical='center')
     ws['B11'] = creator.name
+    ws['B11'].alignment = Alignment(horizontal='center', vertical='center')
     ws['F11'] = getattr(creator.owner, 'name', '')
+    ws['F11'].alignment = Alignment(horizontal='center', vertical='center')
     accountant = Profile.objects \
         .filter(department__code='fin', position__code='fin_accountant', archived=False) \
         .first()
     ws['F12'] = getattr(accountant, 'name', '')
+    ws['F12'].alignment = Alignment(horizontal='center', vertical='center')
     # TODO: 法务负责人
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['B13'] = getattr(finOwner, 'name', '')
+    ws['B13'].alignment = Alignment(horizontal='center', vertical='center')
     ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     ws['B14'] = getattr(ceo, 'name', '')
+    ws['B14'].alignment = Alignment(horizontal='center', vertical='center')
 
     for cell in ws.merged_cells:
         if not inBounds('A4:F19', cell):
@@ -567,6 +667,7 @@ def exportTravelAuditDoc(activity):
         'car': 0,
         'ship': 0,
         'plane': 0,
+        'hotel': 0,
         'traffic': 0,
         'other': 0,
         'amount2': 0
@@ -579,55 +680,76 @@ def exportTravelAuditDoc(activity):
         startDate, endDate = parseDate(item['startTime']), parseDate(item['endTime'])
         row = str(firstItemRow + index)
         ws['C' + row] = startDate.month
+        ws['C' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['D' + row] = startDate.day
+        ws['D' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['E' + row] = startDate.hour
+        ws['E' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['F' + row] = endDate.month
+        ws['F' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['G' + row] = endDate.day
+        ws['G' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['H' + row] = endDate.hour
+        ws['H' + row].alignment = Alignment(vertical='center', horizontal='center')
         days = item['days']
         ws['I' + row] = days
+        ws['I' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         ws['J' + row] = item['place']
+        ws['J' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['K' + row] = days
+        ws['K' + row].alignment = Alignment(vertical='center', horizontal='center')
         ws['L' + row] = item['spec']
+        ws['L' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         normal = float(item['spec']) * days
         total['normal'] = total['normal'] + normal
         ws['M' + row] = normal
+        ws['M' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         train = float(item.get('train', '0'))
         total['train'] = total['train'] + train
         ws['N' + row] = amountFixed(train)
+        ws['N' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         car = float(item.get('car', '0'))
         total['car'] = total['car'] + car
         ws['O' + row] = amountFixed(car)
+        ws['O' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         ship = float(item.get('ship', '0'))
         total['ship'] = total['ship'] + ship
         ws['P' + row] = amountFixed(ship)
+        ws['P' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         plane = float(item.get('plane', '0'))
         total['plane'] = total['plane'] + plane
         ws['Q' + row] = amountFixed(plane)
+        ws['Q' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        ws['R' + row] = '0.00'
+        hotel = float(item.get('hotel', '0'))
+        total['hotel'] = total['hotel'] + hotel
+        ws['R' + row] = amountFixed(hotel)
+        ws['R' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         traffic = float(item.get('traffic', '0'))
         total['traffic'] = total['traffic'] + traffic
         ws['S' + row] = amountFixed(traffic)
+        ws['S' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         other = float(item.get('other', '0'))
         total['other'] = total['other'] + other
         ws['T' + row] = amountFixed(other)
+        ws['T' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        # FIXME: 单据张数
-        amount1 = train + car + ship + plane + traffic + other
+        amount1 = train + car + ship + plane + traffic + other + hotel
         ws['V' + row] = amountFixed(amount1)
+        ws['V' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         amount2 = normal + amount1
         total['amount2'] = amount2 + total['amount2']
         ws['W' + row] = amountFixed(amount2)
+        ws['W' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         t = amount2 + t
 
@@ -637,7 +759,7 @@ def exportTravelAuditDoc(activity):
     ws['O' + str(r)] = amountFixed(total['car'])
     ws['P' + str(r)] = amountFixed(total['ship'])
     ws['Q' + str(r)] = amountFixed(total['plane'])
-    ws['R' + str(r)] = '0.00'
+    ws['R' + str(r)] = amountFixed(total['hotel'])
     ws['S' + str(r)] = amountFixed(total['traffic'])
     ws['T' + str(r)] = amountFixed(total['other'])
     ws['U' + str(r)] = '0'
