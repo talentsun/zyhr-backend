@@ -806,11 +806,13 @@ def exportTravelAuditDoc(activity):
     for j, ch in enumerate(amount):
         col = chr(ord('E') + j)
         ws[col + '5'] = ch
+        ws[col + '5'].alignment = Alignment(vertical='center', wrapText=True)
 
     ## 合计
     for j, ch in enumerate(amount):
         col = chr(ord('E') + j)
         ws[col + '8'] = ch
+        ws[col + '8'].alignment = Alignment(vertical='center', wrapText=True)
 
     ## 金额大写
     ws['B9'] = '金额大写：{}'.format(convertToDaxieAmount(t))
