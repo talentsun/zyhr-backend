@@ -812,13 +812,13 @@ def exportTravelAuditDoc(activity):
     ws['B9'] = '金额大写：{}'.format(convertToDaxieAmount(t))
 
     ws['D9'] = '原借款：{} 元'.format(amountFixed(float(info['yuanjiekuan'])))
-    if getattr(info, 'tuibukuan', None) is not None:
-        ws['N9'] = '退补款：{} 元'.format(amountFixed(float(getattr(info, 'tuibukuan'))))
+    if info.get('tuibukuan', None) is not None:
+        ws['N9'] = '退补款：{} 元'.format(amountFixed(float(info.get('tuibukuan'))))
 
     creator = activity.creator
     owner = creator.owner
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='accountant', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
     hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
     ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     # 报销人/部分负责人/财务负责人
