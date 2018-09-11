@@ -160,31 +160,61 @@ def exportOpenAccountAuditDoc(activity):
     wb = load_workbook(cwd + '/xlsx-templates/open_account.xlsx')
     ws = wb.active
 
-    ws['B2'].value = '厘米脚印（北京）科技有限公司'
-    ws['B2'].value = account['name']
+    ws['B2'].value = activity.creator.department.name
+    ws['B2'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B3'].value = account['bank']
-    ws['E3'].value = account.get('time', '')
+    ws['D2'].value = activity.created_at.strftime('%Y-%m-%d')
+    ws['D2'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B4'].value = account['reason']
+    ws['B3'].value = account['name']
+    ws['B3'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B5'].value = activity.creator.name
+    ws['B4'].value = account['bank']
+    ws['B4'].alignment = Alignment(horizontal='center', vertical='center')
+    natures = [
+        {'value': "basic", 'label': "基本账户"},
+        {'value': "normal", 'label': "一般账户"},
+        {'value': "temporary", 'label': "临时账户"},
+        {'value': "special", 'label': "专用账户"}
+    ]
+    nature = account['nature']
+    for n in natures:
+        if n['value'] == nature:
+            ws['D4'].value = n['label']
+            ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws['B5'].value = account['reason']
+    ws['B5'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws['B6'].value = activity.creator.name
+    ws['B6'].alignment = Alignment(horizontal='center', vertical='center')
     owner = activity.creator.owner
     ceo = Profile.objects.filter(position__code='ceo', archived=False).first()
-    ws['D5'].value = owner.name if owner is not None else ''
-    ws['F5'].value = ceo.name if ceo is not None else ''
+    ws['D6'].value = owner.name if owner is not None else ''
+    ws['D6'].alignment = Alignment(horizontal='center', vertical='center')
 
-    ws['B6'].value = activity.created_at.strftime('%Y-%m-%d')
-    ws['B7'].value = account.get('desc', '')
+    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    ws['B7'].value = finOwner.name if finOwner is not None else ''
     ws['B7'].alignment = Alignment(horizontal='center', vertical='center')
 
+    ws['D7'].value = ceo.name if ceo is not None else ''
+    ws['D7'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws['B8'].value = activity.created_at.strftime('%Y-%m-%d')
+    ws['B8'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B9'].value = account.get('desc', '')
+    ws['B9'].alignment = Alignment(horizontal='center', vertical='center')
+
     # fix border style
-    style_range(ws, 'B2:F2', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B3:C3', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'E3:F3', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B4:F4', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B6:F6', border=Border(top=thin, left=thin, right=thin, bottom=thin))
-    style_range(ws, 'B7:F7', border=Border(top=thin, left=thin, right=thin, bottom=thin))
+    for cell in ws.merged_cells:
+        if not inBounds('A2:D9', cell):
+            logger.info('ignore cell: {}'.format(cell.coord))
+            continue
+
+        logger.info('fix border style {}'.format(cell.coord))
+        style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+
+    set_border(ws, 'A2:D9', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
