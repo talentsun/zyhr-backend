@@ -513,16 +513,21 @@ def exportBizContractAuditDoc(activity):
     ws['B10'] = info.get('desc', '')
     ws['B10'].alignment = Alignment(horizontal='center', vertical='center')
     ws['B11'] = creator.name
+    ws['B11'].alignment = Alignment(horizontal='center', vertical='center')
     ws['F11'] = getattr(creator.owner, 'name', '')
+    ws['F11'].alignment = Alignment(horizontal='center', vertical='center')
     accountant = Profile.objects \
         .filter(department__code='fin', position__code='fin_accountant', archived=False) \
         .first()
     ws['F12'] = getattr(accountant, 'name', '')
+    ws['F12'].alignment = Alignment(horizontal='center', vertical='center')
     # TODO: 法务负责人
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['B13'] = getattr(finOwner, 'name', '')
+    ws['B13'].alignment = Alignment(horizontal='center', vertical='center')
     ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     ws['B14'] = getattr(ceo, 'name', '')
+    ws['B14'].alignment = Alignment(horizontal='center', vertical='center')
 
     for cell in ws.merged_cells:
         if not inBounds('A4:F19', cell):
