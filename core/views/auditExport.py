@@ -508,7 +508,7 @@ def exportMoneyAuditDoc(activity):
 
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
-    set_border(ws, 'A1:M13', 'medium')
+    set_border(ws, 'A3:M13', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
@@ -527,7 +527,7 @@ def exportBizContractAuditDoc(activity):
     base = auditData['base']
     info = auditData['info']
 
-    ws['A3'] = '合同类型：{}                                                    {}'.format(
+    ws['A3'] = '合同类型：{}                                                                                                        {}'.format(
         '大宗类' if base['type'] == 'dazong' else '其他类',
         datetime.datetime.now().strftime('%Y-%m-%d'))
     ws['B4'] = base.get('company', '')
