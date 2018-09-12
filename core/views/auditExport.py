@@ -504,7 +504,7 @@ def exportMoneyAuditDoc(activity):
 
         logger.info('fix border style {}'.format(cell.coord))
         style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
-    set_border(ws, 'A1:M13', 'medium')
+    set_border(ws, 'A3:M13', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
