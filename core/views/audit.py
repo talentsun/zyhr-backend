@@ -39,17 +39,17 @@ def submitActivityAudit(activity):
     step.activated_at = datetime.datetime.now(tz=timezone.utc)
     step.save()
 
-    if step.assignee.pk == activity.creator.pk:
-        # 发起人和第一位审批人相同
-        step.state = AuditStep.StateApproved
-        step.active = False
-        step.finished_at = datetime.datetime.now(tz=timezone.utc)
-        step.save()
-
-        step = steps[1]
-        step.active = True
-        step.activated_at = datetime.datetime.now(tz=timezone.utc)
-        step.save()
+    # if step.assignee.pk == activity.creator.pk:
+    #     # 发起人和第一位审批人相同
+    #     step.state = AuditStep.StateApproved
+    #     step.active = False
+    #     step.finished_at = datetime.datetime.now(tz=timezone.utc)
+    #     step.save()
+    #
+    #     step = steps[1]
+    #     step.active = True
+    #     step.activated_at = datetime.datetime.now(tz=timezone.utc)
+    #     step.save()
 
     Message.objects.create(activity=activity,
                            category='progress',
