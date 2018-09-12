@@ -117,7 +117,7 @@ def convertToDaxieAmountV2(n):
         res.append(''.join([nums[int(x)] + y for x, y in list(zip(decimal_part, decimal_label)) if x != '0']))
 
     if int_part != '0':
-        res.append('圆')
+        res.append('元')
         while int_part:
             small_int_part, int_part = int_part[-4:], int_part[:-4]
             tmp = ''.join([nums[int(x)] + (y if x != '0' else '') for x, y in
@@ -127,7 +127,12 @@ def convertToDaxieAmountV2(n):
             if tmp:
                 tmp += unit
                 res.append(tmp)
-    return ''.join(res[::-1])
+    r =  ''.join(res[::-1])
+
+    if not decimal_part or decimal_part == '0':
+        r = r + '整'
+
+    return r
 
 
 def convertToDaxieAmountV1(amount):
@@ -275,15 +280,7 @@ def exportCostAuditDoc(activity):
 
     # 大写金额
     r = r + 1
-    first = True
-    daxieText = '金额大写：'
-    for index, ch in enumerate(paddingAmount(totalAmount)):
-        dx = daxie(ch)
-        if first and dx == ' ':
-            continue
-
-        first = False
-        daxieText = daxieText + dx + daxieUnit[index]
+    daxieText = '金额大写：' + convertToDaxieAmount(totalAmount)
     ws['B' + str(r)] = daxieText
 
     # FIXME: 原借款/退补款
