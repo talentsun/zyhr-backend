@@ -9,6 +9,7 @@ from core.views import organization
 from core.views import roles
 from core.views import message
 from core.views import customer
+from core.views import finCustomer
 from core.views import finAccount
 from core.views import stats
 from core.views import taizhang
@@ -63,6 +64,13 @@ urlpatterns = [
     path(r'customers/<int:customerId>', customer.customer),
     path(r'customers/actions/import', customer.importCustomers),
     path(r'customers/actions/export', customer.exportCustomers),
+
+    # fin customers api
+    path(r'fin-customers', finCustomer.index),
+    path(r'fin-customers/actions/import', finCustomer.importCustomers),
+    path(r'fin-customers/actions/delete', finCustomer.deleteCustomers),
+    path(r'fin-customers/actions/export', finCustomer.exportCustomers),
+    path(r'fin-customers/<int:customerId>', finCustomer.customer),
 
     # finAccount api
     path(r'fin-accounts', finAccount.index),

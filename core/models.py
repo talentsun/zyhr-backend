@@ -390,6 +390,39 @@ class Customer(models.Model):
         return r
 
 
+class FinCustomer(models.Model):
+    org = models.CharField(max_length=255)  # 对接银行/机构
+    layer = models.CharField(max_length=255)  # 银行/机构层级
+    owner = models.CharField(max_length=255)  # 负责人
+    interface = models.CharField(max_length=255)
+    interfacePosition = models.CharField(max_length=255)
+    interfacePhone = models.CharField(max_length=255)
+    meetTime = models.DateTimeField()
+    meetPlace = models.CharField(max_length=255)
+    member = models.CharField(max_length=255, null=True)
+    otherMember = models.CharField(max_length=255, null=True)
+    otherMemberPosition = models.CharField(max_length=255, null=True)
+    desc = models.TextField(null=True)  # 沟通情况
+    next = models.TextField(null=True)  # 后续工作安排
+
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    archived = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class FinCustomerOps(models.Model):
+    record = models.ForeignKey(FinCustomer, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    op = models.CharField(max_length=50)  # create/modify/delete
+    prop = models.CharField(max_length=50, null=True)
+    extra = JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 CurrencyChoices = (
     ('rmb', '人民币'),
     ('hkd', '港币'),
