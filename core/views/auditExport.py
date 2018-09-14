@@ -532,11 +532,11 @@ def exportBizContractAuditDoc(activity):
 
     ws['F5'] = info.get('downstream', '')
     ws['B6'] = info['asset']
-    ws['B7'] = str(info['tonnage']) + '吨'
-    ws['F7'] = str(info['buyPrice']) + '元/吨'
+    ws['B7'] = amountFixed(float(info['tonnage'])) + '吨'
+    ws['F7'] = amountFixed(float(info['buyPrice'])) + '元/吨'
 
     ws['B8'] = '现金' if info['settlementType'] == 'cash' else '转账'
-    ws['F8'] = str(info.get('sellPrice', '')) + '元/吨'
+    ws['F8'] = amountFixed(float(info['sellPrice'])) + '元/吨'
     ws['B9'] = info['profitsPerTon']
     ws['F9'] = info['grossMargin'] + '%'
     ws['B10'] = info.get('desc', '')
