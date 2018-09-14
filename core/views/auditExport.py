@@ -5,6 +5,8 @@ import re
 import json
 import logging
 import datetime
+import zipfile
+from shutil import copyfile, make_archive
 
 import iso8601
 from django.db import transaction
@@ -127,7 +129,7 @@ def convertToDaxieAmountV2(n):
             if tmp:
                 tmp += unit
                 res.append(tmp)
-    r =  ''.join(res[::-1])
+    r = ''.join(res[::-1])
 
     if not decimal_part or decimal_part == '0':
         r = r + '整'
@@ -524,9 +526,9 @@ def exportBizContractAuditDoc(activity):
     base = auditData['base']
     info = auditData['info']
 
-    ws['A3'] = '合同类型：{}                                                                                                        {}'.format(
-        '大宗类' if base['type'] == 'dazong' else '其他类',
-        datetime.datetime.now().strftime('%Y-%m-%d'))
+    ws[
+        'A3'] = '合同类型：{}                                                                                                      {}' \
+        .format('大宗类' if base['type'] == 'dazong' else '其他类', datetime.datetime.now().strftime('%Y-%m-%d'))
     ws['B4'] = base.get('company', '')
 
     ws['B5'] = info['upstream']
@@ -534,11 +536,11 @@ def exportBizContractAuditDoc(activity):
 
     ws['F5'] = info.get('downstream', '')
     ws['B6'] = info['asset']
-    ws['B7'] = str(info['tonnage']) + '吨'
-    ws['F7'] = str(info['buyPrice']) + '元/吨'
+    ws['B7'] = amountFixed(float(info['tonnage'])) + '吨'
+    ws['F7'] = amountFixed(float(info['buyPrice'])) + '元/吨'
 
     ws['B8'] = '现金' if info['settlementType'] == 'cash' else '转账'
-    ws['F8'] = str(info.get('sellPrice', '')) + '元/吨'
+    ws['F8'] = amountFixed(float(info['sellPrice'])) + '元/吨'
     ws['B9'] = info['profitsPerTon']
     ws['F9'] = info['grossMargin'] + '%'
     ws['B10'] = info.get('desc', '')
@@ -821,7 +823,8 @@ def exportTravelAuditDoc(activity):
     creator = activity.creator
     owner = creator.owner
     finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
+    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant',
+                                           archived=False).first()
     hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
     ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     # 报销人/部分负责人/财务负责人
@@ -856,15 +859,11 @@ def exportTravelAuditDoc(activity):
     return path
 
 
-@require_http_methods(['GET'])
-def export(request, activityId):
-    # TODO: travel audit
-    activity = AuditActivity.objects.get(pk=activityId)
+def _export(activity):
     path, filename = None, None
     if activity.config.subtype == 'open_account':
         path = exportOpenAccountAuditDoc(activity)
-        account = activity.extra['account']
-        filename = '开户申请审批单_{}_{}.xlsx'.format(account['name'], account['bank'])
+        filename = '开户申请审批单.xlsx'
     elif re.match('cost', activity.config.subtype):
         path = exportCostAuditDoc(activity)
         filename = '费用报销审批单.xlsx'
@@ -885,9 +884,43 @@ def export(request, activityId):
         path = exportTravelAuditDoc(activity)
         filename = '差旅费用报销审批单.xlsx'
 
-    # activity.taskState = 'finished'
-    # activity.save()
+    return path, filename
 
+
+@require_http_methods(['GET'])
+def export(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    path, filename = _export(activity)
     return sendfile(request, path,
                     attachment=True,
                     attachment_filename=filename)
+
+
+def zipdir(path, ziph):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file), arcname=file)
+
+
+@require_http_methods(['GET'])
+def batchExport(request):
+    idx = request.GET.get('idx')
+    idx = idx.split(',')
+
+    dir = '/tmp/archive-' + str(uuid.uuid4())
+    os.makedirs(dir)
+
+    activities = AuditActivity.objects.filter(pk__in=idx)
+    for activity in activities:
+        path, filename = _export(activity)
+        name = filename.split('.')[0]
+        copyfile(path, dir + '/{}-{}.xlsx'.format(name, activity.pk))
+
+    path = '/tmp/审批单-{}.zip'.format(str(uuid.uuid4()))
+    zipf = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
+    zipdir(dir, zipf)
+    zipf.close()
+
+    return sendfile(request, path,
+                    attachment=True,
+                    attachment_filename='审批单.zip')

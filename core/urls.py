@@ -31,6 +31,7 @@ urlpatterns = [
     path(r'audit-activities', audit.activities),
     path(r'audit-activities/<uuid:activityId>', audit.activity),
     path(r'audit-activities/<str:activityId>/actions/cancel', audit.cancel),
+    path(r'export-audit', auditExport.batchExport),
     path(r'audit-activities/<str:activityId>/actions/export', auditExport.export),
     path(r'audit-activities/<str:activityId>/actions/update-data', audit.updateData),
     path(r'audit-activities/<str:activityId>/actions/submit-audit', audit.submitAudit),
