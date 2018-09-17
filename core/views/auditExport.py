@@ -282,9 +282,10 @@ def exportCostAuditDoc(activity):
     ws['B' + str(r)] = daxieText
 
     # FIXME: 原借款/退补款
-    ws['D' + str(r)] = '原借款：{} 元'.format(yuanjiekuan)
+    ws['D' + str(r)] = '原借款：{} 元'.format(amountFixed(yuanjiekuan))
     ws['D' + str(r)].alignment = Alignment(horizontal='left', vertical='center')
-    ws['N' + str(r)] = '退（补）款：{} 元'.format(tuibukuan)
+    ws['N' + str(r)] = '退（补）款：{} 元'.format(amountFixed(tuibukuan))
+    ws['N' + str(r)].alignment = Alignment(horizontal='left', vertical='center')
 
     creator = activity.creator
     owner = creator.owner
