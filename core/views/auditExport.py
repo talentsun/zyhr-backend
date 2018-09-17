@@ -286,9 +286,10 @@ def exportCostAuditDoc(activity):
     ws['B' + str(r)] = daxieText
 
     # FIXME: 原借款/退补款
-    ws['D' + str(r)] = '原借款：{} 元'.format(yuanjiekuan)
+    ws['D' + str(r)] = '原借款：{} 元'.format(amountFixed(yuanjiekuan))
     ws['D' + str(r)].alignment = Alignment(horizontal='left', vertical='center')
-    ws['N' + str(r)] = '退（补）款：{} 元'.format(tuibukuan)
+    ws['N' + str(r)] = '退（补）款：{} 元'.format(amountFixed(tuibukuan))
+    ws['N' + str(r)].alignment = Alignment(horizontal='left', vertical='center')
 
     creator = activity.creator
     owner = creator.owner
@@ -527,7 +528,7 @@ def exportBizContractAuditDoc(activity):
     info = auditData['info']
 
     ws[
-        'A3'] = '合同类型：{}                                                                                                      {}' \
+        'A3'] = '合同类型：{}                                                                                                              {}' \
         .format('大宗类' if base['type'] == 'dazong' else '其他类', datetime.datetime.now().strftime('%Y-%m-%d'))
     ws['B4'] = base.get('company', '')
 
@@ -863,7 +864,7 @@ def _export(activity):
     path, filename = None, None
     if activity.config.subtype == 'open_account':
         path = exportOpenAccountAuditDoc(activity)
-        filename = '开户申请审批单.xlsx'
+        filename = '银行开户申请审批单.xlsx'
     elif re.match('cost', activity.config.subtype):
         path = exportCostAuditDoc(activity)
         filename = '费用报销审批单.xlsx'
@@ -914,7 +915,8 @@ def batchExport(request):
     for activity in activities:
         path, filename = _export(activity)
         name = filename.split('.')[0]
-        copyfile(path, dir + '/{}-{}.xlsx'.format(name, activity.pk))
+        time_str = activity.created_at.strftime('%Y-%m-%d-%H-%M-%S')
+        copyfile(path, dir + '/{}-{}.xlsx'.format(name, time_str))
 
     path = '/tmp/审批单-{}.zip'.format(str(uuid.uuid4()))
     zipf = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
