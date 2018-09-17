@@ -859,7 +859,7 @@ def _export(activity):
     path, filename = None, None
     if activity.config.subtype == 'open_account':
         path = exportOpenAccountAuditDoc(activity)
-        filename = '开户申请审批单.xlsx'
+        filename = '银行开户申请审批单.xlsx'
     elif re.match('cost', activity.config.subtype):
         path = exportCostAuditDoc(activity)
         filename = '费用报销审批单.xlsx'
