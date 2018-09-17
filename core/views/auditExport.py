@@ -797,8 +797,9 @@ def exportTravelAuditDoc(activity):
     info = auditData['info']
     dp = creator.department.name if creator.department is not None else ''
     date = datetime.datetime.now().strftime('%Y-%m-%d')
-    ws['B2'] = '报销部门：{}                        {}                      单据及附件共 1 页' \
-        .format(dp, date)
+    ws['B2'] = '报销部门：{}'.format(dp)
+    ws['E2'] = date
+    ws['L2'] = '单据及附件共 1 页'
 
     ws['B5'] = '差旅报销'
     ws['C5'] = getattr(info, 'reason', '')
