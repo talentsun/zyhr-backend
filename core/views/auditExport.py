@@ -308,8 +308,9 @@ def exportCostAuditDoc(activity):
     ## 表头信息
     dp = creator.department.name if creator.department is not None else ''
     date = datetime.datetime.now().strftime('%Y-%m-%d')
-    ws['B2'] = '报销部门：{}                        {}                      单据及附件共 {} 页' \
-        .format(dp, date, str(len(items)))
+    ws['B2'] = '报销部门：{}'.format(dp)
+    ws['E2'] = date
+    ws['L2'] = '单据及附件共 {} 页'.format(str(len(items)))
 
     ## 账号信息系
     account = activity.extra['account']
