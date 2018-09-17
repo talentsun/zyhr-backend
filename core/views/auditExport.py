@@ -910,7 +910,8 @@ def batchExport(request):
     for activity in activities:
         path, filename = _export(activity)
         name = filename.split('.')[0]
-        copyfile(path, dir + '/{}-{}.xlsx'.format(name, activity.pk))
+        time_str = activity.created_at.strftime('%Y-%m-%d-%H-%M-%S')
+        copyfile(path, dir + '/{}-{}.xlsx'.format(name, time_str))
 
     path = '/tmp/审批单-{}.zip'.format(str(uuid.uuid4()))
     zipf = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
