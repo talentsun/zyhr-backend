@@ -454,9 +454,8 @@ def exportMoneyAuditDoc(activity):
 
     auditData = activity.extra
     creator = activity.creator
-    ws['A2'] = '  用款部门:{}                                                                                   {}'. \
-        format(getattr(creator.department, 'name', ''),
-               datetime.datetime.now().strftime('%Y-%m-%d'))
+    ws['A2'] = '  用款部门:{}'.format(getattr(creator.department, 'name', ''))
+    ws['K2'] = datetime.datetime.now().strftime('%Y-%m-%d')
 
     # 收款信息
     info = auditData['info']
