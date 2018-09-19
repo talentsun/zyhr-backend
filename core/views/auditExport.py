@@ -164,6 +164,23 @@ def inBounds(range, cell):
            and bounds[2] >= cell.bounds[2] and bounds[3] >= cell.bounds[3]
 
 
+def resolveProfileFromAudit(activity, dep=None, pos=None):
+    steps = activity.steps()
+
+    for step in steps:
+        assignee_dep = None
+        if step.assigneeDepartment is not None:
+            assignee_dep = step.assigneeDepartment.code
+
+        assignee_pos = step.assigneePosition.code
+
+        if assignee_dep == dep and assignee_pos == pos:
+            return step.assignee
+
+    # profile not found
+    return None
+
+
 def exportOpenAccountAuditDoc(activity):
     account = activity.extra['account']
 
@@ -200,14 +217,16 @@ def exportOpenAccountAuditDoc(activity):
     ws['B6'].value = activity.creator.name
     ws['B6'].alignment = Alignment(horizontal='center', vertical='center')
     owner = activity.creator.owner
-    ceo = Profile.objects.filter(position__code='ceo', archived=False).first()
     ws['D6'].value = owner.name if owner is not None else ''
     ws['D6'].alignment = Alignment(horizontal='center', vertical='center')
 
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    finOwner = resolveProfileFromAudit(activity, 'fin', 'onwer')
+    # finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['B7'].value = finOwner.name if finOwner is not None else ''
     ws['B7'].alignment = Alignment(horizontal='center', vertical='center')
 
+    ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
+    # ceo = Profile.objects.filter(position__code='ceo', archived=False).first()
     ws['D7'].value = ceo.name if ceo is not None else ''
     ws['D7'].alignment = Alignment(horizontal='center', vertical='center')
 
@@ -285,7 +304,6 @@ def exportCostAuditDoc(activity):
     daxieText = '金额大写：' + convertToDaxieAmount(totalAmount)
     ws['B' + str(r)] = daxieText
 
-    # FIXME: 原借款/退补款
     ws['D' + str(r)] = '原借款：{} 元'.format(amountFixed(yuanjiekuan))
     ws['D' + str(r)].alignment = Alignment(horizontal='left', vertical='center')
     ws['N' + str(r)] = '退（补）款：{} 元'.format(amountFixed(tuibukuan))
@@ -293,11 +311,11 @@ def exportCostAuditDoc(activity):
 
     creator = activity.creator
     owner = creator.owner
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant',
-                                           archived=False).first()
-    hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
+    finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
+    hrOwner = resolveProfileFromAudit(activity, dep='hr', pos='owner')
+    # ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
 
     # 报销人/部分负责人/财务负责人
     ws['C' + str(r + 1)] = '报销人：{}'.format(getattr(creator, 'name', ''))
@@ -357,7 +375,6 @@ def exportLoanAuditDoc(activity):
         format(getattr(creator.department, 'name', ''),
                datetime.datetime.now().strftime('%Y-%m-%d'),
                activity.sn)
-    # FIXME: 今借到
 
     # 人民币大写
     amount = float(auditData['loan']['amount'])
@@ -385,11 +402,13 @@ def exportLoanAuditDoc(activity):
     ws['F11'] = getattr(creator.owner, 'name', '')
     ws['F11'].alignment = Alignment(vertical='center', horizontal='center')
 
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    # finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
     ws['I11'] = getattr(finOwner, 'name', '')
     ws['I11'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    # ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
     ws['M11'] = getattr(ceo, 'name', '')
     ws['M11'].alignment = Alignment(vertical='center', horizontal='center')
 
@@ -488,15 +507,15 @@ def exportMoneyAuditDoc(activity):
     ws['H10'] = getattr(creator.owner, 'name', '')
     ws['H10'].alignment = Alignment(vertical='center', horizontal='center')
 
-    accountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant', archived=False).first()
+    accountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
     ws['B12'] = getattr(accountant, 'name', '')
     ws['B12'].alignment = Alignment(vertical='center', horizontal='center')
 
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
     ws['H12'] = getattr(finOwner, 'name', '')
     ws['H12'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
     ws['H13'] = getattr(ceo, 'name', '')
     ws['H13'].alignment = Alignment(vertical='center', horizontal='center')
 
@@ -550,16 +569,17 @@ def exportBizContractAuditDoc(activity):
     ws['B11'].alignment = Alignment(horizontal='center', vertical='center')
     ws['F11'] = getattr(creator.owner, 'name', '')
     ws['F11'].alignment = Alignment(horizontal='center', vertical='center')
-    accountant = Profile.objects \
-        .filter(department__code='fin', position__code='fin_accountant', archived=False) \
-        .first()
+
+    accountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
     ws['F12'] = getattr(accountant, 'name', '')
     ws['F12'].alignment = Alignment(horizontal='center', vertical='center')
+
     # TODO: 法务负责人
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
+    finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
     ws['B13'] = getattr(finOwner, 'name', '')
     ws['B13'].alignment = Alignment(horizontal='center', vertical='center')
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+
+    ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
     ws['B14'] = getattr(ceo, 'name', '')
     ws['B14'].alignment = Alignment(horizontal='center', vertical='center')
 
@@ -775,9 +795,8 @@ def exportTravelAuditDoc(activity):
     ws['D' + str(r + 3)] = info.get('reason', '')
     ws['X4'] = '附件共（{}）张'.format(len(auditData.get('attachments', [])))
 
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant',
-                                           archived=False).first()
-    hr = Profile.objects.filter(department__code='hr', position__code='hr_member', archived=False).first()
+    finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accoutant')
+    hr = resolveProfileFromAudit(activity, dep='hr', pos='hr_member')
     ws['C' + str(r + 5)] = '会计：{}              人资专员：{}              出差人员签字：{}'.format(
         getattr(finAccountant, 'name', ''), getattr(hr, 'name', ''), creator.name)
 
@@ -824,11 +843,10 @@ def exportTravelAuditDoc(activity):
 
     creator = activity.creator
     owner = creator.owner
-    finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
-    finAccountant = Profile.objects.filter(department__code='fin', position__code='fin_accountant',
-                                           archived=False).first()
-    hrOwner = Profile.objects.filter(department__code='hr', position__code='owner', archived=False).first()
-    ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
+    finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
+    finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accoutant')
+    hrOwner = resolveProfileFromAudit(activity, dep='hr', pos='owner')
+    ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
     # 报销人/部分负责人/财务负责人
     ws['C10'] = '报销人：{}'.format(getattr(creator, 'name', ''))
     ws['C11'] = '部门负责人：{}'.format(getattr(owner, 'name', ''))
