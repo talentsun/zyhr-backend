@@ -144,12 +144,24 @@ class Profile(models.Model):
             .first()
 
 
-# TODO: 支持待处理任务的生成
 class AuditActivityConfig(models.Model):
+    '''
+    conditions 结构设计：
+    [{prop: "xxxx", compare: "eq/lt/gte", value: ""}...]
+    prop 常见取值 amount/creator.department/creator.position
+    '''
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    category = models.CharField(max_length=255)
-    subtype = models.CharField(max_length=255, unique=True)
+    category = models.CharField(max_length=255)  # fin/law/hr
+    subtype = models.CharField(max_length=255)  # cost/loan/money/open_account/travel/biz/fn
     hasTask = models.BooleanField(default=False)
+
+    fallback = models.BooleanField(default=False)  # 是否是默认审批流
+    priority = models.IntegerField(default=0)  # 只有默认审批流为 0
+    conditions = JSONField(null=True)  # 审批流激活条件
+
+    archived = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class AuditActivityConfigStep(models.Model):
@@ -555,3 +567,8 @@ class CustomerStat(models.Model):
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     yewuliang = models.DecimalField(decimal_places=2, max_digits=19)
+
+
+class Configuration(models.Model):
+    key = models.CharField(unique=True, max_length=255)  # audits
+    value = JSONField()

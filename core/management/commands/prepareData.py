@@ -24,6 +24,8 @@ class Command(BaseCommand):
                                       department=dep)
 
     def handle(self, *args, **options):
+        # use for v1 only
+
         roleSuperuser = Role.objects.create(name='超级管理员', extra=P_V1)
         roleMember = Role.objects.create(name='普通员工', extra=[
             P_V1_VIEW_HOME,

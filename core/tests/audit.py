@@ -184,20 +184,6 @@ class AuditTestCase(TestCase):
                 )
                 self.assertEquals(response.status_code, 200)
 
-    def test_query_configs(self):
-        self.audit_activity_normal_lifecycle([])
-        activity = AuditActivity.objects.all()[0]
-
-        token = generateToken(activity.creator)
-        client = Client()
-        response = client.get(
-            '/api/v1/audit-configs',
-            HTTP_AUTHORIZATION=token
-        )
-        self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(len(result['configs']), 2)
-
     def test_create_audit_activity(self):
         self.audit_activity_normal_lifecycle([])
         activity = AuditActivity.objects.all()[0]

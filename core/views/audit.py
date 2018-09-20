@@ -3,6 +3,7 @@ import re
 import json
 import logging
 import datetime
+from collections import Iterable
 
 import iso8601
 from django.db import transaction
@@ -179,16 +180,73 @@ def setupSteps(activity, taskId=None):
         pos = pos + 1
 
 
+def _resolveProp(auditData, path):
+    props = path.split('.')
+
+    value = auditData
+    for prop in props:
+        value = value.get(prop, None)
+        if value is None:
+            break
+
+    return value
+
+
+def _compareValue(cond, boundary, value):
+    if cond == 'eq':
+        if isinstance(boundary, Iterable):
+            return value in boundary
+        else:
+            return boundary == value
+    elif cond == 'lt':
+        return value < boundary
+    elif cond == 'lte':
+        return value <= boundary
+    elif cond == 'gt':
+        return value > boundary
+    elif cond == 'gte':
+        return value >= boundary
+    else:
+        return False
+
+
+def resolveConfigByConditions(subtype, auditData):
+    configs = AuditActivityConfig.objects \
+        .filter(subtype=subtype, fallback=False) \
+        .order_by('priority')
+    fallback = AuditActivityConfig.objects \
+        .filter(subtype=subtype, fallback=True) \
+        .first()
+
+    result = None
+    for config in configs:
+        match = True
+        for condition in config.conditions:
+            prop, cond, value = condition['prop'], condition['condition'], condition['value']
+            v = _resolveProp(auditData, prop)
+            if not _compareValue(cond, value, v):
+                match = False
+                break
+
+        if match:
+            result = config
+            break
+
+    if result is None:
+        return fallback
+    else:
+        return result
+
+
 @transaction.atomic
 def createActivity(profile, data):
     # TODO: validate user permission
-    configId = data.get('config', None)  # audit acitivity config id
-    configCode = data.get('code', None)  # audit acitivity config code
+    subtype = data.get('code', None)  # audit acitivity config code
     submit = data.get('submit', False)  # 是否提交审核
-    if configId is not None:
-        config = AuditActivityConfig.objects.get(pk=configId)
-    else:
-        config = AuditActivityConfig.objects.get(subtype=configCode)
+    config = resolveConfigByConditions(subtype, data['extra'])
+
+    if config is None:
+        return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
 
     taskId = uuid.uuid4()
     logger.info('{} create activity base on config: {}'.format(
@@ -280,6 +338,14 @@ def submitAudit(request, activityId):
     if activity.state != AuditActivity.StateDraft \
             and activity.state != AuditActivity.StateCancelled:
         return JsonResponse({'errorId': 'invalid-state'}, status=400)
+
+    # update config if submit
+    config = resolveConfigByConditions(activity.config.subtype, activity.extra)
+    if config is None:
+        return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
+
+    activity.config = config
+    activity.save()
 
     setupSteps(activity, taskId=uuid.uuid4())
     submitActivityAudit(activity)
