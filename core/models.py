@@ -322,8 +322,15 @@ class BankAccount(models.Model):
 
 class Company(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=255)
+
+
+# 记忆数据
+class Memo(models.Model):
+    category = models.CharField(max_length=255) # upstream/downstream/asset...
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    value = models.CharField(max_length=255, null=True)
 
 
 class Message(models.Model):

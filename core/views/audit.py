@@ -85,9 +85,20 @@ def recordBankAccountIfNeed(profile, code, data):
 def recordCompanyIfNeed(profile, code, data):
     if re.match('biz', code):
         company = data['base'].get('company')
-        count = Company.objects.filter(profile=profile, name=company).count()
+        count = Company.objects.filter(name=company).count()
         if count == 0:
             Company.objects.create(profile=profile, name=company)
+
+
+def recordMemo(profile, code, data):
+    if re.match('biz', code):
+        props = ['upstream', 'downstream', 'asset']
+        for prop in props:
+            value = data['info'].get(prop, None)
+            if value is not None and value != '':
+                count = Memo.objects.filter(category=prop, value=value).count()
+                if count == 0:
+                    Memo.objects.create(category=prop, value=value, profile=profile)
 
 
 def generateActivitySN():
@@ -206,6 +217,7 @@ def createActivity(profile, data):
 
     recordBankAccountIfNeed(profile, activity.config.subtype, activity.extra)
     recordCompanyIfNeed(profile, activity.config.subtype, activity.extra)
+    recordMemo(profile, activity.config.subtype, activity.extra)
 
     return activity
 
