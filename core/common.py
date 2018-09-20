@@ -41,7 +41,7 @@ def resolve_position(pos):
 
 
 def resolve_profile(profile):
-    accounts = BankAccount.objects.filter(profile=profile)
+    accounts = BankAccount.objects.all()
     companies = Company.objects.filter(profile=profile)
     messages = Message.objects \
         .filter(profile=profile, read=False) \

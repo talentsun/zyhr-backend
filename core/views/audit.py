@@ -72,8 +72,7 @@ def recordBankAccountIfNeed(profile, code, data):
             continue
 
         if BankAccount.objects. \
-                filter(profile=profile,
-                       name=name,
+                filter(name=name,
                        bank=bank,
                        number=number).count() == 0:
             BankAccount.objects. \

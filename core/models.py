@@ -314,7 +314,7 @@ class File(models.Model):
 
 class BankAccount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=255)
     number = models.CharField(max_length=255)
     bank = models.CharField(max_length=255)
