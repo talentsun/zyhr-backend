@@ -41,8 +41,9 @@ def resolve_position(pos):
 
 
 def resolve_profile(profile):
-    accounts = BankAccount.objects.filter(profile=profile)
-    companies = Company.objects.filter(profile=profile)
+    accounts = BankAccount.objects.all()
+    companies = Company.objects.all()
+    memo = Memo.objects.all()
     messages = Message.objects \
         .filter(profile=profile, read=False) \
         .order_by('-updated_at')
@@ -80,6 +81,11 @@ def resolve_profile(profile):
         'companies': [{
             'name': c.name,
         } for c in companies],
+
+        'memo': [{
+            'category': m.category,
+            'value': m.value
+        } for m in memo],
 
         'messages': [{
             'id': str(m.pk),
