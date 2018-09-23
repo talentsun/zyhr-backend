@@ -5,6 +5,17 @@ from core import specs_v3
 
 
 class SpecsV3TestCase(TestCase):
+    def assert_audit_steps(self, config, deps=[], pos=[]):
+        steps = AuditActivityConfigStep.objects \
+            .filter(config=config) \
+            .order_by('position')
+
+        stepDeps = [getattr(s.assigneeDepartment, 'code', None) for s in steps]
+        self.assertListEqual(stepDeps, deps)
+
+        stepPos = [getattr(s.assigneePosition, 'code', None) for s in steps]
+        self.assertListEqual(stepPos, pos)
+
     def test_create_audit_config(self):
         positions = [
             {'name': '总裁', 'code': 'ceo'},
@@ -26,23 +37,33 @@ class SpecsV3TestCase(TestCase):
         for dep in departments:
             Department.objects.create(**dep)
 
-        specs.createAuditConfig(spec='fin.cost_lte_5000:\
+        config = specs_v3.createAuditConfig(spec='fin.cost:fin.accountant->fin.owner...', fallback=True)
+        self.assertEqual(config.category, 'fin')
+        self.assertEqual(config.subtype, 'cost')
+        self.assertListEqual(config.conditions, [])
+        self.assertEqual(config.fallback, True)
+        self.assertEqual(config.priority, 0)
+        self.assert_audit_steps(
+            config,
+            deps=['fin', 'fin'],
+            pos=['accountant', 'owner']
+        )
+
+        config = specs_v3.createAuditConfig(spec='fin.cost(amount<=5000):\
                                 fin.accountant->\
                                 _.owner->\
                                 hr.owner->\
                                 fin.owner->\
-                                fin.cashier')
-
-        config = AuditActivityConfig.objects.all()[0]
+                                fin.cashier...')
         self.assertEqual(config.category, 'fin')
-        self.assertEqual(config.subtype, 'cost_lte_5000')
-        steps = AuditActivityConfigStep.objects.filter(
-            config=config).order_by('position')
-        self.assertEqual(steps.count(), 5)
-        stepDeps = [
-            s.assigneeDepartment.code if s.assigneeDepartment else None for s in steps]
-        stepPos = [
-            s.assigneePosition.code if s.assigneePosition else None for s in steps]
-        self.assertListEqual(stepDeps, ['fin', None, 'hr', 'fin', 'fin'])
-        self.assertListEqual(
-            stepPos, ['accountant', 'owner', 'owner', 'owner', 'cashier'])
+        self.assertEqual(config.subtype, 'cost')
+        self.assertListEqual(config.conditions, [
+            {'prop': 'amount', 'condition': 'lte', 'value': 5000}
+        ])
+        self.assertEqual(config.fallback, False)
+        self.assertEqual(config.priority, 1)
+        self.assert_audit_steps(
+            config,
+            deps=['fin', None, 'hr', 'fin', 'fin'],
+            pos=['accountant', 'owner', 'owner', 'owner', 'cashier']
+        )

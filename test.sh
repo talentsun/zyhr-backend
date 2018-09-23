@@ -6,6 +6,7 @@ coverage run \
         manage.py test \
 			--no-logs \
             --failfast \
+			--nomigrations \
             --settings=backend.test_settings
 
 coverage html

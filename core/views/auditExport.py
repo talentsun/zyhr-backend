@@ -99,6 +99,10 @@ def daxie(n):
 daxieUnit = ['佰', '拾', '万', '仟', '佰', '拾', '元', '角', '分']
 
 
+def convertToDaxieAmountV2(amount):
+    pass
+
+
 def convertToDaxieAmount(amount):
     return convertToDaxieAmountV2(amount)
 

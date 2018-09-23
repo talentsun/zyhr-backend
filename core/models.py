@@ -326,7 +326,7 @@ class File(models.Model):
 
 class BankAccount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=255)
     number = models.CharField(max_length=255)
     bank = models.CharField(max_length=255)
@@ -334,8 +334,15 @@ class BankAccount(models.Model):
 
 class Company(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=255)
+
+
+# 记忆数据
+class Memo(models.Model):
+    category = models.CharField(max_length=255)  # upstream/downstream/asset...
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    value = models.CharField(max_length=255, null=True)
 
 
 class Message(models.Model):
@@ -400,6 +407,39 @@ class Customer(models.Model):
     def nianxian(self):
         r = datetime.datetime.now(tz=timezone.utc).year - int(self.year)
         return r
+
+
+class FinCustomer(models.Model):
+    org = models.CharField(max_length=255)  # 对接银行/机构
+    layer = models.CharField(max_length=255)  # 银行/机构层级
+    owner = models.CharField(max_length=255)  # 负责人
+    interface = models.CharField(max_length=255)
+    interfacePosition = models.CharField(max_length=255)
+    interfacePhone = models.CharField(max_length=255)
+    meetTime = models.DateTimeField()
+    meetPlace = models.CharField(max_length=255)
+    member = models.CharField(max_length=255, null=True)
+    otherMember = models.CharField(max_length=255, null=True)
+    otherMemberPosition = models.CharField(max_length=255, null=True)
+    desc = models.TextField(null=True)  # 沟通情况
+    next = models.TextField(null=True)  # 后续工作安排
+
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    archived = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class FinCustomerOps(models.Model):
+    record = models.ForeignKey(FinCustomer, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    op = models.CharField(max_length=50)  # create/modify/delete
+    prop = models.CharField(max_length=50, null=True)
+    extra = JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 CurrencyChoices = (
@@ -567,6 +607,7 @@ class CustomerStat(models.Model):
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     yewuliang = models.DecimalField(decimal_places=2, max_digits=19)
+    avg_price = models.DecimalField(max_digits=32, decimal_places=4)  # 平均结算价格
 
 
 class Configuration(models.Model):

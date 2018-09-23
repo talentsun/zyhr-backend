@@ -41,9 +41,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'test_without_migrations',
     'corsheaders',
     'core'
 ]
+
+TEST_WITHOUT_MIGRATIONS_COMMAND = 'django_nose.management.commands.test.Command'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

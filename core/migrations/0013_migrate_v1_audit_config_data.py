@@ -2,6 +2,7 @@
 
 from django.db import migrations, transaction
 from core.models import *
+from core.management.commands.prepareData import Command
 
 
 class Migrator():
@@ -132,6 +133,18 @@ class Migrator():
             self.migrateFnContractAudit()
 
 
+def prepareV1DataIfNeed(apps, schema_editor):
+    with transaction.atomic():
+        config = AuditActivityConfig.objects \
+            .filter(subtype='cost_lte_5000') \
+            .first()
+        if config != None:
+            return
+
+        cmd = Command()
+        cmd.handle()
+
+
 def upgradeToV3(apps, schema_editor):
     m = Migrator()
     m.migrate()
@@ -139,9 +152,10 @@ def upgradeToV3(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0008_auto_20180919_0849'),
+        ('core', '0012_auto_20180923_1458'),
     ]
 
     operations = [
+        migrations.RunPython(prepareV1DataIfNeed),
         migrations.RunPython(upgradeToV3),
     ]

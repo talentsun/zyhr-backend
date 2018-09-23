@@ -35,13 +35,16 @@ def createAuditConfig(spec=None, fallback=False):
     categorySpecs, flowSpecs = spec.split(':')
     categorySpecs, flowSpecs = categorySpecs.strip(), flowSpecs.strip()
 
-    i1 = categorySpecs.index('(')
-    i2 = categorySpecs.index(')')
-    conditions = categorySpecs[i1 + 1:i2]
-    conditions = conditions.split(',')
-    conditions = [parseCondition(c) for c in conditions]
+    if '(' not in categorySpecs:
+        conditions = []
+    else:
+        i1 = categorySpecs.index('(')
+        i2 = categorySpecs.index(')')
+        conditions = categorySpecs[i1 + 1:i2]
+        conditions = conditions.split(',')
+        conditions = [parseCondition(c) for c in conditions]
+        categorySpecs = categorySpecs[:i1]
 
-    categorySpecs = categorySpecs[:i1]
     category, subtype = categorySpecs.split('.')
 
     if fallback:

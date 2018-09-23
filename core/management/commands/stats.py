@@ -9,10 +9,13 @@ from django.core.management.base import BaseCommand
 
 from core.models import *
 
-logger = logging.getLogger('app.core.views.audit')
+logger = logging.getLogger('app.core.views.stats')
 
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument('--once', action='store_true')
+
     def calTransactionStatsForAccountTotal(self, account, startDate=None, endDate=None):
         # calculate balance
         records = StatsTransactionRecord.objects.filter(number=account.number, archived=False)
@@ -145,7 +148,10 @@ class Command(BaseCommand):
 
         # 资金占压
         for r in records:
-            zijin_zhanya = r.shangyou_zijin_zhanya + zijin_zhanya
+            s = r.shangyou_zijin_zhanya
+            if s is None:
+                s = 0
+            zijin_zhanya = s + zijin_zhanya
 
         return {
             'xiaoshoue': xiaoshoue,
@@ -221,10 +227,17 @@ class Command(BaseCommand):
             records = records.filter(date=month)
 
         yewuliang = Decimal('0.00')
+        dunwei = Decimal('0.00')
         for r in records:
             yewuliang = yewuliang + r.hetong_jine
+            dunwei = dunwei + r.upstream_dunwei
 
-        return {'yewuliang': yewuliang}
+        r = {'yewuliang': yewuliang}
+        if dunwei != 0:
+            r['avg_price'] = yewuliang / dunwei
+        else:
+            r['avg_price'] = 0
+        return r
 
     def calCustomerStats(self):
         CustomerStat.objects.all().delete()
@@ -254,15 +267,25 @@ class Command(BaseCommand):
             nextMonth = self.calNextMonth(month)
 
     def _stats(self):
-        self.calTransactionStats()
-        self.calTaizhangStats()
-        self.calCustomerStats()
+        try:
+            logger.info('cal stats')
+            self.calTransactionStats()
+            self.calTaizhangStats()
+            self.calCustomerStats()
+            logger.info('cal stats done')
+        except:
+            logger.exception("some error happend")
 
     def handle(self, *args, **kwargs):
         def job():
             self._stats()
 
-        schedule.every(1).hour().do(job)
+        if kwargs['once']:
+            self._stats()
+            return
+
+        schedule.every().hour.do(job)
+
         while True:
             schedule.run_pending()
             time.sleep(1)
