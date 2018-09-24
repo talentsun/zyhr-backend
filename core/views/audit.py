@@ -204,7 +204,9 @@ def _resolveProp(auditData, path):
 
 def _compareValue(cond, boundary, value):
     if cond == 'eq':
-        if isinstance(boundary, Iterable):
+        if type(boundary) == str:
+            return boundary == value
+        elif isinstance(boundary, Iterable):
             return value in boundary
         else:
             return boundary == value
