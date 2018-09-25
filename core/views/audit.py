@@ -331,7 +331,6 @@ def cancel(request, activityId):
 @validateToken
 def updateData(request, activityId):
     # TODO: validate user permission
-    # TODO: if audit type change, rebuild audit workflow
     data = json.loads(request.body.decode('utf-8'))
     activity = AuditActivity.objects.get(pk=activityId)
     activity.extra = data

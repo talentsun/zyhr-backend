@@ -97,22 +97,24 @@ class Migrator():
 
     def migrateBizContractAudit(self):
         audit = AuditActivityConfig.objects.get(subtype='biz_contract')
+        audit.subtype = 'biz'
         audit.priority = 0
         audit.fallback = True
         audit.save()
 
     def migrateFnContractAudit(self):
         audit = AuditActivityConfig.objects.get(subtype='fn_contract')
+        audit.subtype = 'fn'
         audit.priority = 0
         audit.fallback = True
         audit.save()
 
         audit = AuditActivityConfig.objects.get(subtype='fn_contract_zero')
+        audit.subtype = 'fn'
         audit.conditions = [
             {'prop': 'amount', 'condition': 'eq', 'value': 0}
         ]
         audit.priority = 1
-        audit.subtype = 'fn_contract'
         audit.fallback = False
         audit.save()
 
@@ -150,6 +152,32 @@ def upgradeToV3(apps, schema_editor):
     m.migrate()
 
 
+def prepareV3AuditCofigurationData(apps, schema_editor):
+    Configuration.objects.create(
+        key='audits',
+        value={
+            'categories': ['fin', 'law', 'hr'],
+            'audits': [
+                {'subtype': 'cost', 'name': '费用报销', 'category': 'fin', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'loan', 'name': '借款申请', 'category': 'fin', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'money', 'name': '用款申请', 'category': 'fin', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'open_account', 'name': '银行开户', 'category': 'fin', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'travel', 'name': '差旅报销', 'category': 'fin', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+
+                {'subtype': 'biz', 'name': '业务合同会签', 'category': 'law', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'fn', 'name': '职能合同会签', 'category': 'law', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()}
+            ]
+        }
+    )
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ('core', '0012_auto_20180923_1458'),
@@ -158,4 +186,5 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(prepareV1DataIfNeed),
         migrations.RunPython(upgradeToV3),
+        migrations.RunPython(prepareV3AuditCofigurationData)
     ]

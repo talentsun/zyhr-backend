@@ -6,12 +6,10 @@ from core import specs_v3
 from core.models import *
 from core.auth import generateToken
 from core.tests import helpers
+from core.views.audit import _compareValue
 
 
 class AuditV3TestCase(TestCase):
-    def setUp(self):
-        pass
-
     def prepareData(self):
         pos_member = Position.objects.create(name='member', code='member')
         pos_owner = Position.objects.create(name='owner', code='owner')
@@ -76,6 +74,9 @@ class AuditV3TestCase(TestCase):
         self.biz_fallback = specs_v3.createAuditConfig(
             spec='fin.biz:_.owner->fin.accountant',
             fallback=True)
+        self.cost_fallback = specs_v3.createAuditConfig(
+            spec='fin.cost:_.owner->fin.accountant',
+            fallback=True)
 
         self.duplicate = specs_v3.createAuditConfig(
             spec='test.duplicate:_.owner->fin.accountant->fin.owner',
@@ -86,9 +87,11 @@ class AuditV3TestCase(TestCase):
                                         subtype=None,
                                         submit=True,
                                         creator=None,
-                                        auditData=None):
-        self.prepareData()
-        self.prepareAuditConfig()
+                                        auditData=None,
+                                        prepare=True):
+        if prepare:
+            self.prepareData()
+            self.prepareAuditConfig()
 
         if subtype is None:
             subtype = 'baoxiao'
@@ -115,7 +118,7 @@ class AuditV3TestCase(TestCase):
         result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(result['ok'], True)
 
-        activity = AuditActivity.objects.all()[0]
+        activity = AuditActivity.objects.first()
         self.assertEqual(activity.creator, creator)
         if submit:
             self.assertEqual(activity.state, AuditActivity.StateProcessing)
@@ -134,6 +137,15 @@ class AuditV3TestCase(TestCase):
             self.assertEqual(result['ok'], True)
             activity = AuditActivity.objects.all()[0]
             self.assertEqual(activity.state, AuditActivity.StateProcessing)
+
+        # test query api
+        r = client.get(
+            '/api/v1/audit-activities/{}'.format(str(activity.pk)),
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEquals(r.status_code, 200)
+        result = json.loads(r.content.decode('utf-8'))
+        self.assertEqual(result['id'], str(activity.pk))
 
         for action in actions:
             if action == 'cancel':
@@ -221,7 +233,42 @@ class AuditV3TestCase(TestCase):
             {'assignee': 'lucy', 'active': True, 'state': AuditStep.StatePending, 'position': 0}
         ])
 
-    # TODO: test case: set up audit workflow again on resubmit
+    def test_submit_again_hit_different_workflow(self):
+        self.audit_activity_normal_lifecycle(actions=['approve', 'reject'], auditData={'amount': 2000})
+        activity = AuditActivity.objects.first()
+
+        token = generateToken(activity.creator)
+        client = Client()
+        response = client.post(
+            '/api/v1/audit-activities/{}/actions/relaunch'.format(
+                str(activity.pk)),
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        activity = AuditActivity.objects.get(pk=result['id'])
+
+        response = client.post(
+            '/api/v1/audit-activities/{}/actions/update-data'.format(str(activity.pk)),
+            json.dumps({
+                'amount': 8000
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(response.status_code, 200)
+
+        r = client.post(
+            '/api/v1/audit-activities/{}/actions/submit-audit'.format(str(activity.pk)),
+            HTTP_AUTHORIZATION=token
+        )
+        self.assertEqual(r.status_code, 200)
+        activity = AuditActivity.objects.get(pk=activity.pk)
+        self.assert_audit_steps(activity, [
+            {'assignee': 'lee', 'active': True, 'state': AuditStep.StatePending, 'position': 0},
+            {'assignee': 'lucy', 'active': False, 'state': AuditStep.StatePending, 'position': 1},
+            {'assignee': 'ceo', 'active': False, 'state': AuditStep.StatePending, 'position': 2},
+        ])
 
     def test_submit_audit_activity_with_invalid_state(self):
         self.audit_activity_normal_lifecycle(auditData={'amount': 2000})
@@ -565,9 +612,49 @@ class AuditV3TestCase(TestCase):
         self.assertEqual(company.name, 'foobar')
 
     def test_record_bank_account(self):
-        # TODO: test case: record bank account
-        pass
+        self.audit_activity_normal_lifecycle(
+            subtype='cost',
+            auditData={
+                'amount': 2000,
+                'account': {
+                    'name': 'foobar',
+                    'bank': 'foobar',
+                    'number': '123456'
+                }
+            })
+        count = BankAccount.objects.filter(name='foobar', bank='foobar', number='123456').count()
+        self.assertEqual(count, 1)
+
+        self.audit_activity_normal_lifecycle(
+            prepare=False,
+            subtype='cost',
+            auditData={
+                'amount': 2000,
+                'account': {
+                    'name': 'foobar',
+                    'bank': 'foobar',
+                    'number': '123456'
+                }
+            })
+        count = BankAccount.objects.filter(name='foobar', bank='foobar', number='123456').count()
+        self.assertEqual(count, 1)
 
     def test_compare_value(self):
-        # TODO: test case: compareValue eq/lt/lte/gt/gte
-        pass
+        self.assertEqual(_compareValue('eq', ['caigou', 'other'], 'other'), True)
+        self.assertEqual(_compareValue('eq', ['caigou', 'other'], 'foobar'), False)
+        self.assertEqual(_compareValue('eq', 1000, 1000), True)
+        self.assertEqual(_compareValue('eq', 1000, 2000), False)
+
+        self.assertEqual(_compareValue('lt', 1000, 500), True)
+        self.assertEqual(_compareValue('lt', 1000, 2000), False)
+
+        self.assertEqual(_compareValue('lte', 1000, 500), True)
+        self.assertEqual(_compareValue('lte', 1000, 100), True)
+        self.assertEqual(_compareValue('lt', 1000, 2000), False)
+
+        self.assertEqual(_compareValue('gt', 1000, 2000), True)
+        self.assertEqual(_compareValue('gt', 1000, 500), False)
+
+        self.assertEqual(_compareValue('gt', 1000, 2000), True)
+        self.assertEqual(_compareValue('gte', 1000, 1000), True)
+        self.assertEqual(_compareValue('gt', 1000, 500), False)

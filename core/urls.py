@@ -3,6 +3,7 @@ from django.urls import path
 from core.views import upload
 from core.views import session
 from core.views import audit
+from core.views import auditCategory
 from core.views import auditExport
 from core.views import emps
 from core.views import organization
@@ -25,6 +26,12 @@ urlpatterns = [
     path(r'send-code', session.sendCode),
     path(r'change-phone', session.changePhone),
     path(r'profile', session.profile),
+
+    # audit-categories api
+    path(r'audit-categories', auditCategory.categories),
+    path(r'audit-categories/<str:subtype>/actions/disable', auditCategory.disableAudit),
+    path(r'audit-categories/<str:subtype>/actions/enable', auditCategory.enableAudit),
+    path(r'audit-categories/<str:subtype>/actions/move', auditCategory.moveAudit),
 
     # audit api
     path(r'audit-configs', audit.configs),
