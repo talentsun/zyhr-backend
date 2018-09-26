@@ -29,9 +29,13 @@ urlpatterns = [
 
     # audit-categories api
     path(r'audit-categories', auditCategory.categories),
+    path(r'audit-categories/<str:subtype>', auditCategory.category),
     path(r'audit-categories/<str:subtype>/actions/disable', auditCategory.disableAudit),
     path(r'audit-categories/<str:subtype>/actions/enable', auditCategory.enableAudit),
     path(r'audit-categories/<str:subtype>/actions/move', auditCategory.moveAudit),
+    path(r'audit-categories/<str:subtype>/actions/update-flow', auditCategory.updateAuditFlow),
+    path(r'audit-categories/<str:subtype>/actions/create-flow', auditCategory.createAuditFlow),
+    path(r'audit-categories/<str:subtype>/actions/stick-flow', auditCategory.stickAuditFlow),
 
     # audit api
     path(r'audit-configs', audit.configs),

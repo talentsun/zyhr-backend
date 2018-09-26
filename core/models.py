@@ -151,9 +151,9 @@ class AuditActivityConfig(models.Model):
     prop 常见取值 amount/creator.department/creator.position
     '''
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    category = models.CharField(max_length=255)  # fin/law/hr
+    category = models.CharField(max_length=255, null=True)  # fin/law/hr
     subtype = models.CharField(max_length=255)  # cost/loan/money/open_account/travel/biz/fn
-    hasTask = models.BooleanField(default=False)
+    hasTask = models.BooleanField(default=False)  # hasTask 在 v3 版本已经废弃
 
     fallback = models.BooleanField(default=False)  # 是否是默认审批流
     priority = models.IntegerField(default=0)  # 只有默认审批流为 0
