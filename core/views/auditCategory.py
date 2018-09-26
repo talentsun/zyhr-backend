@@ -25,8 +25,7 @@ def resolve_step(step):
     return {
         'pk': str(step.pk),
         'department': resolve_department(step.assigneeDepartment),
-        'position': resolve_department(step.assigneePosition),
-        'position': step.position
+        'position': resolve_position(step.assigneePosition)
     }
 
 
@@ -44,41 +43,37 @@ def resolve_config(config):
 
 def updateCategoryUpdatedAt(subtype):
     configuration = Configuration.objects.get(key='audits')
-    for audit in configuration['audit']:
+    for audit in configuration.value['audits']:
         if audit['subtype'] == subtype:
             audit['updated_at'] = timezone.now()
     configuration.save()
 
 
-@require_http_methods(['GET', 'DELETE'])
+@require_http_methods(['GET'])
 @validateToken
 def category(request, subtype):
-    if request.method == 'GET':
-        configs = AuditActivityConfig.objects \
-            .filter(subtype=subtype, archived=False) \
-            .order_by('priority')
-        return JsonResponse({
-            'configs': [resolve_config(c) for c in configs]
-        })
-    elif request.method == 'DELETE':
-        data = json.loads(request.body.decode('utf-8'))
-        # delete config
-        AuditActivityConfig.objects \
-            .filter(pk=data['config']) \
-            .update(archived=True)
+    configs = AuditActivityConfig.objects \
+        .filter(subtype=subtype, archived=False) \
+        .order_by('priority')
+    return JsonResponse({
+        'configs': [resolve_config(c) for c in configs]
+    })
 
-        # update audit category updated_at
-        updateCategoryUpdatedAt(subtype)
 
-        # update priority
-        configs = AuditActivityConfig.objects \
-            .filter(subtype=subtype, archived=False) \
-            .order_by('priority')
-        for index, config in enumerate(configs):
-            config.priority = index
-            config.save()
+def reset_steps(config, steps):
+    AuditActivityConfigStep.objects.filter(config=config).delete()
+    for index, step in enumerate(steps):
+        pos = Position.objects.get(pk=step['pos'])
+        dep = step.get('dep', None)
+        if dep != None:
+            dep = Department.objects.get(pk=dep)
 
-        return JsonResponse({'ok': True})
+        AuditActivityConfigStep.objects.create(
+            config=config,
+            position=index,
+            assigneeDepartment=dep,
+            assigneePosition=pos
+        )
 
 
 @require_http_methods(['POST'])
@@ -94,20 +89,7 @@ def updateAuditFlow(request, subtype):
         config.conditions = conditions
         config.save()
 
-        AuditActivityConfigStep.objects.filter(config=config).delete()
-        for index, step in enumerate(steps):
-            pos = Position.objects.get(pk=step['pos'])
-            dep = step.get('dep', None)
-            if dep != None:
-                dep = Department.objects.get(pk=dep)
-
-            AuditActivityConfigStep.objects.create(
-                config=config,
-                position=index + 1,
-                assigneeDepartment=dep,
-                assigneePosition=pos
-            )
-
+        reset_steps(config, steps)
         updateCategoryUpdatedAt(config.subtype)
 
     return JsonResponse({'ok': True})
@@ -121,31 +103,48 @@ def createAuditFlow(request, subtype):
     conditions = data.get('conditions', None)
 
     with transaction.atomic():
+        count = AuditActivityConfig.objects \
+            .filter(subtype=subtype, archived=False, fallback=False) \
+            .count()
         config = AuditActivityConfig(subtype=subtype)
         config.conditions = conditions
+        config.priority = count + 1
         config.save()
 
-        for index, step in enumerate(steps):
-            pos = Position.objects.get(pk=step['pos'])
-            dep = step.get('dep', None)
-            if dep != None:
-                dep = Department.objects.get(pk=dep)
-
-            AuditActivityConfigStep.objects.create(
-                config=config,
-                position=index + 1,
-                assigneeDepartment=dep,
-                assigneePosition=pos
-            )
-
+        reset_steps(config, steps)
         updateCategoryUpdatedAt(config.subtype)
+
+    return JsonResponse({'ok': True, 'id': str(config.pk)})
+
+
+@require_http_methods(['DELETE'])
+@validateToken
+def deleteAuditFlow(request, subtype):
+    data = json.loads(request.body.decode('utf-8'))
+
+    with transaction.atomic():
+        # delete config
+        AuditActivityConfig.objects \
+            .filter(pk=data['config']) \
+            .update(archived=True)
+
+        # update audit category updated_at
+        updateCategoryUpdatedAt(subtype)
+
+        # update priority
+        configs = AuditActivityConfig.objects \
+            .filter(subtype=subtype, archived=False, fallback=False) \
+            .order_by('priority')
+        for index, config in enumerate(configs):
+            config.priority = index + 1
+            config.save()
 
     return JsonResponse({'ok': True})
 
 
 @require_http_methods(['POST'])
 @validateToken
-def stickAuditFlow(request):
+def stickAuditFlow(request, subtype):
     data = json.loads(request.body.decode('utf-8'))
     configId = data['config']
 
@@ -155,13 +154,13 @@ def stickAuditFlow(request):
         config.save()
 
         configs = AuditActivityConfig.objects \
-            .filter(subtype=config.subtype, fallback=False, archived=False) \
+            .filter(subtype=subtype, fallback=False, archived=False) \
             .order_by('priority')
         for index, config in enumerate(configs):
             config.priority = index + 1
             config.save()
 
-        updateCategoryUpdatedAt(config.subtype)
+        updateCategoryUpdatedAt(subtype)
 
     return JsonResponse({'ok': True})
 
