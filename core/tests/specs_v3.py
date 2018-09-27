@@ -22,20 +22,20 @@ class SpecsV3TestCase(TestCase):
             {'name': '负责人', 'code': 'owner'},
             {'name': '会计', 'code': 'accountant'},
             {'name': '出纳', 'code': 'cashier'},
-            {'name': '组员', 'code': 'member'},  # 各部门一般成员职位
-            {'name': '业务经理', 'code': 'mgr'}  # 只在大宗商品事业部
         ]
         for pos in positions:
             Position.objects.create(**pos)
 
         departments = [
-            {'name': '总部', 'code': 'root'},
-            {'name': '大宗商品事业部', 'code': 'dazong'},
-            {'name': '财务中心', 'code': 'fin'},
-            {'name': '人力行政中心', 'code': 'hr'},
+            {'name': '总部', 'code': 'root', 'pos': ['ceo']},
+            {'name': '财务中心', 'code': 'fin', 'pos': ['owner', 'accountant', 'cashier']},
+            {'name': '人力行政中心', 'code': 'hr', 'pos': ['owner']},
         ]
         for dep in departments:
-            Department.objects.create(**dep)
+            dep_ = Department.objects.create(name=dep['name'], code=dep['code'])
+            for code in dep['pos']:
+                pos = Position.objects.get(code=code)
+                DepPos.objects.create(dep=dep_, pos=pos)
 
         config = specs_v3.createAuditConfig(spec='fin.cost:fin.accountant->fin.owner...', fallback=True)
         self.assertEqual(config.category, 'fin')
@@ -65,5 +65,5 @@ class SpecsV3TestCase(TestCase):
         self.assert_audit_steps(
             config,
             deps=['fin', None, 'hr', 'fin', 'fin'],
-            pos=['accountant', 'owner', 'owner', 'owner', 'cashier']
+            pos=['accountant', None, 'owner', 'owner', 'cashier']
         )

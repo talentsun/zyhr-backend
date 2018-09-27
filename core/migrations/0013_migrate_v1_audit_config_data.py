@@ -47,7 +47,7 @@ class Migrator():
         audit = AuditActivityConfig.objects.get(subtype='money_caigou_or_other_lte_5k')
         audit.conditions = [
             {'prop': 'amount', 'condition': 'lte', 'value': 5000},
-            {'prop': 'info.type', 'condition': 'eq', 'value': 'caigou,other'}
+            {'prop': 'info.type', 'condition': 'eq', 'value': ['caigou', 'other']}
         ]
         audit.priority = 1
         audit.subtype = 'money'
@@ -55,7 +55,7 @@ class Migrator():
 
         audit = AuditActivityConfig.objects.get(subtype='money_caigou_or_other')
         audit.conditions = [
-            {'prop': 'info.type', 'condition': 'eq', 'value': 'fin,biz'}
+            {'prop': 'info.type', 'condition': 'eq', 'value': ['caigou', 'other']}
         ]
         audit.priority = 2
         audit.subtype = 'money'
@@ -64,7 +64,7 @@ class Migrator():
         audit = AuditActivityConfig.objects.get(subtype='money_lte_50k')
         audit.priority = 3
         audit.conditions = [
-            {'prop': 'amount', 'condition': 'lte', 'value': 500 * 1000}
+            {'prop': 'amount', 'condition': 'lte', 'value': 50 * 1000}
         ]
         audit.subtype = 'money'
         audit.save()
@@ -72,7 +72,7 @@ class Migrator():
         audit = AuditActivityConfig.objects.get(subtype='money_gt_50k')
         audit.priority = 4
         audit.conditions = [
-            {'prop': 'amount', 'condition': 'gt', 'value': 500 * 1000}
+            {'prop': 'amount', 'condition': 'gt', 'value': 50 * 1000}
         ]
         audit.subtype = 'money'
         audit.save()

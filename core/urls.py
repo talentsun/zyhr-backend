@@ -37,9 +37,10 @@ urlpatterns = [
     path(r'audit-categories/<str:subtype>/actions/create-flow', auditCategory.createAuditFlow),
     path(r'audit-categories/<str:subtype>/actions/stick-flow', auditCategory.stickAuditFlow),
     path(r'audit-categories/<str:subtype>/actions/delete-flow', auditCategory.deleteAuditFlow),
+    path(r'audit-categories/<str:subtype>/actions/get-flow', auditCategory.getAuditFlow),
+    path(r'audit-categories/<str:subtype>/actions/update-fallback-flow', auditCategory.updateFallbackAuditFlow),
 
     # audit api
-    path(r'audit-configs', audit.configs),
     path(r'audit-activities', audit.activities),
     path(r'audit-activities/<uuid:activityId>', audit.activity),
     path(r'audit-activities/<str:activityId>/actions/cancel', audit.cancel),

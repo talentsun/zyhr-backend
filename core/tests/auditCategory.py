@@ -156,7 +156,7 @@ class AuditCategoryTestCase(TestCase):
             json.dumps({
                 'conditions': [{'prop': 'amount', 'condition': 'lte', 'value': 2000}],
                 'steps': [
-                    {'dep': None, 'pos': self.pos_pk('owner')},
+                    {'dep': None, 'pos': None},
                     {'dep': self.dep_pk('fin'), 'pos': self.pos_pk('owner')},
                     {'dep': self.dep_pk('root'), 'pos': self.pos_pk('ceo')}
                 ]
@@ -169,7 +169,7 @@ class AuditCategoryTestCase(TestCase):
 
         config = AuditActivityConfig.objects.get(pk=result['id'])
         self.assert_config_steps(config, [
-            {'dep': None, 'pos': 'owner', 'position': 0},
+            {'dep': None, 'pos': None, 'position': 0},
             {'dep': 'fin', 'pos': 'owner', 'position': 1},
             {'dep': 'root', 'pos': 'ceo', 'position': 2},
         ])
@@ -207,6 +207,46 @@ class AuditCategoryTestCase(TestCase):
             config.conditions,
             [{'prop': 'amount', 'condition': 'lte', 'value': 4000}]
         )
+
+    def test_update_audit_flow(self):
+        client = Client()
+        r = client.post(
+            '/api/v1/audit-categories/cost/actions/update-fallback-flow',
+            json.dumps({
+                'steps': [
+                    {'dep': self.dep_pk('fin'), 'pos': self.pos_pk('owner')},
+                    {'dep': self.dep_pk('root'), 'pos': self.pos_pk('ceo')}
+                ]
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.generateToken
+        )
+        self.assertEqual(r.status_code, 200)
+
+        config = AuditActivityConfig.objects.get(subtype='cost', fallback=True)
+        self.assert_config_steps(config, [
+            {'dep': 'fin', 'pos': 'owner', 'position': 0},
+            {'dep': 'root', 'pos': 'ceo', 'position': 1},
+        ])
+        self.assertEqual(config.conditions, None)
+        self.assertEqual(config.priority, 0)
+        self.assertEqual(config.fallback, True)
+
+        r = client.post(
+            '/api/v1/audit-categories/cost/actions/update-fallback-flow',
+            json.dumps({
+                'steps': [{}]
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.generateToken
+        )
+        self.assert_config_steps(config, [
+            {'dep': None, 'pos': None, 'position': 0},
+        ])
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(config.conditions, None)
+        self.assertEqual(config.priority, 0)
+        self.assertEqual(config.fallback, True)
 
     def test_stick_audit_flow(self):
         config = self._create_audit_flow()
@@ -248,7 +288,7 @@ class AuditCategoryTestCase(TestCase):
         config3 = self._create_audit_flow()
 
         client = Client()
-        r = client.delete(
+        r = client.post(
             '/api/v1/audit-categories/cost/actions/delete-flow',
             json.dumps({'config': str(config.pk)}),
             content_type='application/json',

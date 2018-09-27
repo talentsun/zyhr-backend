@@ -106,4 +106,4 @@ def changePhone(request):
 @validateToken
 def profile(request):
     profile = request.profile
-    return JsonResponse(resolve_profile(profile))
+    return JsonResponse(resolve_profile(profile, orgs=True))

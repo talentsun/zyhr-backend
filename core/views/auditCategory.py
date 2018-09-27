@@ -21,26 +21,6 @@ from core.common import *
 logger = logging.getLogger('app.core.views.auditConfig')
 
 
-def resolve_step(step):
-    return {
-        'pk': str(step.pk),
-        'department': resolve_department(step.assigneeDepartment),
-        'position': resolve_position(step.assigneePosition)
-    }
-
-
-def resolve_config(config):
-    steps = AuditActivityConfigStep.objects.filter(config=config).order_by('position')
-
-    return {
-        'pk': str(config.pk),
-        'priority': config.priority,
-        'fallback': config.fallback,
-        'conditions': config.conditions,
-        'steps': [resolve_step(s) for s in steps]
-    }
-
-
 def updateCategoryUpdatedAt(subtype):
     configuration = Configuration.objects.get(key='audits')
     for audit in configuration.value['audits']:
@@ -63,10 +43,11 @@ def category(request, subtype):
 def reset_steps(config, steps):
     AuditActivityConfigStep.objects.filter(config=config).delete()
     for index, step in enumerate(steps):
-        pos = Position.objects.get(pk=step['pos'])
+        pos = None
         dep = step.get('dep', None)
         if dep != None:
             dep = Department.objects.get(pk=dep)
+            pos = Position.objects.get(pk=step['pos'])
 
         AuditActivityConfigStep.objects.create(
             config=config,
@@ -97,6 +78,33 @@ def updateAuditFlow(request, subtype):
 
 @require_http_methods(['POST'])
 @validateToken
+def getAuditFlow(request, subtype):
+    data = json.loads(request.body.decode('utf-8'))
+    configId = data['config']
+    config = AuditActivityConfig.objects.get(pk=configId)
+    return JsonResponse(resolve_config(config))
+
+
+@require_http_methods(['POST'])
+@validateToken
+def updateFallbackAuditFlow(request, subtype):
+    configData = json.loads(request.body.decode('utf-8'))
+    with transaction.atomic():
+        config = AuditActivityConfig.objects \
+            .filter(subtype=subtype, archived=False, fallback=True) \
+            .first()
+
+        if config is None:
+            config = AuditActivityConfig(subtype=subtype, fallback=True, priority=0)
+
+        config.save()
+        reset_steps(config, configData['steps'])
+
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
 def createAuditFlow(request, subtype):
     data = json.loads(request.body.decode('utf-8'))
     steps = data['steps']
@@ -117,7 +125,7 @@ def createAuditFlow(request, subtype):
     return JsonResponse({'ok': True, 'id': str(config.pk)})
 
 
-@require_http_methods(['DELETE'])
+@require_http_methods(['POST'])
 @validateToken
 def deleteAuditFlow(request, subtype):
     data = json.loads(request.body.decode('utf-8'))

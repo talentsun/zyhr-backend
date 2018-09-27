@@ -11,13 +11,13 @@ from core.views.audit import _compareValue
 
 class AuditV3TestCase(TestCase):
     def prepareData(self):
-        pos_member = Position.objects.create(name='member', code='member')
-        pos_owner = Position.objects.create(name='owner', code='owner')
+        pos_biz_member = Position.objects.create(name='member', code='member')
+        pos_fin_member = Position.objects.create(name='member', code='member')
+        pos_biz_owner = Position.objects.create(name='owner', code='owner')
+        pos_fin_owner = Position.objects.create(name='owner', code='owner')
         pos_accountant = Position.objects.create(name='accountant', code='accountant')
         pos_cashier = Position.objects.create(name='cashier', code='cashier')
         pos_ceo = Position.objects.create(name='ceo', code='ceo')
-        self.pos_member = pos_member
-        self.pos_owner = pos_owner
         self.pos_accountant = pos_accountant
         self.pos_ceo = pos_ceo
 
@@ -28,17 +28,26 @@ class AuditV3TestCase(TestCase):
         self.biz = biz
         self.fin = fin
 
+        DepPos.objects.create(dep=root, pos=pos_ceo)
+        DepPos.objects.create(dep=biz, pos=pos_biz_member)
+        DepPos.objects.create(dep=biz, pos=pos_biz_owner)
+
+        DepPos.objects.create(dep=fin, pos=pos_accountant)
+        DepPos.objects.create(dep=fin, pos=pos_fin_owner)
+        DepPos.objects.create(dep=fin, pos=pos_cashier)
+        DepPos.objects.create(dep=fin, pos=pos_fin_member)
+
         # biz.owner: lee
         lee = helpers.prepareProfile('lee', 'lee', '18888888880')
         lee.department = biz
-        lee.position = pos_owner
+        lee.position = pos_biz_owner
         lee.save()
         self.lee = lee
 
         # biz.member jack
         jack = helpers.prepareProfile('jack', 'jack', '18888888881')
         jack.department = biz
-        jack.position = pos_member
+        jack.position = pos_biz_member
         jack.save()
         self.jack = jack
 
@@ -59,7 +68,7 @@ class AuditV3TestCase(TestCase):
         # fin.owner: neo
         neo = helpers.prepareProfile('neo', 'neo', '13333333338')
         neo.department = fin
-        neo.position = pos_owner
+        neo.position = pos_fin_owner
         neo.save()
         self.neo = neo
 

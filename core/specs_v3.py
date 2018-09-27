@@ -70,11 +70,12 @@ def createAuditConfig(spec=None, fallback=False):
     for index, step in enumerate(stepSpecs):
         dep, pos = step.split('.')
         dep, pos = dep.strip(), pos.strip()
-        pos = Position.objects.get(code=pos)
         if dep == '_':
             dep = None
+            pos = None
         else:
             dep = Department.objects.get(code=dep)
+            pos = dep.resolvePosition(pos)
 
         AuditActivityConfigStep.objects \
             .create(config=config,

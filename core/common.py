@@ -3,14 +3,6 @@ from django.utils import timezone
 from core.models import *
 
 
-def resolve_config(config):
-    return {
-        'id': str(config.pk),
-        'category': config.category,
-        'subtype': config.subtype
-    }
-
-
 def resolve_department(dep):
     if dep is None:
         return None
@@ -40,7 +32,7 @@ def resolve_position(pos):
     }
 
 
-def resolve_profile(profile):
+def resolve_profile(profile, orgs=False):
     accounts = BankAccount.objects.all()
     companies = Company.objects.all()
     memo = Memo.objects.all()
@@ -60,7 +52,7 @@ def resolve_profile(profile):
 
     pendingTasks = pendingTasks.count()
 
-    return {
+    result = {
         'id': str(profile.pk),
         'name': profile.name,
         'email': profile.email,
@@ -105,6 +97,12 @@ def resolve_profile(profile):
         'created_at': profile.created_at.isoformat(),
         'updated_at': profile.updated_at.isoformat(),
     }
+
+    if orgs:
+        deps = Department.objects.all()
+        result['departments'] = [resolve_department(d) for d in deps]
+
+    return result
 
 
 def resolve_activity(activity):
@@ -191,4 +189,24 @@ def resolve_account(a):
 
         'created_at': a.created_at.isoformat(),
         'updated_at': a.updated_at.isoformat()
+    }
+
+
+def resolve_config_step(step):
+    return {
+        'pk': str(step.pk),
+        'department': resolve_department(step.assigneeDepartment),
+        'position': resolve_position(step.assigneePosition)
+    }
+
+
+def resolve_config(config):
+    steps = AuditActivityConfigStep.objects.filter(config=config).order_by('position')
+
+    return {
+        'id': str(config.pk),
+        'priority': config.priority,
+        'fallback': config.fallback,
+        'conditions': config.conditions,
+        'steps': [resolve_config_step(s) for s in steps]
     }

@@ -17,11 +17,32 @@ class Department(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def resolvePosition(self, code):
+        for item in DepPos.objects.filter(dep=self):
+            if item.pos.code == code:
+                return item.pos
+
+        return None
+
+    @property
+    def identity(self):
+        if self.code:
+            return self.code
+        else:
+            return str(self.pk)
+
 
 class Position(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     code = models.CharField(max_length=50)
     name = models.CharField(max_length=255)
+
+    @property
+    def identity(self):
+        if self.code:
+            return self.code
+        else:
+            return str(self.pk)
 
 
 class DepPos(models.Model):
@@ -171,6 +192,7 @@ class AuditActivityConfigStep(models.Model):
                                            null=True,
                                            on_delete=models.CASCADE)
     assigneePosition = models.ForeignKey(Position,
+                                         null=True,
                                          on_delete=models.CASCADE)
     position = models.IntegerField()
 
@@ -192,6 +214,7 @@ class AuditActivity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     sn = models.CharField(max_length=255)
     config = models.ForeignKey(AuditActivityConfig, on_delete=models.CASCADE)
+    config_data = JSONField(null=True)  # 对审批配置数据进行备份
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
     state = models.CharField(
         max_length=20, choices=StateChoices, default=StateDraft)

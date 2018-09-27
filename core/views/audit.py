@@ -21,15 +21,6 @@ from core.common import *
 logger = logging.getLogger('app.core.views.audit')
 
 
-@require_http_methods(['GET'])
-@validateToken
-def configs(request):
-    configs = AuditActivityConfig.objects.all()
-    return JsonResponse({
-        'configs': [resolve_config(config) for config in configs]
-    })
-
-
 def submitActivityAudit(activity):
     activity.state = AuditActivity.StateProcessing
     activity.save()
@@ -133,17 +124,21 @@ def setupSteps(activity, taskId=None):
             taskId, step.position))
 
         assigneeDepartment = step.assigneeDepartment
+        assigneePosition = step.assigneePosition
         if assigneeDepartment is None:
-            # 如果部门没有配置，那么就设置为发起者所在部门
+            # 如果部门没有配置，那么就设置为发起者所在部门，职位自动是所在部门负责人
             assigneeDepartment = profile.department
+            assigneePosition = assigneeDepartment.resolvePosition('owner')
 
         logger.info('{} resolve assignee for step#{}, dep: {}, pos: {}'.format(
-            taskId, step.position, assigneeDepartment.code, step.assigneePosition.code))
+            taskId, step.position,
+            getattr(assigneeDepartment, 'identity', 'null'),
+            getattr(assigneePosition, 'identity', 'null')))
 
         profiles = Profile.objects \
             .filter(archived=False,
                     department=assigneeDepartment,
-                    position=step.assigneePosition)
+                    position=assigneePosition)
 
         if profiles.count() == 0:
             logger.info('{} no candidates, skip'.format(taskId))
@@ -175,22 +170,24 @@ def setupSteps(activity, taskId=None):
     for t in filteredTuples:
         step, assignee = t
 
+        assigneePosition = step.assigneePosition
         assigneeDepartment = step.assigneeDepartment
         if assigneeDepartment is None:
             # 如果部门没有配置，那么就设置为发起者所在部门
             assigneeDepartment = profile.department
+            assigneePosition = assigneeDepartment.resolvePosition('owner')
 
         AuditStep.objects \
             .create(activity=activity,
                     active=False,
                     assignee=assignee,
                     assigneeDepartment=assigneeDepartment,
-                    assigneePosition=step.assigneePosition,
+                    assigneePosition=assigneePosition,
                     position=pos)
         pos = pos + 1
 
 
-def _resolveProp(auditData, path):
+def _resolveProp(auditData, path, creator):
     props = path.split('.')
 
     value = auditData
@@ -222,7 +219,7 @@ def _compareValue(cond, boundary, value):
         return False
 
 
-def resolveConfigByConditions(subtype, auditData):
+def resolveConfigByConditions(subtype, auditData, creator):
     configs = AuditActivityConfig.objects \
         .filter(subtype=subtype, fallback=False) \
         .order_by('priority')
@@ -235,7 +232,7 @@ def resolveConfigByConditions(subtype, auditData):
         match = True
         for condition in config.conditions:
             prop, cond, value = condition['prop'], condition['condition'], condition['value']
-            v = _resolveProp(auditData, prop)
+            v = _resolveProp(auditData, prop, creator)
             if not _compareValue(cond, value, v):
                 match = False
                 break
@@ -255,7 +252,7 @@ def createActivity(profile, data):
     # TODO: validate user permission
     subtype = data.get('code', None)  # audit acitivity config code
     submit = data.get('submit', False)  # 是否提交审核
-    config = resolveConfigByConditions(subtype, data['extra'])
+    config = resolveConfigByConditions(subtype, data['extra'], profile)
 
     if config is None:
         return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
@@ -266,6 +263,7 @@ def createActivity(profile, data):
 
     activity = AuditActivity.objects \
         .create(config=config,
+                config_data=resolve_config(config),
                 sn=generateActivitySN(),
                 state=AuditActivity.StateDraft,
                 creator=profile,
@@ -352,11 +350,12 @@ def submitAudit(request, activityId):
         return JsonResponse({'errorId': 'invalid-state'}, status=400)
 
     # update config if submit
-    config = resolveConfigByConditions(activity.config.subtype, activity.extra)
+    config = resolveConfigByConditions(activity.config.subtype, activity.extra, request.profile)
     if config is None:
         return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
 
     activity.config = config
+    activity.config_data = resolve_config(config)
     activity.save()
 
     setupSteps(activity, taskId=uuid.uuid4())
@@ -440,7 +439,7 @@ def approveStep(request, stepId):
                 activity.taskState = 'pending'
             activity.save()
 
-            if activity.config.subtype == 'biz_contract':
+            if re.match('biz', activity.config.subtype):
                 info = activity.extra['info']
                 Taizhang.objects.create(
                     auditId=activity.pk,
