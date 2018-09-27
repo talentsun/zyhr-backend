@@ -66,8 +66,11 @@ class AuditTestCase(TestCase):
                                         actions,
                                         config=None,
                                         submitDirectly=True,
-                                        creator=None):
-        self.perpareData()
+                                        creator=None,
+                                        prepare=True,
+                                        auditData={}):
+        if prepare:
+            self.perpareData()
 
         open_account_config = specs.createAuditConfig(
             spec='fin.open_account:_.owner->fin.owner->root.ceo...')
@@ -92,7 +95,7 @@ class AuditTestCase(TestCase):
             json.dumps({
                 'config': str(config.pk),
                 'submit': submitDirectly,
-                'extra': {}
+                'extra': auditData
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=token
@@ -138,23 +141,11 @@ class AuditTestCase(TestCase):
                     {'assignee': self.lucy},
                     {'assignee': self.ceo}
                 ]
-        else:
-            if creator.department.code == 'fin':
-                expect_steps = [
-                    {'assignee': self.neo},
-                    {'assignee': self.ceo}
-                ]
-            else:
-                expect_steps = [
-                    {'assignee': self.lee},
-                    {'assignee': self.neo},
-                    {'assignee': self.ceo}
-                ]
 
-        for step in steps:
-            es = expect_steps[step.position]
-            self.assertEqual(es['assignee'], step.assignee)
-            self.assertEqual(step.state, AuditStep.StatePending)
+            for step in steps:
+                es = expect_steps[step.position]
+                self.assertEqual(es['assignee'], step.assignee)
+                self.assertEqual(step.state, AuditStep.StatePending)
 
         for action in actions:
             if action == 'cancel':
@@ -548,9 +539,40 @@ class AuditTestCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=token)
         self.assertEquals(response.status_code, 200)
-        msgs = Message.objects\
+        msgs = Message.objects \
             .filter(profile=step.assignee,
                     category='hurryup',
-                    activity=activity)\
+                    activity=activity) \
             .count()
         self.assertEqual(msgs, 1)
+
+    def test_import_biz_data(self):
+        self.perpareData()
+
+        biz = specs.createAuditConfig(
+            spec='fin.biz_contract:_.owner->root.ceo')
+
+        self.audit_activity_normal_lifecycle(['approve', 'approve'],
+                                             config='biz_contract',
+                                             prepare=False,
+                                             auditData={
+                                                 'base': {
+                                                     'name': 'xxx',
+                                                     'company': 'xxx'
+                                                 },
+                                                 'info': {
+                                                     'upstream': 'upstream',
+                                                     'downstream': '',
+                                                     'asset': '货物标的',
+                                                     'proportion': '90',
+                                                     'tonnage': '1000',
+                                                     'buyPrice': '900',
+                                                     'sellPrice': '1000',
+                                                     'profitsPerTon': '100.00',
+                                                     'settlementType': 'cash',
+                                                     'settlementDuration': '30',
+                                                     'desc': ''
+                                                 }
+                                             })
+        count = Taizhang.objects.all().count()
+        self.assertEqual(count, 1)
