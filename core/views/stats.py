@@ -21,10 +21,13 @@ logger = logging.getLogger('app.core.views.stats')
 
 
 def resolve_transaction_record(record):
+    account = FinAccount.objects.filter(number=record.number).first()
+
     return {
         'id': record.pk,
         'date': record.date,
         'number': record.number,
+        'accountName': getattr(account, 'name', None),
         'income': record.income,
         'outcome': record.outcome,
         'balance': record.balance,
