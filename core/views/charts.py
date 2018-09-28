@@ -121,8 +121,11 @@ def taizhang_pie(request):
         total = total + t['sum_xiaoshoue']
 
     for index, asset in enumerate(assets):
-        value = assetData[index]['value']
-        assetData[index]['percent'] = value / total * 100
+        if total == Decimal(0.0):
+            assetData[index]['percent'] = 0.0
+        else:
+            value = assetData[index]['value']
+            assetData[index]['percent'] = value / total * 100
 
     return JsonResponse(assetData, safe=False)
 

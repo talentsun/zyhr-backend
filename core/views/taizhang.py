@@ -92,12 +92,14 @@ def taizhangDetail(request, id):
         modifiedProps = []
         for prop in props:
             value = getattr(r, prop, None)
+            v = data.get(prop, None)
 
-            if type(value) is Decimal:
-                value = str(value)
-
-            if value != data.get(prop, None):
-                modifiedProps.append({'prop': prop, 'value': value})
+            if type(value) is not Decimal:
+                if value != v:
+                    modifiedProps.append({'prop': prop, 'value': value})
+            else:
+                if v is not None and Decimal(v) != value:
+                    modifiedProps.append({'prop': prop, 'value': value})
 
             partial[prop] = data.get(prop, None)
 
