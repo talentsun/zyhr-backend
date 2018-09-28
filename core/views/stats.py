@@ -46,7 +46,8 @@ def transactionRecords(request):
         if number is not None and number != '':
             records = records.filter(number__contains=number)
         if date is not None and date != '':
-            records = records.filter(date=date)
+            start_date, end_date = date.split(',')
+            records = records.filter(date__gte=start_date, date__lte=end_date)
         if other is not None and other != '':
             records = records.filter(other__contains=other)
 
