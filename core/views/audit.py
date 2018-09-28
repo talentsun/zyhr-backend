@@ -52,7 +52,9 @@ def submitActivityAudit(activity):
 def recordBankAccountIfNeed(profile, code, data):
     accounts = []
     if re.match('cost|loan', code):
-        accounts = [data['account']]
+        account = data.get('account', None)
+        if account is not None:
+            accounts.append(account)
     if re.match('money', code):
         accounts = [data['inAccount'], data['outAccount']]
 
@@ -219,6 +221,13 @@ def _compareValue(cond, boundary, value):
         return False
 
 
+def _compareCreator(creator, dep, pos):
+    if pos is None:
+        return str(creator.department.pk) == dep
+    else:
+        return str(creator.department.pk) == dep and str(creator.position.pk) == pos
+
+
 def resolveConfigByConditions(subtype, auditData, creator):
     configs = AuditActivityConfig.objects \
         .filter(subtype=subtype, fallback=False) \
@@ -232,10 +241,17 @@ def resolveConfigByConditions(subtype, auditData, creator):
         match = True
         for condition in config.conditions:
             prop, cond, value = condition['prop'], condition['condition'], condition['value']
-            v = _resolveProp(auditData, prop, creator)
-            if not _compareValue(cond, value, v):
-                match = False
-                break
+            if prop == 'creator':
+                dep = value.get('department', None)
+                pos = value.get('position', None)
+                if not _compareCreator(creator, dep, pos):
+                    match = False
+                    break
+            else:
+                v = _resolveProp(auditData, prop, creator)
+                if not _compareValue(cond, value, v):
+                    match = False
+                    break
 
         if match:
             result = config

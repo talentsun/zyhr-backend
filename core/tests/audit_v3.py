@@ -11,9 +11,9 @@ from core.views.audit import _compareValue
 
 class AuditV3TestCase(TestCase):
     def prepareData(self):
-        pos_biz_member = Position.objects.create(name='member', code='member')
+        self.pos_biz_member = Position.objects.create(name='member', code='member')
         pos_fin_member = Position.objects.create(name='member', code='member')
-        pos_biz_owner = Position.objects.create(name='owner', code='owner')
+        self.pos_biz_owner = Position.objects.create(name='owner', code='owner')
         pos_fin_owner = Position.objects.create(name='owner', code='owner')
         pos_accountant = Position.objects.create(name='accountant', code='accountant')
         pos_cashier = Position.objects.create(name='cashier', code='cashier')
@@ -29,8 +29,8 @@ class AuditV3TestCase(TestCase):
         self.fin = fin
 
         DepPos.objects.create(dep=root, pos=pos_ceo)
-        DepPos.objects.create(dep=biz, pos=pos_biz_member)
-        DepPos.objects.create(dep=biz, pos=pos_biz_owner)
+        DepPos.objects.create(dep=biz, pos=self.pos_biz_member)
+        DepPos.objects.create(dep=biz, pos=self.pos_biz_owner)
 
         DepPos.objects.create(dep=fin, pos=pos_accountant)
         DepPos.objects.create(dep=fin, pos=pos_fin_owner)
@@ -40,14 +40,14 @@ class AuditV3TestCase(TestCase):
         # biz.owner: lee
         lee = helpers.prepareProfile('lee', 'lee', '18888888880')
         lee.department = biz
-        lee.position = pos_biz_owner
+        lee.position = self.pos_biz_owner
         lee.save()
         self.lee = lee
 
         # biz.member jack
         jack = helpers.prepareProfile('jack', 'jack', '18888888881')
         jack.department = biz
-        jack.position = pos_biz_member
+        jack.position = self.pos_biz_member
         jack.save()
         self.jack = jack
 
@@ -83,6 +83,36 @@ class AuditV3TestCase(TestCase):
         self.biz_fallback = specs_v3.createAuditConfig(
             spec='fin.biz:_.owner->fin.accountant',
             fallback=True)
+
+        self.cost_biz_owner = specs_v3.createAuditConfig(
+            spec='fin.cost:fin.accountant',
+            fallback=False)
+        self.cost_biz_owner.conditions = [
+            {
+                'prop': 'creator',
+                'condition': 'eq',
+                'value': {
+                    'department': str(self.biz.pk),
+                    'position': str(self.pos_biz_owner.pk)
+                }
+            }
+        ]
+        self.cost_biz_owner.save()
+
+        self.cost_fin = specs_v3.createAuditConfig(
+            spec='fin.cost:root.ceo',
+            fallback=False)
+        self.cost_fin.conditions = [
+            {
+                'prop': 'creator',
+                'condition': 'eq',
+                'value': {
+                    'department': str(self.fin.pk)
+                }
+            }
+        ]
+        self.cost_fin.save()
+
         self.cost_fallback = specs_v3.createAuditConfig(
             spec='fin.cost:_.owner->fin.accountant',
             fallback=True)
@@ -209,6 +239,34 @@ class AuditV3TestCase(TestCase):
             {'assignee': 'lucy', 'active': False, 'state': AuditStep.StatePending, 'position': 1},
             {'assignee': 'neo', 'active': False, 'state': AuditStep.StatePending, 'position': 2},
             {'assignee': 'ceo', 'active': False, 'state': AuditStep.StatePending, 'position': 3},
+        ])
+
+    def test_create_audit_activity_hit_creator_condition(self):
+        self.audit_activity_normal_lifecycle(
+            subtype='cost',
+            creator='lee',
+            auditData={
+                'amount': 8000,
+                'category': 'hotel'
+            }
+        )
+        activity = AuditActivity.objects.first()
+        self.assert_audit_steps(activity, [
+            {'assignee': 'lucy', 'active': True, 'state': AuditStep.StatePending, 'position': 0}
+        ])
+
+    def test_create_audit_activity_hit_creator_condition_2(self):
+        self.audit_activity_normal_lifecycle(
+            subtype='cost',
+            creator='lucy',
+            auditData={
+                'amount': 8000,
+                'category': 'hotel'
+            }
+        )
+        activity = AuditActivity.objects.first()
+        self.assert_audit_steps(activity, [
+            {'assignee': 'ceo', 'active': True, 'state': AuditStep.StatePending, 'position': 0}
         ])
 
     def test_create_audit_activity_hit_conditions_2(self):
@@ -608,7 +666,10 @@ class AuditV3TestCase(TestCase):
                 'info': {
                     'upstream': 'up',
                     'downstream': 'down',
-                    'asset': 'iron'
+                    'asset': 'iron',
+                    'tonnage': '1000',
+                    'buyPrice': '1000',
+                    'sellPrice': '1000'
                 }
             })
         upstream = Memo.objects.filter(category='upstream').first()
