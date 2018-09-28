@@ -44,11 +44,11 @@ def transactionRecords(request):
 
         records = StatsTransactionRecord.objects.filter(archived=False)
         if number is not None and number != '':
-            records = records.filter(number=number)
+            records = records.filter(number__contains=number)
         if date is not None and date != '':
             records = records.filter(date=date)
         if other is not None and other != '':
-            records = records.filter(other=other)
+            records = records.filter(other__contains=other)
 
         records = records.order_by('-id')
         total = records.count()
