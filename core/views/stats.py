@@ -163,8 +163,19 @@ def transactionRecord(request, recordId):
             modifiedProps = []
             for prop in props:
                 value = getattr(r, prop, None)
-                if value != data.get(prop, None):
-                    modifiedProps.append({'prop': prop, 'value': value})
+                v = data.get(prop, None)
+
+                if v is None and value is None:
+                    continue
+
+                if prop in ['outcome', 'income', 'balance']:
+                    if v is None or value is None:
+                        modifiedProps.append({'prop': prop, 'value': value})
+                    elif Decimal(value) != Decimal(v):
+                        modifiedProps.append({'prop': prop, 'value': value})
+                else:
+                    if v != value:
+                        modifiedProps.append({'prop': prop, 'value': value})
 
                 partial[prop] = data.get(prop, None)
 
