@@ -458,27 +458,22 @@ def rejectStep(request, stepId):
 
 
 def searchActivities(activities, search):
-    # TODO: add search engine
-    return activities, activities.count()
-
-    '''
     parts = search.split(' ')
     keywords = []
     for part in parts:
-       if part != '':
-           keywords.append(part)
+        if part != '':
+            keywords.append(part)
 
     result = []
     for activity in activities:
-       n = activity.appDisplayName
-       t = activity.appDisplayType
-       if any([k in t for k in keywords]):
-           result.append(activity)
-       elif any([k in n for k in keywords]):
-           result.append(activity)
+        n = activity.appDisplayName
+        t = activity.appDisplayType
+        if any([k in t for k in keywords]):
+            result.append(activity)
+        elif any([k in n for k in keywords]):
+            result.append(activity)
 
     return result, len(result)
-    '''
 
 
 @require_http_methods(['GET'])
@@ -515,7 +510,7 @@ def mineActivities(request):
         activities = activities[start:start + limit]
         return JsonResponse({
             'total': total,
-            'activities': [resolve_activity(activity) for activity in activities]
+            'activities': [resolve_activity(activity, include_steps=False) for activity in activities]
         })
 
     activities = activities.order_by('-updated_at')
@@ -523,7 +518,7 @@ def mineActivities(request):
     activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(activity) for activity in activities]
+        'activities': [resolve_activity(activity, include_steps=False) for activity in activities]
     })
 
 
@@ -545,8 +540,10 @@ def relatedActivities(request):
     limit = int(request.GET.get('limit', '20'))
 
     # TODO: 处理职位变更问题
-    steps = AuditStep.objects.filter(assignee=request.profile,
-                                     activity__archived=False)
+    steps = AuditStep.objects \
+        .select_related('creator') \
+        .filter(assignee=request.profile,
+                activity__archived=False)
     steps = steps.filter(Q(active=True) |
                          Q(state__in=[
                              AuditStep.StateApproved,
@@ -575,14 +572,14 @@ def relatedActivities(request):
         activities = activities[start:start + limit]
         return JsonResponse({
             'total': total,
-            'activities': [resolve_activity(activity) for activity in activities]
+            'activities': [resolve_activity(activity, include_steps=False) for activity in activities]
         })
 
     total = activities.count()
     activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(activity) for activity in activities]
+        'activities': [resolve_activity(activity, include_steps=False) for activity in activities]
     })
 
 
@@ -615,14 +612,16 @@ def assignedActivities(request):
         steps = steps.filter(created_at__lt=date)
 
     activityIdx = [s.activity.pk for s in steps]
-    activities = AuditActivity.objects.filter(pk__in=activityIdx)
+    activities = AuditActivity.objects \
+        .select_related('creator') \
+        .filter(pk__in=activityIdx)
     activities = activities.order_by('-updated_at')
 
     total = activities.count()
     activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(activity) for activity in activities]
+        'activities': [resolve_activity(activity, include_steps=False) for activity in activities]
     })
 
 
@@ -658,14 +657,16 @@ def processedActivities(request):
         steps = steps.filter(created_at__lt=date)
 
     activityIdx = [s.activity.pk for s in steps]
-    activities = AuditActivity.objects.filter(pk__in=activityIdx)
+    activities = AuditActivity.objects \
+        .select_related('creator') \
+        .filter(pk__in=activityIdx)
     activities = activities.order_by('-updated_at')
 
     total = activities.count()
     activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(activity) for activity in activities]
+        'activities': [resolve_activity(activity, include_steps=False) for activity in activities]
     })
 
 
@@ -680,9 +681,10 @@ def auditTasks(request):
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    activities = AuditActivity.objects.filter(state=AuditActivity.StateApproved,
-                                              config__hasTask=True,
-                                              archived=False)
+    activities = AuditActivity.objects.select_related('creator') \
+        .filter(state=AuditActivity.StateApproved,
+                config__hasTask=True,
+                archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
@@ -707,7 +709,7 @@ def auditTasks(request):
     activities = activities[start:start + limit]
     return JsonResponse({
         'total': total,
-        'activities': [resolve_activity(activity) for activity in activities]
+        'activities': [resolve_activity(activity, include_steps=False) for activity in activities]
     })
 
 

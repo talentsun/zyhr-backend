@@ -107,10 +107,8 @@ def resolve_profile(profile):
     }
 
 
-def resolve_activity(activity):
-    steps = AuditStep.objects.filter(activity=activity).order_by('position')
-
-    return {
+def resolve_activity(activity, include_steps=True):
+    result = {
         'id': str(activity.pk),
         'sn': activity.sn,
         'creator': resolve_profile(activity.creator),
@@ -120,9 +118,14 @@ def resolve_activity(activity):
         'extra': activity.extra,
         'canHurryup': activity.canHurryup,
         'created_at': activity.created_at.isoformat(),
-        'updated_at': activity.updated_at.isoformat(),
-        'steps': [resolve_step(step) for step in steps]
+        'updated_at': activity.updated_at.isoformat()
     }
+
+    if include_steps:
+        steps = AuditStep.objects.filter(activity=activity).order_by('position')
+        result['steps'] = [resolve_step(step) for step in steps]
+
+    return result
 
 
 def resolve_step(step):
