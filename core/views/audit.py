@@ -458,22 +458,27 @@ def rejectStep(request, stepId):
 
 
 def searchActivities(activities, search):
+    # TODO: add search engine
+    return activities, activities.count()
+
+    '''
     parts = search.split(' ')
     keywords = []
     for part in parts:
-        if part != '':
-            keywords.append(part)
+       if part != '':
+           keywords.append(part)
 
     result = []
     for activity in activities:
-        n = activity.appDisplayName
-        t = activity.appDisplayType
-        if any([k in t for k in keywords]):
-            result.append(activity)
-        elif any([k in n for k in keywords]):
-            result.append(activity)
+       n = activity.appDisplayName
+       t = activity.appDisplayType
+       if any([k in t for k in keywords]):
+           result.append(activity)
+       elif any([k in n for k in keywords]):
+           result.append(activity)
 
     return result, len(result)
+    '''
 
 
 @require_http_methods(['GET'])
