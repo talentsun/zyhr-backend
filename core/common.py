@@ -32,26 +32,11 @@ def resolve_position(pos):
     }
 
 
-def resolve_profile(profile, orgs=False):
-    accounts = BankAccount.objects.all()
-    companies = Company.objects.all()
-    memo = Memo.objects.all()
-    messages = Message.objects \
-        .filter(profile=profile, read=False) \
-        .order_by('-updated_at')
-
-    pendingTasks = AuditActivity.objects \
-        .filter(state=AuditActivity.StateApproved,
-                archived=False,
-                taskState='pending')
-
-    if profile.department is not None and profile.department.code == 'hr':
-        pendingTasks = pendingTasks.filter(config__category='law')
-    elif profile.department is not None and profile.department.code == 'fin':
-        pendingTasks = pendingTasks.filter(config__category='fin')
-
-    pendingTasks = pendingTasks.count()
-
+def resolve_profile(profile,
+                    orgs=False,
+                    include_messages=True,
+                    include_pending_tasks=True,
+                    include_memo=True):
     result = {
         'id': str(profile.pk),
         'name': profile.name,
@@ -62,24 +47,16 @@ def resolve_profile(profile, orgs=False):
         'role': resolve_role(profile.role),
         'department': resolve_department(profile.department),
         'position': resolve_position(profile.position),
-        'pendingTasks': pendingTasks,
 
-        'accounts': [{
-            'name': account.name,
-            'bank': account.bank,
-            'number': account.number
-        } for account in accounts],
+        'created_at': profile.created_at.isoformat(),
+        'updated_at': profile.updated_at.isoformat(),
+    }
 
-        'companies': [{
-            'name': c.name,
-        } for c in companies],
-
-        'memo': [{
-            'category': m.category,
-            'value': m.value
-        } for m in memo],
-
-        'messages': [{
+    if include_messages:
+        messages = Message.objects \
+            .filter(profile=profile, read=False) \
+            .order_by('-updated_at')
+        result['messages'] = [{
             'id': str(m.pk),
             'read': m.read,
             'activity': {
@@ -92,35 +69,70 @@ def resolve_profile(profile, orgs=False):
             },
             'category': m.category,
             'extra': m.extra
-        } for m in messages],
+        } for m in messages]
 
-        'created_at': profile.created_at.isoformat(),
-        'updated_at': profile.updated_at.isoformat(),
-    }
+    if include_pending_tasks:
+        pendingTasks = AuditActivity.objects \
+            .filter(state=AuditActivity.StateApproved,
+                    archived=False,
+                    taskState='pending')
+        if profile.department is not None and profile.department.code == 'hr':
+            pendingTasks = pendingTasks.filter(config__category='law')
+        elif profile.department is not None and profile.department.code == 'fin':
+            pendingTasks = pendingTasks.filter(config__category='fin')
+
+        pendingTasks = pendingTasks.count()
+        result['pendingTasks'] = pendingTasks
 
     if orgs:
         deps = Department.objects.all()
         result['departments'] = [resolve_department(d) for d in deps]
 
-    return result
+    if include_memo:
+        accounts = BankAccount.objects.all()
+        companies = Company.objects.all()
+        memo = Memo.objects.all()
+
+        result['accounts'] = [{
+            'name': account.name,
+            'bank': account.bank,
+            'number': account.number
+        } for account in accounts]
+
+        result['companies'] = [{
+            'name': c.name,
+        } for c in companies]
+
+        result['memo'] = [{
+            'category': m.category,
+            'value': m.value
+        } for m in memo]
+
+        return result
 
 
-def resolve_activity(activity):
-    steps = AuditStep.objects.filter(activity=activity).order_by('position')
-
-    return {
+def resolve_activity(activity, include_steps=True):
+    result = {
         'id': str(activity.pk),
         'sn': activity.sn,
-        'creator': resolve_profile(activity.creator),
+        'creator': resolve_profile(activity.creator,
+                                   include_memo=False,
+                                   include_messages=False,
+                                   include_pending_tasks=False),
         'type': activity.config.subtype,
         'state': activity.state,
         'taskState': activity.taskState,
         'extra': activity.extra,
         'canHurryup': activity.canHurryup,
         'created_at': activity.created_at.isoformat(),
-        'updated_at': activity.updated_at.isoformat(),
-        'steps': [resolve_step(step) for step in steps]
+        'updated_at': activity.updated_at.isoformat()
     }
+
+    if include_steps:
+        steps = AuditStep.objects.filter(activity=activity).order_by('position')
+        result['steps'] = [resolve_step(step) for step in steps]
+
+    return result
 
 
 def resolve_step(step):
