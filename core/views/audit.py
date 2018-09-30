@@ -488,8 +488,10 @@ def mineActivities(request):
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    activities = AuditActivity.objects.filter(creator=request.profile,
-                                              archived=False)
+    activities = AuditActivity.objects \
+        .select_related('creator', 'config') \
+        .filter(creator=request.profile,
+                archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
@@ -541,7 +543,7 @@ def relatedActivities(request):
 
     # TODO: 处理职位变更问题
     steps = AuditStep.objects \
-        .select_related('creator') \
+        .select_related('creator', 'config') \
         .filter(assignee=request.profile,
                 activity__archived=False)
     steps = steps.filter(Q(active=True) |
@@ -613,7 +615,7 @@ def assignedActivities(request):
 
     activityIdx = [s.activity.pk for s in steps]
     activities = AuditActivity.objects \
-        .select_related('creator') \
+        .select_related('creator', 'config') \
         .filter(pk__in=activityIdx)
     activities = activities.order_by('-updated_at')
 
@@ -658,7 +660,7 @@ def processedActivities(request):
 
     activityIdx = [s.activity.pk for s in steps]
     activities = AuditActivity.objects \
-        .select_related('creator') \
+        .select_related('creator', 'config') \
         .filter(pk__in=activityIdx)
     activities = activities.order_by('-updated_at')
 
@@ -681,7 +683,8 @@ def auditTasks(request):
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    activities = AuditActivity.objects.select_related('creator') \
+    activities = AuditActivity.objects \
+        .select_related('creator', 'config') \
         .filter(state=AuditActivity.StateApproved,
                 config__hasTask=True,
                 archived=False)
