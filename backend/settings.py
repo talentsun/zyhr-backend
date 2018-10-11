@@ -34,7 +34,7 @@ SENDFILE_BACKEND = 'sendfile.backends.simple'
 
 JPUSH_APP_KEY = os.getenv('JPUSH_APP_KEY', '')
 JPUSH_APP_SECRET = os.getenv('JPUSH_APP_SECRET', '')
-JPUSH_APNS_PRODUCTION = os.getenv('PUSH_APNS_PRODUCTIONS', 'true') == 'true'
+JPUSH_APNS_PRODUCTION = os.getenv('JPUSH_APNS_PRODUCTIONS', 'true') == 'true'
 
 # Application definition
 
