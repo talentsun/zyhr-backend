@@ -311,6 +311,8 @@ class Command(BaseCommand):
             if 'error' not in result:
                 message.apn_sent = True
                 message.save()
+                logger.exception("send message activity: {}, profile: {} done".format(str(message.activity.pk),
+                                                                                      str(message.profile.pk)))
                 return
             else:
                 raise Exception(str(result['error']))
@@ -334,7 +336,7 @@ class Command(BaseCommand):
         def job():
             self._stats()
 
-        schedule.every(1).hour().do(job)
+        schedule.every(1).hour.do(job)
         while True:
             schedule.run_pending()
             self.sendAPNIfNeed()
