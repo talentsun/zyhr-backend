@@ -121,3 +121,18 @@ def bindDeviceId(request):
     profile.deviceId = deviceId
     profile.save()
     return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@transaction.atomic
+@validateToken
+def unbindDeviceId(request):
+    data = json.loads(request.body.decode('utf-8'))
+    profile = request.profile
+
+    deviceId = data['deviceId']
+    if profile.deviceId == deviceId:
+        profile.deviceId = None
+        profile.save()
+
+    return JsonResponse({'ok': True})
