@@ -132,6 +132,8 @@ class Profile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    deviceId = models.CharField(max_length=255, null=True)
+
     @property
     def owner(self):
         if self.department is None:
@@ -328,7 +330,7 @@ class Company(models.Model):
 
 # 记忆数据
 class Memo(models.Model):
-    category = models.CharField(max_length=255) # upstream/downstream/asset...
+    category = models.CharField(max_length=255)  # upstream/downstream/asset...
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     value = models.CharField(max_length=255, null=True)
 
@@ -341,6 +343,7 @@ class Message(models.Model):
                                  on_delete=models.CASCADE,
                                  null=True)
     category = models.CharField(max_length=255)  # hurryup/finish/progress
+    apn_sent = models.BooleanField(default=False)
     extra = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -107,3 +107,17 @@ def changePhone(request):
 def profile(request):
     profile = request.profile
     return JsonResponse(resolve_profile(profile))
+
+
+@require_http_methods(['GET'])
+@transaction.atomic
+@validateToken
+def bindDeviceId(request):
+    data = json.loads(request.body.decode('utf-8'))
+    profile = request.profile
+
+    deviceId = data['deviceId']
+    Profile.objects.filter(deviceId=deviceId).update(deviceId=None)
+    profile.deviceId = deviceId
+    profile.save()
+    return JsonResponse({'ok': True})
