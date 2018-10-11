@@ -1,11 +1,15 @@
+import json
 import time
 import schedule
 import logging
 from decimal import Decimal
 from pytz import timezone as tz
+import requests
+from requests.auth import HTTPBasicAuth
 
 from django.db.models import Q
 from django.core.management.base import BaseCommand
+from django.conf import settings
 
 from core.models import *
 
@@ -276,16 +280,62 @@ class Command(BaseCommand):
         except:
             logger.exception("some error happend")
 
+    def sendAPN(self, message):
+        try:
+            profile = message.profile
+
+            if profile is None or \
+                    profile.archived or \
+                    profile.blocked or \
+                            profile.deviceId is None or \
+                            profile.deviceId == '':
+                message.apn_sent = True
+                message.save()
+                return
+
+            r = requests.post('https://api.jpush.cn/v3/push',
+                              auth=HTTPBasicAuth(settings.JPUSH_APP_KEY, settings.JPUSH_APP_SECRET),
+                              data=json.dumps({
+                                  "platform": "all",
+                                  "audience": {
+                                      "registration_id": [profile.deviceId]
+                                  },
+                                  "notification": {
+                                      "alert": "您有新的审批需要处理！"
+                                  },
+                                  "options": {
+                                      "apns_production": settings.JPUSH_APNS_PRODUCTION
+                                  }
+                              }))
+            result = r.json()
+            if 'error' not in result:
+                message.apn_sent = True
+                message.save()
+                return
+            else:
+                raise Exception(str(result['error']))
+        except:
+            logger.exception("fail to send message activity: {}, profile: {}".format(str(message.activity.pk),
+                                                                                     str(message.profile.pk)))
+
+    def sendAPNIfNeed(self):
+        try:
+            # 既没有被阅读，有没有被推送的消息
+            messages = Message.objects \
+                .filter(category='progress',
+                        apn_sent=False,
+                        read=False)
+            for msg in messages:
+                self.sendAPN(msg)
+        except:
+            logger.exception("some error happens while sending push notifications.")
+
     def handle(self, *args, **kwargs):
         def job():
             self._stats()
 
-        if kwargs['once']:
-            self._stats()
-            return
-
-        schedule.every().hour.do(job)
-
+        schedule.every(1).hour().do(job)
         while True:
             schedule.run_pending()
+            self.sendAPNIfNeed()
             time.sleep(1)

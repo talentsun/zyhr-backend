@@ -498,7 +498,7 @@ def exportMoneyAuditDoc(activity):
     ws['H7'] = outAccount['number']
 
     ws['B8'] = info['desc']
-    ws['B8'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['B8'].alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
     # 借款人、部门负责人、财务负责人、公司负责人
     ws['B10'] = creator.name

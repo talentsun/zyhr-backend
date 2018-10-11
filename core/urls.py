@@ -25,6 +25,7 @@ urlpatterns = [
     path(r'send-code', session.sendCode),
     path(r'change-phone', session.changePhone),
     path(r'profile', session.profile),
+    path(r'bind-device-id', session.bindDeviceId),
 
     # audit api
     path(r'audit-configs', audit.configs),
