@@ -109,7 +109,7 @@ def profile(request):
     return JsonResponse(resolve_profile(profile))
 
 
-@require_http_methods(['GET'])
+@require_http_methods(['POST'])
 @transaction.atomic
 @validateToken
 def bindDeviceId(request):
