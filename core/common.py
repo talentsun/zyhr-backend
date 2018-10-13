@@ -1,3 +1,4 @@
+import re
 from django.utils import timezone
 
 from core.models import *
@@ -206,3 +207,12 @@ def resolve_account(a):
         'created_at': a.created_at.isoformat(),
         'updated_at': a.updated_at.isoformat()
     }
+
+
+def resolveCategoryForAudit(activity):
+    if re.match('fn|biz', activity.config.subtype):
+        return '法务'
+    elif re.match('cost|loan|money|account|travel', activity.config.subtype):
+        return '财务'
+    else:
+        return '行政'

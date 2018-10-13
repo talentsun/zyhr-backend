@@ -12,10 +12,12 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 
 from core.models import *
+from core.common import resolveCategoryForAudit
 
 logger = logging.getLogger('app.core.views.stats')
 
 
+# TODO: rename stats.py to tasks.py
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--once', action='store_true')
@@ -280,6 +282,39 @@ class Command(BaseCommand):
         except:
             logger.exception("some error happend")
 
+    def resolveNotification(self, msg):
+        activity = msg.activity
+        categoryName = resolveCategoryForAudit(activity)
+        auditCreatedAt = activity.created_at.strftime('%Y-%m-%d')
+
+        if msg.category == 'hurryup':
+            title = '催一下'
+            content = '您有一笔{}提交的{}审批未处理，请及时审批！'.format(activity.creator.name, categoryName)
+        elif msg.category == 'progress':
+            title = '审批提醒'
+            content = '您有一笔{}提交的{}审批未处理，请及时审批！'.format(activity.creator.name, categoryName)
+        else:  # finish
+            state = msg.extra['state']
+            if state == 'approved':
+                title = '审批通过'
+                content = '您于 {} 提交的审批单审批通过'.format(auditCreatedAt)
+            else:  # rejected
+                title = '审批失败'
+                content = '您于 {} 提交的审批单审批未通过'.format(auditCreatedAt)
+
+        return {
+            'android': {
+                'title': title,
+                'alert': content
+            },
+            'ios': {
+                'alert': {
+                    'title': title,
+                    'body': content
+                }
+            }
+        }
+
     def sendAPN(self, message):
         try:
             profile = message.profile
@@ -300,9 +335,7 @@ class Command(BaseCommand):
                                   "audience": {
                                       "registration_id": [profile.deviceId]
                                   },
-                                  "notification": {
-                                      "alert": "您有新的审批需要处理！"
-                                  },
+                                  "notification": self.resolveNotification(message),
                                   "options": {
                                       "apns_production": settings.JPUSH_APNS_PRODUCTION
                                   }
@@ -324,9 +357,9 @@ class Command(BaseCommand):
         try:
             # 既没有被阅读，有没有被推送的消息
             messages = Message.objects \
-                .filter(category='progress',
-                        apn_sent=False,
-                        read=False)
+                .filter(apn_sent=False,
+                        read=False,
+                        category__in=['hurryup', 'progress', 'finish'])
             for msg in messages:
                 self.sendAPN(msg)
         except:
