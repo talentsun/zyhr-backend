@@ -344,8 +344,8 @@ class Command(BaseCommand):
             if 'error' not in result:
                 message.apn_sent = True
                 message.save()
-                logger.exception("send message activity: {}, profile: {} done".format(str(message.activity.pk),
-                                                                                      str(message.profile.pk)))
+                logger.info("send message activity: {}, profile: {} done".format(str(message.activity.pk),
+                                                                                 str(message.profile.pk)))
                 return
             else:
                 raise Exception(str(result['error']))
