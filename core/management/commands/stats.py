@@ -305,12 +305,18 @@ class Command(BaseCommand):
         return {
             'android': {
                 'title': title,
-                'alert': content
+                'alert': content,
+                'extras': {
+                    'activity': str(msg.activity.pk)
+                }
             },
             'ios': {
                 'alert': {
                     'title': title,
                     'body': content
+                },
+                'extras': {
+                    'activity': str(msg.activity.pk)
                 }
             }
         }
