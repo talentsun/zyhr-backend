@@ -292,7 +292,7 @@ class Command(BaseCommand):
             content = '您有一笔{}提交的{}审批未处理，请及时审批！'.format(activity.creator.name, categoryName)
         elif msg.category == 'progress':
             title = '审批提醒'
-            content = '您有一笔{}提交的{}审批未处理，请及时审批！'.format(activity.creator.name, categoryName)
+            content = '您有一笔{}提交的{}审批待处理，请及时审批！'.format(activity.creator.name, categoryName)
         else:  # finish
             state = msg.extra['state']
             if state == 'approved':
