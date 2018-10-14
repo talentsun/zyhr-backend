@@ -11,9 +11,12 @@ def resolve_department(dep):
     positions = [i.pos for i in dps]
 
     return {
+        'parent': str(dep.parent.pk) if dep.parent else None,
         'id': str(dep.pk),
         'code': dep.code,
         'name': dep.name,
+        'displayName': dep.displayName,
+        'archived': dep.archived,
         'positions': [{
             'id': str(p.pk),
             'name': p.name,
@@ -28,6 +31,7 @@ def resolve_position(pos):
 
     return {
         'id': str(pos.pk),
+        'archived': pos.archived,
         'name': pos.name
     }
 

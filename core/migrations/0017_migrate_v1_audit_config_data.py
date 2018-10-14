@@ -180,7 +180,7 @@ def prepareV3AuditCofigurationData(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0012_auto_20180923_1458'),
+        ('core', '0016_auto_20181014_0821'),
     ]
 
     operations = [

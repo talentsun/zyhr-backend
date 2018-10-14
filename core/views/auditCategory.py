@@ -40,6 +40,25 @@ def category(request, subtype):
     })
 
 
+def check_steps(steps):
+    for index, step in enumerate(steps):
+        pos = step.get('pos', None)
+        dep = step.get('dep', None)
+        if dep is None:
+            continue
+
+        dep = Department.objects.get(pk=dep)
+        pos = Position.objects.get(pk=pos)
+
+        if dep.archived or pos.archived:
+            return False, index, step
+
+        if DepPos.objects.filter(dep=dep, pos=pos).count() == 0:
+            return False, index, step
+
+    return True, None, None
+
+
 def reset_steps(config, steps):
     AuditActivityConfigStep.objects.filter(config=config).delete()
     for index, step in enumerate(steps):
@@ -66,8 +85,17 @@ def updateAuditFlow(request, subtype):
     conditions = data.get('conditions', None)
 
     with transaction.atomic():
+        valid, idx, step = check_steps(steps)
+        if not valid:
+            return JsonResponse({
+                'errorId': 'some-step-abnormal',
+                'step': step,
+                'index': idx
+            }, status=400)
+
         config = AuditActivityConfig.objects.get(pk=configId)
         config.conditions = conditions
+        config.abnormal = False
         config.save()
 
         reset_steps(config, steps)
@@ -111,6 +139,14 @@ def createAuditFlow(request, subtype):
     conditions = data.get('conditions', None)
 
     with transaction.atomic():
+        valid, idx, step = check_steps(steps)
+        if not valid:
+            return JsonResponse({
+                'errorId': 'some-step-abnormal',
+                'step': step,
+                'index': idx
+            }, status=400)
+
         count = AuditActivityConfig.objects \
             .filter(subtype=subtype, archived=False, fallback=False) \
             .count()

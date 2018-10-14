@@ -70,6 +70,7 @@ urlpatterns = [
     path(r'emps/<uuid:empId>/actions/update-state', emps.updateState),
     path(r'emps/<uuid:empId>/actions/update-password', emps.updatePassword),
     path(r'departments', organization.departments),
+    path(r'departments/<uuid:dep>', organization.department),
     path(r'positions', organization.positions),
 
     # customers api

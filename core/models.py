@@ -10,12 +10,14 @@ from jsonfield import JSONField
 
 class Department(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    code = models.CharField(max_length=50)
+    code = models.CharField(max_length=50, null=True)
     name = models.CharField(max_length=50)
     parent = models.ForeignKey('self', null=True, on_delete=models.CASCADE)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    archived = models.BooleanField(default=False)
 
     def resolvePosition(self, code):
         for item in DepPos.objects.filter(dep=self):
@@ -31,11 +33,26 @@ class Department(models.Model):
         else:
             return str(self.pk)
 
+    @property
+    def displayName(self):
+        parents = []
+
+        parent = self.parent
+        while parent is not None:
+            parents.append(parent.name)
+            parent = parent.parent
+
+        parents = parents[0:-1]
+        parents.reverse()
+        return '-'.join(parents)
+
 
 class Position(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    code = models.CharField(max_length=50)
+    code = models.CharField(max_length=50, null=True)
     name = models.CharField(max_length=255)
+
+    archived = models.BooleanField(default=False)
 
     @property
     def identity(self):
@@ -183,6 +200,7 @@ class AuditActivityConfig(models.Model):
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    abnormal = models.BooleanField(default=False)  # 审批流配置是否异常
 
 
 class AuditActivityConfigStep(models.Model):
@@ -195,6 +213,7 @@ class AuditActivityConfigStep(models.Model):
                                          null=True,
                                          on_delete=models.CASCADE)
     position = models.IntegerField()
+    abnormal = models.BooleanField(default=False)  # 审批环节是否异常
 
 
 class AuditActivity(models.Model):
@@ -203,12 +222,14 @@ class AuditActivity(models.Model):
     StateApproved = 'approved'
     StateRejected = 'rejected'
     StateCancelled = 'cancelled'
+    StateAborted = 'aborted'  # new in v3
     StateChoices = (
         (StateDraft, StateDraft),
         (StateProcessing, StateProcessing),
         (StateApproved, StateApproved),
         (StateRejected, StateRejected),
         (StateRejected, StateCancelled),
+        (StateAborted, StateAborted),
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)

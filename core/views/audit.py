@@ -277,6 +277,9 @@ def createActivity(profile, data):
     logger.info('{} create activity base on config: {}'.format(
         taskId, config.subtype))
 
+    if submit and config.abnormal:
+        return JsonResponse({'errorId': 'config-abnormal'}, status=400)
+
     activity = AuditActivity.objects \
         .create(config=config,
                 config_data=resolve_config(config),
@@ -369,6 +372,9 @@ def submitAudit(request, activityId):
     config = resolveConfigByConditions(activity.config.subtype, activity.extra, request.profile)
     if config is None:
         return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
+
+    if config.abnormal:
+        return JsonResponse({'errorId': 'config-abnormal'}, status=400)
 
     activity.config = config
     activity.config_data = resolve_config(config)
