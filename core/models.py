@@ -46,6 +46,16 @@ class Department(models.Model):
         parents.reverse()
         return '-'.join(parents)
 
+    def isAncestorOf(self, dep):
+        parents = []
+
+        p = dep.parent
+        while p is not None:
+            parents.append(p.pk)
+            p = p.parent
+
+        return self.pk in parents
+
 
 class Position(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)

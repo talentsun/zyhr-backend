@@ -23,6 +23,37 @@ class OrgView:
         org_update.send(sender=self, dep=dep, pos=pos)
 
 
+def createOrUpdateDepartment(data, dep=None):
+    parent = data.get('parent', None)
+    name = data.get('name', None)
+
+    if name is None or name == '':
+        return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
+
+    if parent is None:
+        parent = Department.objects.get(code='root').pk
+
+    parentDep = Department.objects.filter(pk=parent).first()
+    if parentDep is None:
+        return JsonResponse({'errorId': 'parent-not-found'}, status=400)
+
+    count = Department.objects.filter(parent=parentDep, name=name).count()
+    if count > 0:
+        return JsonResponse({'errorId': 'department-name-duplicate'}, status=400)
+
+    if dep is None:
+        Department.objects.create(parent=parentDep, name=name)
+    else:
+        if dep.isAncestorOf(parentDep) or dep.pk == parentDep.pk:
+            return JsonResponse({'errorId': 'parent-cycle'}, status=400)
+
+        dep.name = name
+        dep.parent = parentDep
+        dep.save()
+
+    return JsonResponse({'ok': True})
+
+
 @require_http_methods(['GET', 'POST'])
 @validateToken
 def departments(request):
@@ -33,25 +64,7 @@ def departments(request):
         })
     else:  # POST
         data = json.loads(request.body.decode('utf-8'))
-        parent = data.get('parent', None)
-        name = data.get('name', None)
-
-        if name is None or name == '':
-            return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
-
-        if parent is None:
-            parent = Department.objects.get(code='root').pk
-
-        parentDep = Department.objects.filter(pk=parent).first()
-        if parentDep is None:
-            return JsonResponse({'errorId': 'parent-not-found'}, status=400)
-
-        count = DepPos.objects.filter(dep=parentDep, pos__name=name).count()
-        if count > 0:
-            return JsonResponse({'errorId': 'name-duplicate'}, status=400)
-
-        Department.objects.create(parent=parentDep, name=name)
-        return JsonResponse({'ok': True})
+        return createOrUpdateDepartment(data)
 
 
 @require_http_methods(['PUT', 'DELETE'])
@@ -62,29 +75,8 @@ def department(request, dep):
         return JsonResponse({'errorId': 'department-not-found'}, status=400)
 
     if request.method == 'PUT':
-        # TODO: validate name
         data = json.loads(request.body.decode('utf-8'))
-        parent = data.get('parent', None)
-        name = data.get('name', None)
-
-        if name is None or name == '':
-            return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
-
-        if parent is None:
-            parent = Department.objects.get(code='root').pk
-
-        parentDep = Department.objects.filter(pk=parent).first()
-        if parentDep is None:
-            return JsonResponse({'errorId': 'parent-not-found'}, status=400)
-
-        count = DepPos.objects.filter(dep=parentDep, pos__name=name).count()
-        if count > 0:
-            return JsonResponse({'errorId': 'name-duplicate'}, status=400)
-
-        dep.name = name
-        dep.parent = parentDep
-        dep.save()
-        return JsonResponse({'ok': True})
+        return createOrUpdateDepartment(data, dep=department)
     else:  # DELETE
         count = Profile.objects \
             .filter(department=department, archived=False) \
@@ -94,6 +86,7 @@ def department(request, dep):
 
         department.archived = True
         department.save()
+        DepPos.objects.filter(dep=department).delete()
 
         OrgView().send_org_update(dep=department.pk)
         return JsonResponse({'ok': True})
@@ -146,7 +139,7 @@ def position(request, pos):
                     .filter(department=item.dep, position=position, archived=False) \
                     .count()
                 if count > 0:
-                    return JsonResponse({'profiles-exist'}, status=400)
+                    return JsonResponse({'errorId': 'profiles-exist'}, status=400)
 
         position.name = name
         position.save()
@@ -168,6 +161,7 @@ def position(request, pos):
 
         position.archived = True
         position.save()
+        DepPos.objects.filter(pos=position).delete()
 
         OrgView().send_org_update(pos=position.pk)
         return JsonResponse({'ok': True})

@@ -64,14 +64,17 @@ urlpatterns = [
     # message api
     path(r'messages/<uuid:messageId>/actions/mark-read', message.markRead),
 
-    # emps/deps/positions api
+    # emps api
     path(r'emps', emps.index),
     path(r'emps/<uuid:empId>', emps.detail),
     path(r'emps/<uuid:empId>/actions/update-state', emps.updateState),
     path(r'emps/<uuid:empId>/actions/update-password', emps.updatePassword),
+
+    # org api
     path(r'departments', organization.departments),
     path(r'departments/<uuid:dep>', organization.department),
     path(r'positions', organization.positions),
+    path(r'positions/<uuid:pos>', organization.position),
 
     # customers api
     path(r'customers', customer.index),
