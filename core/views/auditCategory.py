@@ -216,7 +216,7 @@ def categories(request):
     data = config.value
     for audit in data['audits']:
         config = AuditActivityConfig.objects \
-            .filter(subtype=audit['subtype']) \
+            .filter(subtype=audit['subtype'], archived=False) \
             .order_by('priority') \
             .first()
 
@@ -229,6 +229,13 @@ def categories(request):
             'pos': getattr(s.assigneePosition, 'name', None)
         } for s in steps]
         audit['flow'] = steps
+
+        abnormal_config_count = AuditActivityConfig.objects \
+                                    .filter(subtype=audit['subtype'],
+                                            archived=False,
+                                            abnormal=True) \
+                                    .count() > 0
+        audit['abnormal'] = abnormal_config_count > 0
 
     audits = data['audits']
     audits = sorted(audits, key=lambda audit: audit.get('updated_at', ''))

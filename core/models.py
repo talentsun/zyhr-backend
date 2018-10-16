@@ -35,16 +35,15 @@ class Department(models.Model):
 
     @property
     def displayName(self):
-        parents = []
+        nodes = []
 
-        parent = self.parent
-        while parent is not None:
-            parents.append(parent.name)
-            parent = parent.parent
+        node = self
+        while node is not None:
+            nodes.append(node.name)
+            node = node.parent
 
-        parents = parents[0:-1]
-        parents.reverse()
-        return '-'.join(parents)
+        nodes.reverse()
+        return '-'.join(nodes)
 
     def isAncestorOf(self, dep):
         parents = []
@@ -55,6 +54,25 @@ class Department(models.Model):
             p = p.parent
 
         return self.pk in parents
+
+    @property
+    def children(self):
+        return Department.objects.filter(parent=self, archived=False)
+
+    @property
+    def profiles(self):
+        result = 0
+        p1 = Profile.objects \
+            .filter(department=self, archived=False) \
+            .count()
+
+        result = result + p1
+
+        children = Department.objects.filter(archived=False, parent=self)
+        for c in children:
+            result = result + c.profiles
+
+        return result
 
 
 class Position(models.Model):

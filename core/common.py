@@ -10,7 +10,7 @@ def resolve_department(dep):
     dps = DepPos.objects.filter(dep=dep)
     positions = [i.pos for i in dps]
 
-    return {
+    result = {
         'parent': str(dep.parent.pk) if dep.parent else None,
         'id': str(dep.pk),
         'code': dep.code,
@@ -24,16 +24,31 @@ def resolve_department(dep):
         } for p in positions]
     }
 
+    result['profiles'] = dep.profiles
 
-def resolve_position(pos):
+    return result
+
+
+def resolve_position(pos, include_departments=False):
     if pos is None:
         return None
 
-    return {
+    result = {
         'id': str(pos.pk),
         'archived': pos.archived,
-        'name': pos.name
+        'code': pos.code,
+        'name': pos.name,
+        'profiles': Profile.objects.filter(position=pos, archived=False).count()
     }
+
+    if include_departments:
+        dps = DepPos.objects.filter(pos=pos)
+        result['departments'] = [{
+            'id': str(d.dep.pk),
+            'displayName': d.dep.displayName
+        } for d in dps]
+
+    return result
 
 
 def resolve_profile(profile,
@@ -89,7 +104,7 @@ def resolve_profile(profile,
         result['pendingTasks'] = pendingTasks
 
     if orgs:
-        deps = Department.objects.all()
+        deps = Department.objects.filter(archived=False)
         result['departments'] = [resolve_department(d) for d in deps]
 
     if include_memo:
@@ -211,6 +226,7 @@ def resolve_account(a):
 def resolve_config_step(step):
     return {
         'pk': str(step.pk),
+        'abnormal': step.abnormal,
         'department': resolve_department(step.assigneeDepartment),
         'position': resolve_position(step.assigneePosition)
     }
@@ -221,6 +237,7 @@ def resolve_config(config):
 
     return {
         'id': str(config.pk),
+        'abnormal': config.abnormal,
         'priority': config.priority,
         'fallback': config.fallback,
         'conditions': config.conditions,

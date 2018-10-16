@@ -157,6 +157,33 @@ class OrgTestCase(TestCase, AuditTestMixin):
         self.biz = Department.objects.get(pk=self.biz.pk)
         self.assertEqual(self.biz.archived, True)
 
+    def test_delete_department_with_children(self):
+        self.prepareData()
+        self.prepareAuditConfig()
+
+        token = generateToken(self.jack)
+        client = Client()
+
+        r = client.post('/api/v1/departments',
+                        json.dumps({
+                            'parent': str(self.biz.pk),
+                            'name': 'biz-child'
+                        }),
+                        content_type='application/json',
+                        HTTP_AUTHORIZATION=token)
+        self.assertEqual(r.status_code, 200)
+        biz_child = Department.objects.get(name='biz-child')
+
+        Profile.objects.filter(department=self.biz).update(archived=True)
+        r = client.delete('/api/v1/departments/{}'.format(str(self.biz.pk)),
+                          HTTP_AUTHORIZATION=token)
+        self.assertEqual(r.status_code, 200)
+        self.biz = Department.objects.get(pk=self.biz.pk)
+        self.assertEqual(self.biz.archived, True)
+
+        biz_child = Department.objects.get(pk=biz_child.pk)
+        self.assertEqual(biz_child.archived, True)
+
     def test_check_audit_on_department_delete(self):
         """
         部门被删除的时候，应该检查审批配置，将流程当中包含该部门的审批配置标记为异常状态

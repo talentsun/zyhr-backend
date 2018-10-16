@@ -58,13 +58,25 @@ def createOrUpdateDepartment(data, dep=None):
 @validateToken
 def departments(request):
     if request.method == 'GET':
-        deps = Department.objects.all()
+        deps = Department.objects.filter(archived=False)
         return JsonResponse({
             'departments': [resolve_department(d) for d in deps]
         })
     else:  # POST
         data = json.loads(request.body.decode('utf-8'))
         return createOrUpdateDepartment(data)
+
+
+def archiveDepartment(dep):
+    if dep is None:
+        return
+
+    for d in dep.children:
+        archiveDepartment(d)
+
+    dep.archived = True
+    dep.save()
+    DepPos.objects.filter(dep=dep).delete()
 
 
 @require_http_methods(['PUT', 'DELETE'])
@@ -78,15 +90,10 @@ def department(request, dep):
         data = json.loads(request.body.decode('utf-8'))
         return createOrUpdateDepartment(data, dep=department)
     else:  # DELETE
-        count = Profile.objects \
-            .filter(department=department, archived=False) \
-            .count()
-        if count > 0:
+        if department.profiles > 0:
             return JsonResponse({'errorId': 'profiles-exist'}, status=400)
 
-        department.archived = True
-        department.save()
-        DepPos.objects.filter(dep=department).delete()
+        archiveDepartment(department)
 
         OrgView().send_org_update(dep=department.pk)
         return JsonResponse({'ok': True})
@@ -98,7 +105,7 @@ def positions(request):
     if request.method == 'GET':
         positions = Position.objects.all()
         return JsonResponse({
-            'positions': [resolve_position(p) for p in positions]
+            'positions': [resolve_position(p, include_departments=True) for p in positions]
         })
     else:  # POST
         data = json.loads(request.body.decode('utf-8'))
@@ -139,7 +146,10 @@ def position(request, pos):
                     .filter(department=item.dep, position=position, archived=False) \
                     .count()
                 if count > 0:
-                    return JsonResponse({'errorId': 'profiles-exist'}, status=400)
+                    return JsonResponse({
+                        'errorId': 'profiles-exist',
+                        'department': resolve_department(item.dep)
+                    }, status=400)
 
         position.name = name
         position.save()
