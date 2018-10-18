@@ -372,6 +372,10 @@ class Command(BaseCommand):
             logger.exception("some error happens while sending push notifications.")
 
     def handle(self, *args, **kwargs):
+        if kwargs["once"]:
+            self._stats()
+            return
+
         def job():
             self._stats()
 

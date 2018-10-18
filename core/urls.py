@@ -109,6 +109,9 @@ urlpatterns = [
     path(r'charts/app/taizhang', charts.app_taizhang),
     path(r'charts/app/funds', charts.app_funds),
     path(r'charts/app/customers', charts.app_customers),
+    path(r'charts/home/taizhang', charts.home_taizhang),
+    path(r'charts/home/funds', charts.home_funds),
+    path(r'charts/home/customer', charts.home_customer),
 
     # roles api
     path(r'roles', roles.index),

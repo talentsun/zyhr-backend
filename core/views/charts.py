@@ -600,3 +600,163 @@ def app_customers(request):
     result['companyData'] = companyData
 
     return JsonResponse(result)
+
+
+@require_http_methods(['GET'])
+@validateToken
+def home_taizhang(request):
+    tss = TaizhangStat.objects.filter(category='month')
+
+    # resolve months
+    months = resolve_recent_months()
+
+    # resolve companies
+    companies = tss.values('company').distinct()
+    companies = [c['company'] for c in companies]
+    companies = [{'id': c, 'name': c} for c in companies]
+
+    # resolve companyData
+    companyData = []
+    for company in companies:
+        # id
+        data = {'id': company['id']}
+
+        # values
+        values = []
+        for month in months:
+            tss = TaizhangStat.objects.filter(category='month', month=month, company=company['name'])
+            if tss.count() == 0:
+                valueItem = {
+                    'xiaoshoue': 0,
+                    'lirune': 0,
+                    'zijin_zhanya': 0,
+                    'kuchun_liang': 0,
+                }
+            else:
+                s = tss.aggregate(
+                    sum_xiaoshoue=Sum('xiaoshoue'),
+                    sum_lirune=Sum('lirune'),
+                    sum_zijin_zhanya=Sum('zijin_zhanya'),
+                    sum_kuchun_liang=Sum('kuchun_liang'),
+                )
+                valueItem = {
+                    'xiaoshoue': s['sum_xiaoshoue'] / Decimal(10000),
+                    'lirune': s['sum_lirune'] / Decimal(10000),
+                    'zijin_zhanya': s['sum_zijin_zhanya'] / Decimal(10000),
+                    'kuchun_liang': s['sum_kuchun_liang'] / Decimal(10000),
+                }
+            values.append(valueItem)
+        data['values'] = values
+
+        companyData.append(data)
+
+    result = {
+        'months': months,
+        'companies': companies,
+        'companyData': companyData
+    }
+    return JsonResponse(result)
+
+
+@require_http_methods(['GET'])
+@validateToken
+def home_customer(request):
+    css = CustomerStat.objects.filter(category='month')
+
+    # resolve months
+    months = resolve_recent_months()
+
+    # resolve customers
+    customers = css.values('customer__pk', 'customer__name').distinct()
+    customers = [{
+        'id': a['customer__pk'],
+        'name': a['customer__name'],
+    } for a in customers]
+
+    customerData = []
+    for customer in customers:
+        data = {'id': customer['id']}
+
+        # values
+        values = []
+        for month in months:
+            tss = CustomerStat.objects \
+                .filter(category='month',
+                        month=month,
+                        customer=customer['id'])
+            t = tss.first()
+            if t is None:
+                valueItem = {
+                    'yewuliang': Decimal('0'),
+                    'avg_price': Decimal('0')
+                }
+            else:
+                valueItem = {
+                    'yewuliang': t.yewuliang / Decimal(10000),
+                    'avg_price': t.avg_price / Decimal(10000)
+                }
+            values.append(valueItem)
+        data['values'] = values
+
+        customerData.append(data)
+
+    result = {
+        'months': months,
+        'customers': customers,
+        'customerData': customerData
+    }
+    return JsonResponse(result)
+
+
+@require_http_methods(['GET'])
+@validateToken
+def home_funds(request):
+    tss = TransactionStat.objects.filter(category='week')
+
+    # resolve weeks
+    weeks = resolve_recent_weeks()
+
+    # resolve accounts
+    accounts = tss.values('account__pk', 'account__name').distinct()
+    accounts = [{
+        'id': a['account__pk'],
+        'name': a['account__name'],
+    } for a in accounts]
+
+    # resolve account data
+    accountData = []
+    for account in accounts:
+        # id
+        data = {'id': account['id']}
+
+        # values
+        values = []
+        for week in weeks:
+            tss = TransactionStat.objects \
+                .filter(category='week',
+                        startDayOfWeek=week,
+                        account=account['id'])
+            t = tss.first()
+            if t is None:
+                valueItem = {
+                    'income': '0',
+                    'outcome': '0',
+                    'balance': '0'
+                }
+            else:
+                valueItem = {
+                    'income': t.income / Decimal(10000),
+                    'outcome': t.outcome / Decimal(10000),
+                    'balance': t.balance / Decimal(10000)
+                }
+            values.append(valueItem)
+        data['values'] = values
+
+        accountData.append(data)
+
+    result = {
+        'weeks': weeks,
+        'accounts': accounts,
+        'accountData': accountData
+    }
+    return JsonResponse(result)
