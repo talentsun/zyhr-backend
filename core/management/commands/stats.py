@@ -1,17 +1,23 @@
+import json
 import time
 import schedule
 import logging
 from decimal import Decimal
 from pytz import timezone as tz
+import requests
+from requests.auth import HTTPBasicAuth
 
 from django.db.models import Q
 from django.core.management.base import BaseCommand
+from django.conf import settings
 
 from core.models import *
+from core.common import resolveCategoryForAudit
 
 logger = logging.getLogger('app.core.views.stats')
 
 
+# TODO: rename stats.py to tasks.py
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--once', action='store_true')
@@ -276,16 +282,105 @@ class Command(BaseCommand):
         except:
             logger.exception("some error happend")
 
-    def handle(self, *args, **kwargs):
-        def job():
-            self._stats()
+    def resolveNotification(self, msg):
+        activity = msg.activity
+        categoryName = resolveCategoryForAudit(activity)
+        auditCreatedAt = activity.created_at.strftime('%Y-%m-%d')
 
-        if kwargs['once']:
+        if msg.category == 'hurryup':
+            title = '催一下'
+            content = '您有一笔{}提交的{}审批未处理，请及时审批！'.format(activity.creator.name, categoryName)
+        elif msg.category == 'progress':
+            title = '审批提醒'
+            content = '您有一笔{}提交的{}审批待处理，请及时审批！'.format(activity.creator.name, categoryName)
+        else:  # finish
+            state = msg.extra['state']
+            if state == 'approved':
+                title = '审批通过'
+                content = '您于 {} 提交的审批单审批通过'.format(auditCreatedAt)
+            else:  # rejected
+                title = '审批失败'
+                content = '您于 {} 提交的审批单审批未通过'.format(auditCreatedAt)
+
+        return {
+            'android': {
+                'title': title,
+                'alert': content,
+                'extras': {
+                    'activity': str(msg.activity.pk)
+                }
+            },
+            'ios': {
+                'alert': {
+                    'title': title,
+                    'body': content
+                },
+                'extras': {
+                    'activity': str(msg.activity.pk)
+                }
+            }
+        }
+
+    def sendAPN(self, message):
+        try:
+            profile = message.profile
+
+            if profile is None or \
+                    profile.archived or \
+                    profile.blocked or \
+                            profile.deviceId is None or \
+                            profile.deviceId == '':
+                message.apn_sent = True
+                message.save()
+                return
+
+            r = requests.post('https://api.jpush.cn/v3/push',
+                              auth=HTTPBasicAuth(settings.JPUSH_APP_KEY, settings.JPUSH_APP_SECRET),
+                              data=json.dumps({
+                                  "platform": "all",
+                                  "audience": {
+                                      "registration_id": [profile.deviceId]
+                                  },
+                                  "notification": self.resolveNotification(message),
+                                  "options": {
+                                      "apns_production": settings.JPUSH_APNS_PRODUCTION
+                                  }
+                              }))
+            result = r.json()
+            if 'error' not in result:
+                message.apn_sent = True
+                message.save()
+                logger.info("send message activity: {}, profile: {} done".format(str(message.activity.pk),
+                                                                                 str(message.profile.pk)))
+                return
+            else:
+                raise Exception(str(result['error']))
+        except:
+            logger.exception("fail to send message activity: {}, profile: {}".format(str(message.activity.pk),
+                                                                                     str(message.profile.pk)))
+
+    def sendAPNIfNeed(self):
+        try:
+            # 既没有被阅读，有没有被推送的消息
+            messages = Message.objects \
+                .filter(apn_sent=False,
+                        read=False,
+                        category__in=['hurryup', 'progress', 'finish'])
+            for msg in messages:
+                self.sendAPN(msg)
+        except:
+            logger.exception("some error happens while sending push notifications.")
+
+    def handle(self, *args, **kwargs):
+        if kwargs["once"]:
             self._stats()
             return
 
-        schedule.every().hour.do(job)
+        def job():
+            self._stats()
 
+        schedule.every(1).hour.do(job)
         while True:
             schedule.run_pending()
+            self.sendAPNIfNeed()
             time.sleep(1)

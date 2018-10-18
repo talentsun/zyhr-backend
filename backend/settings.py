@@ -32,6 +32,10 @@ CORS_ORIGIN_ALLOW_ALL = True
 HOST = os.getenv('HOST', 'localhost:8000')
 SENDFILE_BACKEND = 'sendfile.backends.simple'
 
+JPUSH_APP_KEY = os.getenv('JPUSH_APP_KEY', '')
+JPUSH_APP_SECRET = os.getenv('JPUSH_APP_SECRET', '')
+JPUSH_APNS_PRODUCTION = os.getenv('JPUSH_APNS_PRODUCTIONS', 'true') == 'true'
+
 # Application definition
 
 INSTALLED_APPS = [

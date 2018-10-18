@@ -198,6 +198,8 @@ class Profile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    deviceId = models.CharField(max_length=255, null=True)
+
     @property
     def owner(self):
         if self.department is None:
@@ -425,6 +427,7 @@ class Message(models.Model):
                                  on_delete=models.CASCADE,
                                  null=True)
     category = models.CharField(max_length=255)  # hurryup/finish/progress
+    apn_sent = models.BooleanField(default=False)
     extra = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)

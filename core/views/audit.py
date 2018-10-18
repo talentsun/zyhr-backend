@@ -330,6 +330,8 @@ def cancel(request, activityId):
             activity.finished_at = datetime.datetime.now(tz=timezone.utc)
             activity.save()
 
+            onActivityEnd(activity)
+
             # delete messages
             Message.objects.filter(activity=activity).delete()
             return JsonResponse({'ok': True})
@@ -461,6 +463,8 @@ def approveStep(request, stepId):
                 activity.taskState = 'pending'
             activity.save()
 
+            onActivityEnd(activity)
+
             if re.match('biz', activity.config.subtype):
                 info = activity.extra['info']
                 Taizhang.objects.create(
@@ -498,6 +502,13 @@ def approveStep(request, stepId):
         }, status=400)
 
 
+def onActivityEnd(activity):
+    # 当 activity 状态变成了 rejected/approved/cancelled 时，这个函数会被调用，用于做 activity 的收尾工作
+
+    # 删除评审过程中产生各种 message，但是 finish/reject 类型的消息是不删除的，因为是 activity 结束之后产生的
+    Message.objects.filter(activity=activity).delete()
+
+
 @require_http_methods(['POST'])
 @validateToken
 def rejectStep(request, stepId):
@@ -533,6 +544,8 @@ def rejectStep(request, stepId):
         activity.finished_at = datetime.datetime.now(tz=timezone.utc)
         activity.state = AuditActivity.StateRejected
         activity.save()
+
+        onActivityEnd(activity)
 
         Message.objects.create(profile=activity.creator,
                                activity=activity,
