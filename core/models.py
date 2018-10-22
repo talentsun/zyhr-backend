@@ -184,7 +184,7 @@ class Profile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, unique=True)
-    email = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, null=True, default='')
     phone = models.CharField(max_length=255, unique=True, null=True)
     department = models.ForeignKey(Department,
                                    on_delete=models.CASCADE,
@@ -210,6 +210,47 @@ class Profile(models.Model):
                     position__code='owner',
                     archived=False) \
             .first()
+
+
+class ProfileInfo(models.Model):
+    StateTesting = "testing"  # 试用期
+    StateNormal = "normal"  # 转正
+    StateLeft = "left"  # 离职
+    StateChoices = (
+        (StateTesting, StateTesting),
+        (StateNormal, StateNormal),
+        (StateLeft, StateLeft)
+    )
+
+    """
+    员工档案表
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    profile = models.OneToOneField(Profile, null=True, on_delete=models.CASCADE)
+    state = models.CharField(max_length=20, choices=StateChoices, default=StateTesting)  # 员工状态，默认是试用期
+    realname = models.CharField(max_length=255, null=True)  # 姓名，可重复
+    archived = models.BooleanField(default=False)
+
+    # 基本信息，电话/邮件/部门/职位在 profile 表当中
+    gender = models.IntegerField(default=0)  # 0：未知，1：男，2：女
+    nation = models.CharField(max_length=255, null=True)  # 民族
+    jiguan = models.CharField(max_length=255, null=True)  # 籍贯
+    education = models.CharField(max_length=255, null=True)  # 最高学历
+
+    # 人事档案信息
+    join_at = models.DateTimeField(null=True)  # 入职时间
+    positive_at = models.DateTimeField(null=True)  # 转正时间
+    contract = models.CharField(max_length=255, null=True)  # 劳动合同
+    shebao = models.CharField(max_length=255, null=True)  # 社保缴纳
+
+    contact_name = models.CharField(max_length=255, null=True)  # 紧急联系人姓名
+    contact_phone = models.CharField(max_length=255, null=True)  # 紧急联系人电话
+    desc = models.CharField(max_length=255)  # 备注
+
+    attachments = JSONField(null=True)  # 相关附件
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class AuditActivityConfig(models.Model):
@@ -245,6 +286,15 @@ class AuditActivityConfigStep(models.Model):
     position = models.IntegerField()
     abnormal = models.BooleanField(default=False)  # 审批环节是否异常
 
+    def candidates(self, profile):
+        if self.assigneeDepartment is not None:
+            return resolveCandidates(self.assigneeDepartment, self.assigneePosition)
+
+        # 适配 v1 自动找发起人部门负责人的情况
+        department = profile.department
+        position = department.resolvePosition('owner')
+        return resolveCandidates(department, position)
+
 
 class AuditActivity(models.Model):
     StateDraft = 'draft'
@@ -252,7 +302,7 @@ class AuditActivity(models.Model):
     StateApproved = 'approved'
     StateRejected = 'rejected'
     StateCancelled = 'cancelled'
-    StateAborted = 'aborted'  # new in v3
+    StateAborted = 'aborted'  # v3 当中的新状态，表示审批由于审批流中负责人员无法正确更换而导致的审批异常中断
     StateChoices = (
         (StateDraft, StateDraft),
         (StateProcessing, StateProcessing),
@@ -345,8 +395,35 @@ class AuditActivity(models.Model):
 
         return r
 
+    def isAbnormal(self):
+        """
+        检查审批当中是否有某些审批环节是无法找到正确的负责人的
+        """
+
+        abnormal = False
+        for step in self.steps():
+            if step.candidates.count() == 0:
+                abnormal = True
+                break
+
+        return abnormal
+
+
+def resolveCandidates(department, position):
+    pis = ProfileInfo.objects \
+        .exclude(state=ProfileInfo.StateLeft) \
+        .filter(profile__archived=False,
+                profile__department=department,
+                profile__position=position)
+    profile_pks = [p.profile.pk for p in pis]
+    profiles = Profile.objects.filter(pk__in=profile_pks)
+    return profiles
+
 
 class AuditStep(models.Model):
+    """
+    AuditStep 表示已发起审批的其中一个审批环节
+    """
     StatePending = 'pending'
     StateApproved = 'approved'
     StateRejected = 'rejected'
@@ -368,11 +445,18 @@ class AuditStep(models.Model):
     position = models.IntegerField()
     desc = models.TextField(null=True)
 
+    abnormal = models.BooleanField(default=False)  # 异常标记
+    extra = JSONField(null=True)  # v3 之后有些审批流程当中需要自定义的数据
+
     activated_at = models.DateTimeField(null=True)  # 开始时间
     finished_at = models.DateTimeField(null=True)  # 结束时间
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def candidates(self):
+        return resolveCandidates(self.assigneeDepartment, self.assigneePosition)
 
     def prevStep(self):
         if self.position == 0:
@@ -688,3 +772,12 @@ class CustomerStat(models.Model):
 class Configuration(models.Model):
     key = models.CharField(unique=True, max_length=255)  # audits
     value = JSONField()
+
+
+class AsyncTask(models.Model):
+    finished = models.BooleanField(default=False)
+    category = models.CharField(max_length=255)
+    exec_at = models.DateTimeField()
+    data = JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -17,6 +17,7 @@ from sendfile import sendfile
 from core.models import *
 from core.auth import validateToken
 from core.common import *
+from core.signals import *
 
 logger = logging.getLogger('app.core.views.audit')
 
@@ -122,33 +123,19 @@ def setupSteps(activity, taskId=None):
     logger.info('{} resolve assignee for every step'.format(taskId))
     stepAssigneeTuples = []
     for index, step in enumerate(configSteps):
-        logger.info('{} resolve assignee for step#{}'.format(
-            taskId, step.position))
-
-        assigneeDepartment = step.assigneeDepartment
-        assigneePosition = step.assigneePosition
-        if assigneeDepartment is None:
-            # 如果部门没有配置，那么就设置为发起者所在部门，职位自动是所在部门负责人
-            assigneeDepartment = profile.department
-            assigneePosition = assigneeDepartment.resolvePosition('owner')
-
         logger.info('{} resolve assignee for step#{}, dep: {}, pos: {}'.format(
             taskId, step.position,
-            getattr(assigneeDepartment, 'identity', 'null'),
-            getattr(assigneePosition, 'identity', 'null')))
+            getattr(step.assigneeDepartment, 'identity', 'null'),
+            getattr(step.assigneePosition, 'identity', 'null')))
 
-        profiles = Profile.objects \
-            .filter(archived=False,
-                    department=assigneeDepartment,
-                    position=assigneePosition)
-
-        if profiles.count() == 0:
+        candidates = step.candidates(profile)
+        if candidates.count() == 0:
             logger.info('{} no candidates, skip'.format(taskId))
             continue
 
-        names = ', '.join([p.name for p in profiles])
+        names = ', '.join([p.name for p in candidates])
         logger.info('{} candidates: {}'.format(taskId, names))
-        assignee = profiles[0]
+        assignee = candidates[0]
         logger.info('{} assignee: {}'.format(taskId, assignee.name))
 
         stepAssigneeTuples.append((step, assignee,))
@@ -175,7 +162,7 @@ def setupSteps(activity, taskId=None):
         assigneePosition = step.assigneePosition
         assigneeDepartment = step.assigneeDepartment
         if assigneeDepartment is None:
-            # 如果部门没有配置，那么就设置为发起者所在部门
+            # 适配 v1: 如果部门没有配置，那么就设置为发起者所在部门
             assigneeDepartment = profile.department
             assigneePosition = assigneeDepartment.resolvePosition('owner')
 
@@ -296,7 +283,7 @@ def createActivity(profile, data):
     recordCompanyIfNeed(profile, activity.config.subtype, activity.extra)
     recordMemo(profile, activity.config.subtype, activity.extra)
 
-    return activity
+    return JsonResponse({'activity': activity.pk})
 
 
 @require_http_methods(['POST'])
@@ -305,8 +292,7 @@ def activities(request):
     # TODO: validate user permission
     profile = request.profile
     data = json.loads(request.body.decode('utf-8'))
-    createActivity(profile, data)
-    return JsonResponse({'ok': True})
+    return createActivity(profile, data)
 
 
 @require_http_methods(['GET'])
@@ -425,6 +411,14 @@ def validateStepState(step, profile):
     return None
 
 
+class PView:
+    def __init__(self):
+        self.source = 'profile'
+
+    def send_user_org_update(self, profile=None):
+        user_org_update.send(sender=self, profile=profile)
+
+
 @require_http_methods(['POST'])
 @validateToken
 def approveStep(request, stepId):
@@ -432,6 +426,8 @@ def approveStep(request, stepId):
     profile = request.profile
     data = json.loads(request.body.decode('utf-8'))
     desc = data.get('desc', None)
+    extra = data.get('extra', None)
+
     try:
         step = AuditStep.objects.get(pk=stepId)
         err = validateStepState(step, profile)
@@ -442,6 +438,7 @@ def approveStep(request, stepId):
         step.active = False
         step.finished_at = datetime.datetime.now(tz=timezone.utc)
         step.desc = desc
+        step.extra = extra
 
         # delete hurry up message
         Message.objects \
@@ -464,6 +461,35 @@ def approveStep(request, stepId):
             activity.save()
 
             onActivityEnd(activity)
+
+            if activity.config.subtype == 'zhuanzheng':
+                profile = activity.creator
+                pi = ProfileInfo.objects.get(profile=profile)
+                if pi.state == ProfileInfo.StateTesting:
+                    pi.state = ProfileInfo.StateNormal
+                    pi.save()
+
+            if activity.config.subtype == 'leave_handover':
+                profile = activity.creator
+                pi = ProfileInfo.objects.get(profile=profile)
+                if pi.state == ProfileInfo.StateTesting or pi.state == ProfileInfo.StateNormal:
+                    pi.state = ProfileInfo.StateLeft
+                    pi.save()
+                    profile.blocked = True
+                    profile.save()
+                    PView().send_user_org_update(profile=profile)
+
+            if activity.config.subtype == 'transfer':
+                info = activity.extra['info']
+                transfer = activity.extra['transfer']
+                exec_at = datetime.datetime.strptime(info['transfer_date'], '%Y-%m-%d')
+                AsyncTask.objects.create(category='transfer',
+                                         exec_at=exec_at,
+                                         data={
+                                             'profile': str(activity.creator.pk),
+                                             'to_department': transfer['to_department'],
+                                             'to_position': transfer['to_position'],
+                                         })
 
             if re.match('biz', activity.config.subtype):
                 info = activity.extra['info']
@@ -804,7 +830,7 @@ def auditTasks(request):
 
     profile = request.profile
     if profile.department.code == 'hr':
-        activities = activities.filter(config__category='law')
+        activities = activities.filter(config__category__in=['law', 'hr'])
     elif profile.department.code == 'fin':
         activities = activities.filter(config__category='fin')
 

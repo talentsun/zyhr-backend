@@ -15,6 +15,7 @@ from core.views import finAccount
 from core.views import stats
 from core.views import taizhang
 from core.views import charts
+from core.views import profile
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -72,11 +73,14 @@ urlpatterns = [
     path(r'emps/<uuid:empId>/actions/update-state', emps.updateState),
     path(r'emps/<uuid:empId>/actions/update-password', emps.updatePassword),
 
-    # org api
+    # org/profile api
     path(r'departments', organization.departments),
     path(r'departments/<uuid:dep>', organization.department),
     path(r'positions', organization.positions),
     path(r'positions/<uuid:pos>', organization.position),
+    path(r'profiles', profile.profiles),
+    path(r'profiles/<uuid:profileId>', profile.profile),
+    path(r'profiles/actions/export', profile.export),
 
     # customers api
     path(r'customers', customer.index),

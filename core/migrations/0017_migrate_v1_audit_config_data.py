@@ -3,6 +3,7 @@
 from django.db import migrations, transaction
 from core.models import *
 from core.management.commands.prepareData import Command
+from core import specs_v3
 
 
 class Migrator():
@@ -172,10 +173,22 @@ def prepareV3AuditCofigurationData(apps, schema_editor):
                 {'subtype': 'biz', 'name': '业务合同会签', 'category': 'law', 'hasTask': True, 'enabled': True,
                  'updated_at': timezone.now()},
                 {'subtype': 'fn', 'name': '职能合同会签', 'category': 'law', 'hasTask': True, 'enabled': True,
-                 'updated_at': timezone.now()}
+                 'updated_at': timezone.now()},
+
+                {'subtype': 'zhuanzheng', 'name': '员工转正评定', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'transfer', 'name': '内部调动', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'leave', 'name': '离职申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'leave_handover', 'name': '离职交接', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
             ]
         }
     )
+
+    # 内部调动默认审批流程
+    specs_v3.createAuditConfig(spec='hr.transfer:_.owner->hr.owner->root.ceo', fallback=True)
 
 
 class Migration(migrations.Migration):

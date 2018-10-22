@@ -10,3 +10,4 @@ from .auditExport import *
 from .auditCategory import *
 
 from .org import *
+from .profile import *

@@ -56,7 +56,8 @@ def resolve_profile(profile,
                     orgs=False,
                     include_messages=True,
                     include_pending_tasks=True,
-                    include_memo=True):
+                    include_memo=True,
+                    include_info=True):
     result = {
         'id': str(profile.pk),
         'name': profile.name,
@@ -128,7 +129,26 @@ def resolve_profile(profile,
             'value': m.value
         } for m in memo]
 
-        return result
+    if include_info:
+        info = ProfileInfo.objects.get(profile=profile)
+        result['info'] = {
+            'state': info.state,
+            'realname': info.realname,
+            'gender': info.gender,
+            'nation': info.nation,
+            'jiguan': info.jiguan,
+            'education': info.education,
+            'join_at': info.join_at.isoformat() if info.join_at else None,
+            'positive_at': info.positive_at.isoformat() if info.positive_at else None,
+            'contract': info.contract,
+            'shebao': info.shebao,
+            'desc': info.desc,
+            'attachments': info.attachments,
+            'contact_name': info.contact_name,
+            'contact_phone': info.contact_phone,
+        }
+
+    return result
 
 
 def resolve_activity(activity, include_steps=True):
@@ -165,6 +185,7 @@ def resolve_step(step):
         'assigneePosition': resolve_position(step.assigneePosition),
         'position': step.position,
         'desc': step.desc,
+        'extra': step.extra,
 
         'activated_at': step.activated_at.isoformat() if step.activated_at else None,
         'finished_at': step.finished_at.isoformat() if step.finished_at else None,

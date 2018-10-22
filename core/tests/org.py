@@ -7,7 +7,6 @@ from django.test import Client
 from core.models import *
 from core.auth import *
 from core.tests import helpers
-
 from core.tests.audit_test_mixin import AuditTestMixin
 
 

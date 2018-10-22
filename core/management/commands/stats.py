@@ -12,6 +12,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 
 from core.models import *
+from core.signals import *
 from core.common import resolveCategoryForAudit
 
 logger = logging.getLogger('app.core.views.stats')
@@ -371,13 +372,37 @@ class Command(BaseCommand):
         except:
             logger.exception("some error happens while sending push notifications.")
 
+    def handleAsyncTasks(self):
+        tasks = AsyncTask.objects.filter(finished=False, exec_at__lte=timezone.now())
+
+        for task in tasks:
+            try:
+                if task.category == 'transfer':
+                    profileId = task.data['profile']
+                    to_department = task.data['to_department']
+                    to_position = task.data['to_position']
+
+                    profile = Profile.objects.get(pk=profileId)
+                    if not profile.archived:
+                        profile.department = Department.objects.get(pk=to_department['id'])
+                        profile.position = Position.objects.get(pk=to_position['id'])
+                        profile.save()
+
+                    user_org_update.send(sender=self, profile=profile)
+                    task.finished = True
+                    task.save()
+            except:
+                logger.exception("fail to handle task: {}".format(task.pk))
+
     def handle(self, *args, **kwargs):
         if kwargs["once"]:
             self._stats()
+            self.handleAsyncTasks()
             return
 
         def job():
             self._stats()
+            self.handleAsyncTasks()
 
         schedule.every(1).hour.do(job)
         while True:

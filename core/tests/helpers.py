@@ -10,4 +10,5 @@ def prepareProfile(name, password, phone):
     profile = Profile.objects.create(user=user,
                                      name=name,
                                      phone=phone)
+    ProfileInfo.objects.create(profile=profile, realname=name)
     return profile
