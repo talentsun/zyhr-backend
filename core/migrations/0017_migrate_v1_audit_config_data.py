@@ -183,6 +183,18 @@ def prepareV3AuditCofigurationData(apps, schema_editor):
                  'updated_at': timezone.now()},
                 {'subtype': 'leave_handover', 'name': '离职交接', 'category': 'hr', 'hasTask': True, 'enabled': True,
                  'updated_at': timezone.now()},
+
+                {'subtype': 'qingjia', 'name': '请假申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'chuchai', 'name': '出差申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'kaoqin_yichang', 'name': '考勤异常申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+
+                {'subtype': 'yinjian_kezhi', 'name': '印鉴刻制申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'dangan_jiechu', 'name': '业务档案原件借出', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
             ]
         }
     )
