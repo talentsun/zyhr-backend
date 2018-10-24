@@ -29,18 +29,6 @@ empty = Side(border_style=None, color=None)
 medium = Side(border_style="medium", color="000000")
 
 
-# FIXME: 获取审批流当中负责审批的各个职位的人员信息，部分审批单里面的人员信息没有参与审批
-def resolveUser(activity, dep, pos):
-    steps = activity.steps()
-    for step in steps:
-        assignee = step.assignee
-        if assignee.department.code == dep and \
-                        assignee.position.code == pos:
-            return assignee
-
-    return None
-
-
 def style_range(ws, cell_range, border=Border(), fill=None, font=None, alignment=None):
     """
     Apply styles to a range of cells as if they were a single cell.
@@ -164,6 +152,35 @@ def inBounds(range, cell):
            and bounds[2] >= cell.bounds[2] and bounds[3] >= cell.bounds[3]
 
 
+def resolveDepOwnerStepFromAudit(activity):
+    steps = activity.steps()
+
+    for step in steps:
+        if step.assigneeDepartment == activity.creator.department and \
+                        step.assigneePosition.code == 'owner':
+            return step
+
+    # step not found
+    return None
+
+
+def resolveStepFromAudit(activity, dep=None, pos=None):
+    steps = activity.steps()
+
+    for step in steps:
+        assignee_dep = None
+        if step.assigneeDepartment is not None:
+            assignee_dep = step.assigneeDepartment.code
+
+        assignee_pos = step.assigneePosition.code
+
+        if assignee_dep == dep and assignee_pos == pos:
+            return step
+
+    # step not found
+    return None
+
+
 def resolveProfileFromAudit(activity, dep=None, pos=None):
     steps = activity.steps()
 
@@ -179,6 +196,14 @@ def resolveProfileFromAudit(activity, dep=None, pos=None):
 
     # profile not found
     return None
+
+
+def fix_merged_cells_border(ws, range):
+    for cell in ws.merged_cells:
+        if not inBounds(range, cell):
+            continue
+
+        style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
 
 
 def exportOpenAccountAuditDoc(activity):
@@ -879,6 +904,373 @@ def exportTravelAuditDoc(activity):
     return path
 
 
+def exportYongrenAuditDoc(activity):
+    auditData = activity.extra
+    info = auditData['info']
+    usage = auditData['usage']
+    template = 'yongren'
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/{}.xlsx'.format(template))
+    ws = wb.active
+
+    ws['B2'] = activity.creator.department.name
+    ws['F2'] = activity.created_at.strftime('%Y-%m-%d')
+    ws['B3'] = info['position']
+    ws['D3'] = info['num']
+    ws['F3'] = info['date']
+    ws['B4'] = info['desc']
+    ws['B4'].alignment = Alignment(vertical='center', wrapText=True)
+    gender = '男' if usage['gender'] == '1' else '女'
+    ws['B5'] = '性别：{}        年龄：{}\n学历：{}        专业：{}'.format(gender, usage['age'], usage['education'], usage['specs'])
+    ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
+    ws['B6'] = info['zige']
+    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:F9')
+    set_border(ws, 'A3:F9', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
+def exportQingjiaAuditDoc(activity):
+    info = activity.extra
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/qingjia.xlsx')
+    ws = wb.active
+
+    ws['D2'] = activity.created_at.strftime('%Y-%m-%d')
+    ws['B3'] = activity.creator.name
+    ws['D3'] = activity.creator.position.name
+    typeOptions = [
+        {'id': 1, 'name': "事假"},
+        {'id': 2, 'name': "病假"},
+        {'id': 3, 'name': "工伤假"},
+        {'id': 4, 'name': "年休假"},
+        {'id': 5, 'name': "婚假"},
+        {'id': 6, 'name': "产假"},
+        {'id': 7, 'name': "产检假"},
+        {'id': 8, 'name': "看护假"},
+        {'id': 9, 'name': "哺乳假"},
+        {'id': 10, 'name': "丧假"},
+        {'id': 11, 'name': "考试假"},
+        {'id': 100, 'name': "其他"}
+    ]
+    for o in typeOptions:
+        if info['type'] == o['id']:
+            ws['B4'] = o['name']
+    ws['B4'].alignment = Alignment(vertical='center', horizontal='left', wrapText=True)
+    ws['B5'] = info['reason']
+    ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
+
+    startDate = datetime.datetime.strptime(info['date'][0], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
+    endDate = datetime.datetime.strptime(info['date'][1], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
+    ws['B6'] = startDate.strftime('%Y-%m-%d %H:%M') + '-' + endDate.strftime('%Y-%m-%d %H:%M')
+    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:D9')
+    set_border(ws, 'A3:D9', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
+def exportChuchaiAuditDoc(activity):
+    info = activity.extra
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/chuchai.xlsx')
+    ws = wb.active
+
+    ws['D2'] = activity.created_at.strftime('%Y-%m-%d')
+    ws['B3'] = activity.creator.name
+    ws['D3'] = activity.creator.position.name
+
+    ws['B4'] = info['reason']
+    ws['B4'].alignment = Alignment(vertical='center', wrapText=True)
+
+    ws['B5'] = info['startTime'] + '-' + info['endTime']
+    ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
+
+    ws['B6'] = info['location']
+    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:D9')
+    set_border(ws, 'A3:D9', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
+def exportKaoqinyichangAuditDoc(activity):
+    info = activity.extra
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/kaoqin_yichang.xlsx')
+    ws = wb.active
+
+    ws['D2'] = activity.created_at.strftime('%Y-%m-%d')
+    ws['B3'] = activity.creator.name
+    ws['D3'] = activity.creator.position.name
+
+    ws['B5'] = info['reason']
+    ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
+
+    startDate = datetime.datetime.strptime(info['date'][0], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
+    endDate = datetime.datetime.strptime(info['date'][1], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
+    ws['B4'] = startDate.strftime('%Y-%m-%d %H:%M') + '-' + endDate.strftime('%Y-%m-%d %H:%M')
+    ws['B4'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B6'] = getattr(step, 'desc', '无')
+    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:D8')
+    set_border(ws, 'A3:D8', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
+def exportZizhishiyongAuditDoc(activity):
+    info = activity.extra['info']
+    usage = activity.extra['usage']
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/zizhi_shiyong.xlsx')
+    ws = wb.active
+
+    ws['B2'] = info['company']
+    ws['B2'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B3'] = info['type']
+    ws['B3'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B4'] = activity.creator.name
+    ws['D4'] = activity.creator.department.name
+    ws['F4'] = activity.created_at.strftime('%Y-%m-%d')
+
+    ws['B5'] = info['desc']
+    ws['B5'].alignment = Alignment(vertical='center', horizontal='left')
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B6'] = getattr(step, 'desc', '无')
+    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['F6'] = getattr(step, 'desc', '无')
+    ws['F6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='fin', pos='owner')
+    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['F7'] = getattr(step, 'desc', '无')
+    ws['F7'].alignment = Alignment(vertical='center', wrapText=True)
+
+    ws['A8'] = '是否带出：{}'.format('是' if usage['out'] == '1' else '否')
+    date = usage['date'] if 'date' in usage else '无'
+    member = usage['member'] if 'member' in usage else '无'
+    desc = usage['desc'] if 'desc' in usage else '无'
+    ws['B8'] = '1.预计归还时间：{}             2. 陪同人员：{}\n3.其他说明事项：{}'.format(date, member, desc)
+    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A2:G9')
+    set_border(ws, 'A2:G9', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
+def exportYinjiankezhiAuditDoc(activity):
+    info = activity.extra
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/yinjian_kezhi.xlsx')
+    ws = wb.active
+
+    ws['B2'] = info['company']
+    ws['B2'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B3'] = info['type']
+    ws['B3'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B4'] = info['reason']
+    ws['B4'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B5'] = info['department']['name']
+    ws['B5'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B5'] = info['department']['name']
+    ws['B5'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B6'] = activity.creator.name
+    ws['B6'].alignment = Alignment(vertical='center', horizontal='left')
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A2:B9')
+    set_border(ws, 'A2:B9', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
+def exportDanganjiechuAuditDoc(activity):
+    info = activity.extra
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/dangan_jiechu.xlsx')
+    ws = wb.active
+
+    ws['B2'] = activity.creator.name
+    ws['B2'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['D2'] = activity.creator.department.name
+    ws['D2'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B3'] = info['name']
+    ws['B3'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B4'] = info['reason']
+    ws['B4'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B5'] = info['date']
+    ws['B5'].alignment = Alignment(vertical='center', horizontal='left')
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B6'] = getattr(step, 'desc', '无')
+    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A2:D9')
+    set_border(ws, 'A2:D9', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
+def exportZichanbaofeiAuditDoc(activity):
+    info = activity.extra
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/zichan_baofei.xlsx')
+    ws = wb.active
+
+    ws['B2'] = activity.creator.department.name
+    ws['B2'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['D2'] = info['name']
+    ws['D2'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B3'] = info['date']
+    ws['B3'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['D3'] = info.get('price', '')
+    ws['D3'].alignment = Alignment(vertical='center', horizontal='left')
+
+    ws['B4'] = info['desc']
+    ws['B4'].alignment = Alignment(vertical='center', horizontal='left')
+
+    step = resolveDepOwnerStepFromAudit(activity)
+    ws['B5'] = getattr(step, 'desc', '无')
+    ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B6'] = getattr(step, 'desc', '无')
+    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A2:D8')
+    set_border(ws, 'A2:D8', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
 def _export(activity):
     path, filename = None, None
     if activity.config.subtype == 'open_account':
@@ -899,10 +1291,37 @@ def _export(activity):
     elif re.match('fn', activity.config.subtype):
         path = exportFnContractAuditDoc(activity)
         filename = '职能合同会签审批.xlsx'
-    else:
+    elif re.match('travel', activity.config.subtype):
         # travel
         path = exportTravelAuditDoc(activity)
         filename = '差旅费用报销审批单.xlsx'
+    elif activity.config.subtype == 'yongren':
+        # yongren
+        path = exportYongrenAuditDoc(activity)
+        filename = '用人需求审批单.xlsx'
+    elif activity.config.subtype == 'qingjia':
+        path = exportQingjiaAuditDoc(activity)
+        filename = '请假申请审批单.xlsx'
+    elif activity.config.subtype == 'chuchai':
+        path = exportChuchaiAuditDoc(activity)
+        filename = '出差申请审批单.xlsx'
+    elif activity.config.subtype == 'kaoqin_yichang':
+        path = exportKaoqinyichangAuditDoc(activity)
+        filename = '考勤异常申请审批单.xlsx'
+    elif activity.config.subtype == 'zizhi_shiyong':
+        path = exportZizhishiyongAuditDoc(activity)
+        filename = '资质使用申请审批单.xlsx'
+    elif activity.config.subtype == 'yinjian_kezhi':
+        path = exportYinjiankezhiAuditDoc(activity)
+        filename = '印鉴刻制申请审批单.xlsx'
+    elif activity.config.subtype == 'dangan_jiechu':
+        path = exportDanganjiechuAuditDoc(activity)
+        filename = '业务档案原件借出申请审批单.xlsx'
+    elif activity.config.subtype == 'zichan_baofei':
+        path = exportZichanbaofeiAuditDoc(activity)
+        filename = '资产报废申请审批单.xlsx'
+    else:
+        pass
 
     return path, filename
 
