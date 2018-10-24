@@ -137,4 +137,5 @@ def exportAccounts(request):
             sheet.write(row + 1, col, getattr(account, prop))
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+    filename = '财务账号{}.xls'.format(timezone.now().strftime('%Y%m%d'))
+    return sendfile(request, f, attachment=True, attachment_filename=filename)

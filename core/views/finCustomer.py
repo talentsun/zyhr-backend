@@ -158,7 +158,8 @@ def exportCustomers(request):
             sheet.write(row + 1, col, attr)
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+    filename = '融资客户信息{}.xls'.format(timezone.now().strftime('%Y%m%d'))
+    return sendfile(request, f, attachment=True, attachment_filename=filename)
 
 
 @require_http_methods(['GET', 'PUT'])
