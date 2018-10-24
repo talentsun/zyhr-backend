@@ -582,6 +582,7 @@ class FinCustomer(models.Model):
     otherMemberPosition = models.CharField(max_length=255, null=True)
     desc = models.TextField(null=True)  # 沟通情况
     next = models.TextField(null=True)  # 后续工作安排
+    note = models.TextField(null=True) # 备注
 
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     archived = models.BooleanField(default=False)

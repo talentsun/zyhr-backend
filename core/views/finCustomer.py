@@ -38,6 +38,7 @@ def resolve_fin_customer(fc):
         'otherMemberPosition': fc.otherMemberPosition,
         'desc': fc.desc,
         'next': fc.next,
+        'note': fc.note,
 
         'creator': resolve_profile(fc.creator) if fc.creator is not None else None,
 
@@ -97,6 +98,7 @@ def createCustomerByTuple(tuple, profile):
         'otherMemberPosition': t[11],
         'desc': t[12],
         'next': t[13],
+        'note': t[14],
         'creator': profile
     }
     logger.info(data)
