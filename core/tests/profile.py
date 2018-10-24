@@ -54,7 +54,7 @@ class OrgTestCase(TestCase, AuditTestMixin):
         profileInfo = ProfileInfo.objects.get(profile=profile)
         self.assertEqual(profile.blocked, True)
         self.assertEqual(profileInfo.realname, 'neo')
-        self.assertEqual(profileInfo.state, ProfileInfo.StateNormal)
+        self.assertEqual(profileInfo.state, ProfileInfo.StateTesting)
 
     def test_delete_profile(self):
         self.prepareData()

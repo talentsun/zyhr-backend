@@ -12,7 +12,7 @@ from core.common import *
 from core.exception import *
 from core.signals import *
 
-logger = logging.getLogger('app.core.views.emps')
+logger = logging.getLogger('app.core.views.org')
 
 
 class OrgView:
@@ -95,6 +95,7 @@ def department(request, dep):
 
         archiveDepartment(department)
 
+        logger.info("department deleted, dep: {}".format(department.pk))
         OrgView().send_org_update(dep=department.pk)
         return JsonResponse({'ok': True})
 

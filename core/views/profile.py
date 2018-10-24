@@ -120,6 +120,8 @@ def profiles(request):
         })
 
         ProfileInfo.objects.create(profile=profile, **data)
+
+        logger.info("profile added, profile: {}".format(profile.pk))
         PView().send_user_org_update(profile=profile)
         return JsonResponse({'ok': True})
 

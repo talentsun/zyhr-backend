@@ -383,11 +383,19 @@ class Command(BaseCommand):
                     to_position = task.data['to_position']
 
                     profile = Profile.objects.get(pk=profileId)
+                    origin_department = profile.department
+                    origin_position = profile.position
                     if not profile.archived:
                         profile.department = Department.objects.get(pk=to_department['id'])
                         profile.position = Position.objects.get(pk=to_position['id'])
                         profile.save()
 
+                    logger.info(
+                        "profile transfer, dep: {}, pos: {} to_dep: {}, to_pos: {}".format(
+                            origin_department.pk,
+                            origin_position.pk,
+                            to_department['id'],
+                            to_position['id']))
                     user_org_update.send(sender=self, profile=profile)
                     task.finished = True
                     task.save()

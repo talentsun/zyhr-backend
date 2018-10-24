@@ -22,7 +22,9 @@ from core.signals import *
 logger = logging.getLogger('app.core.views.audit')
 
 
-def submitActivityAudit(activity):
+def submitActivityAudit(activity, taskId=None):
+    logger.info("{} submit audit activity, activity: {}".format(taskId, activity.pk))
+
     activity.state = AuditActivity.StateProcessing
     activity.save()
 
@@ -48,6 +50,8 @@ def submitActivityAudit(activity):
                            category='progress',
                            extra={},
                            profile=step.assignee)
+
+    logger.info("{} submit audit activity done, activity: {}".format(taskId, activity.pk))
 
 
 def recordBankAccountIfNeed(profile, code, data):
@@ -251,7 +255,9 @@ def resolveConfigByConditions(subtype, auditData, creator):
 
 
 @transaction.atomic
-def createActivity(profile, data):
+def createActivity(profile, data, taskId=None):
+    logger.info('{} create activity'.format(taskId))
+
     # TODO: validate user permission
     subtype = data.get('code', None)  # audit acitivity config code
     submit = data.get('submit', False)  # 是否提交审核
@@ -260,7 +266,6 @@ def createActivity(profile, data):
     if config is None:
         return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
 
-    taskId = uuid.uuid4()
     logger.info('{} create activity base on config: {}'.format(
         taskId, config.subtype))
 
@@ -277,22 +282,25 @@ def createActivity(profile, data):
 
     if submit:
         setupSteps(activity, taskId=taskId)
-        submitActivityAudit(activity)
+        submitActivityAudit(activity, taskId=taskId)
 
     recordBankAccountIfNeed(profile, activity.config.subtype, activity.extra)
     recordCompanyIfNeed(profile, activity.config.subtype, activity.extra)
     recordMemo(profile, activity.config.subtype, activity.extra)
 
-    return JsonResponse({'activity': activity.pk})
+    return JsonResponse({'activity': str(activity.pk), 'ok': True, 'id': str(activity.pk)})
 
 
 @require_http_methods(['POST'])
 @validateToken
 def activities(request):
     # TODO: validate user permission
+    taskId = uuid.uuid4()
+    logger.info("{} create new audit activity".format(taskId))
+
     profile = request.profile
     data = json.loads(request.body.decode('utf-8'))
-    return createActivity(profile, data)
+    return createActivity(profile, data, taskId=taskId)
 
 
 @require_http_methods(['GET'])
@@ -307,11 +315,18 @@ def activity(request, activityId):
 @validateToken
 def cancel(request, activityId):
     # TODO: validate user permission
-    # TODO: delete steps
+
+    taskId = uuid.uuid4()
+    logger.info("{} cancel audit activity, activity: {}".format(taskId, activityId))
+
     try:
         activity = AuditActivity.objects.get(pk=activityId)
         if activity.isCancellable():
+
+            logger.info("{} update activity state to cancelled".format(taskId))
             activity.state = AuditActivity.StateCancelled
+
+            logger.info("{} update delete steps".format(taskId))
             AuditStep.objects.filter(activity=activity).delete()
             activity.finished_at = datetime.datetime.now(tz=timezone.utc)
             activity.save()
@@ -319,7 +334,10 @@ def cancel(request, activityId):
             onActivityEnd(activity)
 
             # delete messages
+            logger.info("{} update delete messages".format(taskId))
             Message.objects.filter(activity=activity).delete()
+
+            logger.info("{} done".format(taskId))
             return JsonResponse({'ok': True})
         else:
             return JsonResponse({
@@ -351,6 +369,9 @@ def updateData(request, activityId):
 @validateToken
 def submitAudit(request, activityId):
     # TODO: validate user permission
+    taskId = uuid.uuid4()
+    logger.info("{} submit audit activity, activity: {}".format(taskId, activityId))
+
     activity = AuditActivity.objects.get(pk=activityId)
     if activity.state != AuditActivity.StateDraft \
             and activity.state != AuditActivity.StateCancelled:
@@ -368,8 +389,8 @@ def submitAudit(request, activityId):
     activity.config_data = resolve_config(config)
     activity.save()
 
-    setupSteps(activity, taskId=uuid.uuid4())
-    submitActivityAudit(activity)
+    setupSteps(activity, taskId=taskId)
+    submitActivityAudit(activity, taskId=taskId)
     return JsonResponse({'ok': True})
 
 
@@ -377,6 +398,9 @@ def submitAudit(request, activityId):
 @validateToken
 @transaction.atomic
 def relaunch(request, activityId):
+    taskId = uuid.uuid4()
+    logger.info("{} relaunch activity, activity: {}".format(taskId, activityId))
+
     activity = AuditActivity.objects.get(pk=activityId)
     activity.archived = True
     activity.save()
@@ -386,8 +410,7 @@ def relaunch(request, activityId):
         'submit': False,
         'extra': activity.extra
     }
-    activity = createActivity(request.profile, data)
-    return JsonResponse({'id': str(activity.pk)})
+    return createActivity(request.profile, data, taskId=taskId)
 
 
 def validateStepState(step, profile):
@@ -477,6 +500,7 @@ def approveStep(request, stepId):
                     pi.save()
                     profile.blocked = True
                     profile.save()
+                    logger.info('profile departure, profile: {}'.format(profile.pk))
                     PView().send_user_org_update(profile=profile)
 
             if activity.config.subtype == 'transfer':
@@ -539,6 +563,9 @@ def onActivityEnd(activity):
 @validateToken
 def rejectStep(request, stepId):
     # TODO: validate user permission
+    taskId = uuid.uuid4()
+    logger.info("{} reject step, stepId: {}".format(taskId, stepId))
+
     profile = request.profile
     data = json.loads(request.body.decode('utf-8'))
     desc = data.get('desc', None)
@@ -567,6 +594,7 @@ def rejectStep(request, stepId):
             .delete()
 
         activity = step.activity
+        logger.info("{} update activity state to rejected, activity: {}".format(taskId, activity.pk))
         activity.finished_at = datetime.datetime.now(tz=timezone.utc)
         activity.state = AuditActivity.StateRejected
         activity.save()
@@ -577,6 +605,8 @@ def rejectStep(request, stepId):
                                activity=activity,
                                category='finish',
                                extra={'state': 'rejected'})
+
+        logger.info("{} reject step done".format(taskId))
         return JsonResponse({'ok': True})
     except:
         return JsonResponse({

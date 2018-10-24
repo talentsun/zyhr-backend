@@ -41,6 +41,10 @@ def check_audit_config(sender, dep=None, pos=None):
     当部门和岗位关系恢复的时候，应该自动恢复异常的审批配置
     如果某些审批环节的配置恢复但是整个审批配置没有恢复的话，需要将恢复正常的环节的 abnormal flag 更新回来
     """
+    taskId = uuid.uuid4()
+    logger.info("{} check audit config".format(taskId))
+    logger.info("{} check whether there are some configs which should be reset abnormal flag.".format(taskId))
+
     configs = AuditActivityConfig.objects.filter(archived=False, abnormal=True)
     for config in configs:
         steps = AuditActivityConfigStep.objects \
@@ -55,6 +59,7 @@ def check_audit_config(sender, dep=None, pos=None):
             else:
                 step.abnormal = False
                 step.save()
+                logger.info("{} reset step abnormal flag, step: {}".format(taskId, str(step.pk)))
 
         if not abnormal:
             config.abnormal = False
@@ -62,6 +67,7 @@ def check_audit_config(sender, dep=None, pos=None):
             AuditActivityConfigStep.objects \
                 .filter(config=config) \
                 .update(abnormal=False)
+            logger.info("{} reset config abnormal flag, config: {}".format(taskId, str(config.pk)))
 
     """
     检查现有的审批流配置是否受影响，有以下几种情况：
@@ -71,6 +77,8 @@ def check_audit_config(sender, dep=None, pos=None):
 
     以上几种情况都会导致该受影响的审批环节不可能存在负责的审批人
     """
+
+    logger.info("{} check whether there are some configs which should be abnormal.".format(taskId))
     configs = AuditActivityConfig.objects.filter(archived=False)
     for config in configs:
         steps = AuditActivityConfigStep.objects \
@@ -83,9 +91,11 @@ def check_audit_config(sender, dep=None, pos=None):
             if not check_config_step(step):
                 affected = True
                 step.abnormal = True
+                logger.info("{} set step abnormal, step: {}".format(taskId, str(step.pk)))
                 step.save()
 
         if affected:
+            logger.info("{} set config abnormal, config: {}".format(taskId, str(config.pk)))
             config.abnormal = True
             config.save()
 
