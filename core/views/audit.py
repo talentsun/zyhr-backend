@@ -446,6 +446,9 @@ class PView:
 @validateToken
 def approveStep(request, stepId):
     # TODO: validate user permission
+    taskId = uuid.uuid4()
+    logger.info("{} approve step, step: {}".format(taskId, stepId))
+
     profile = request.profile
     data = json.loads(request.body.decode('utf-8'))
     desc = data.get('desc', None)
@@ -478,6 +481,8 @@ def approveStep(request, stepId):
         step.save()
         if step.nextStep() == None:
             activity = step.activity
+            logger.info("{} activity has been approved, activity: {}".format(taskId, activity.pk))
+
             activity.state = AuditActivity.StateApproved
             if activity.config.hasTask:
                 activity.taskState = 'pending'
@@ -544,6 +549,8 @@ def approveStep(request, stepId):
                                    category='progress',
                                    extra={},
                                    profile=nextStep.assignee)
+
+        logger.info("{} approve step done, step: {}".format(taskId, stepId))
         return JsonResponse({'ok': True})
     except:
         logger.exception("fail to approve step")

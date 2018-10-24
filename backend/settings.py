@@ -168,10 +168,15 @@ LOGGING = {
             'stream': sys.stdout,
             'formatter': 'verbose'
         },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/var/lib/zyhr/app.log',
+        },
     },
     'loggers': {
         'app': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': True,
         }
