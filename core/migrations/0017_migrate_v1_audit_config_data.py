@@ -183,6 +183,8 @@ def prepareV3AuditCofigurationData(apps, schema_editor):
                  'updated_at': timezone.now()},
                 {'subtype': 'leave_handover', 'name': '离职交接', 'category': 'hr', 'hasTask': True, 'enabled': True,
                  'updated_at': timezone.now()},
+                {'subtype': 'yongren', 'name': '用人需求', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
 
                 {'subtype': 'qingjia', 'name': '请假申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
                  'updated_at': timezone.now()},
@@ -195,12 +197,26 @@ def prepareV3AuditCofigurationData(apps, schema_editor):
                  'updated_at': timezone.now()},
                 {'subtype': 'dangan_jiechu', 'name': '业务档案原件借出', 'category': 'hr', 'hasTask': True, 'enabled': True,
                  'updated_at': timezone.now()},
+
+                {'subtype': 'zichan_baofei', 'name': '固定资产报损（废）', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'zichan_caigou', 'name': '固定资产购置申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
+                {'subtype': 'zizhi_shiyong', 'name': '资质使用申请', 'category': 'hr', 'hasTask': True, 'enabled': True,
+                 'updated_at': timezone.now()},
             ]
         }
     )
 
     # 内部调动默认审批流程
+    specs_v3.createAuditConfig(spec='hr.yongren:_.owner->hr.owner->root.ceo', fallback=True)
+    specs_v3.createAuditConfig(spec='hr.zhuanzheng:_.owner->hr.owner->root.ceo', fallback=True)
     specs_v3.createAuditConfig(spec='hr.transfer:_.owner->hr.owner->root.ceo', fallback=True)
+    specs_v3.createAuditConfig(spec='hr.leave:_.owner->hr.owner->root.ceo', fallback=True)
+    specs_v3.createAuditConfig(spec='hr.leave_handover:_.owner->fin.owner->hr.owner->root.ceo', fallback=True)
+    specs_v3.createAuditConfig(spec='hr.qingjia:_.owner->hr.owner', fallback=True)
+    specs_v3.createAuditConfig(spec='hr.chuchai:_.owner->hr.owner', fallback=True)
+    specs_v3.createAuditConfig(spec='hr.kaoqin_yichang:_.owner->hr.owner', fallback=True)
 
 
 class Migration(migrations.Migration):
