@@ -540,7 +540,7 @@ class Customer(models.Model):
     rating = models.CharField(max_length=50)
     shareholder = models.CharField(max_length=255)
     faren = models.CharField(max_length=255)
-    capital = models.FloatField()
+    capital = models.CharField(max_length=255, null=True)
     year = models.CharField(max_length=10)
     category = models.CharField(max_length=255, choices=CustomerCatgetories)
     nature = models.CharField(max_length=255)  # 公司性质
