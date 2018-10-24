@@ -412,7 +412,7 @@ class Command(BaseCommand):
             self._stats()
             self.handleAsyncTasks()
 
-        schedule.every(1).hour.do(job)
+        schedule.every(20).minute.do(job)
         while True:
             schedule.run_pending()
             self.sendAPNIfNeed()
