@@ -293,8 +293,12 @@ def exportRecords(request):
                 data[prop] = getattr(r, prop)
             else:
                 exp = calPathMapping[prop]
-                value = eval(exp, {'Decimal': Decimal}, data)
-                data[prop] = value
+                try:
+                    value = eval(exp, {'Decimal': Decimal}, data)
+                    data[prop] = value
+                except:
+                    logger.exception("fail to calculate {}".format(prop))
+                    data[prop] = None
 
         for col, prop in enumerate(props):
             sheet.write(row + 1, col, data.get(prop, ''))
