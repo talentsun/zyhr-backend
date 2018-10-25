@@ -79,7 +79,8 @@ def createCustomerByTuple(tuple, profile):
             t.append(i)
             continue
 
-        if isnan(i):
+        if pandas.isna(i):
+        # if isnan(i):
             t.append('')
         else:
             t.append(i)
