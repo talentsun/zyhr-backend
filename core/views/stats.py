@@ -79,37 +79,40 @@ def transactionRecords(request):
 def createTransactionRecordByTuple(tuple, profile):
     logger.info(tuple)
 
-    date = str(tuple[1]).strip()
+    data = {}
+    props = ['date', 'number', 'income', 'outcome', 'balance', 'desc', 'other']
+    for index, prop in enumerate(props):
+        value = tuple[index + 1]
+        if pandas.isna(value):
+            value = None
+
+        data[prop] = value
+
+    # process date
+    date = data['date']
+    if date is None:
+        raise Exception('invalid date')
+    date = str(date).strip()
     if re.match('^\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d$', date):
         date = date.split(' ')[0]
-
     if not re.match('^\d\d\d\d-\d\d-\d\d$', date):
         raise Exception('invalid date')
+    data['date'] = date
 
-    number = tuple[2]
-    income = tuple[3]
-    outcome = tuple[4]
+    if data['number'] is None:
+        raise Exception('number shoud not be empty')
 
-    balance = tuple[5]
-    desc = tuple[6]
-    other = tuple[7]
+    if data['income'] is None and data['outcome'] is None:
+        raise Exception("income or outcome should not be empty")
 
-    if desc == '' or desc is None:
-        raise Exception('balance should not be empty')
+    if data['balance'] is None:
+        raise Exception("balance should not be empty")
 
-    if other == '':
-        raise Exception('other should not be empty')
+    if data['other'] is None:
+        raise Exception("other should not be empty")
 
-    r = StatsTransactionRecord.objects.create(
-        creator=profile,
-        date=date,
-        number=number,
-        income=income,
-        outcome=outcome,
-        balance=balance,
-        desc=desc,
-        other=other,
-    )
+    data['creator'] = profile
+    r = StatsTransactionRecord.objects.create(**data)
 
     SRO = StatsTransactionRecordOps
     SRO.objects.create(record=r, profile=profile, op='create')
