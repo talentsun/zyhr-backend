@@ -1271,6 +1271,57 @@ def exportZichanbaofeiAuditDoc(activity):
     return path
 
 
+def exportZichancaigouAuditDoc(activity):
+    items = activity.extra['items']
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/zichan_caigou.xlsx')
+    ws = wb.active
+
+    ws['B2'] = activity.creator.name
+    ws['B2'].alignment = Alignment(vertical='center', horizontal='center')
+
+    ws['E2'] = activity.creator.department.name
+    ws['E2'].alignment = Alignment(vertical='center', horizontal='center')
+
+    ws['H2'] = activity.created_at.strftime('%Y-%m-%d')
+    ws['H2'].alignment = Alignment(vertical='center', horizontal='center')
+
+    row = 5
+    for index, item in enumerate(items):
+        r = row + index
+        ws['A' + str(r)] = item.get('name', '')
+        ws['B' + str(r)] = item.get('model', '')
+        ws['C' + str(r)] = item.get('num', '')
+        ws['D' + str(r)] = item.get('price', '')
+        ws['E' + str(r)] = amountFixed(float(item['price']) * float(item['num']))
+        ws['F' + str(r)] = item.get('date', '')
+        ws['G' + str(r)] = item.get('channel', '')
+        ws['H' + str(r)] = item.get('desc', '')
+        ws['H' + str(r)].alignment = Alignment(vertical='center', horizontal='left')
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B10'] = getattr(step, 'desc', '无') or '无'
+    ws['B10'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B11'] = getattr(step, 'desc', '无') or '无'
+    ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B12'] = getattr(step, 'desc', '无') or '无'
+    ws['B12'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A2:H16')
+    set_border(ws, 'A2:H16', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
 def _export(activity):
     path, filename = None, None
     if activity.config.subtype == 'open_account':
@@ -1320,6 +1371,9 @@ def _export(activity):
     elif activity.config.subtype == 'zichan_baofei':
         path = exportZichanbaofeiAuditDoc(activity)
         filename = '资产报废申请审批单.xlsx'
+    elif activity.config.subtype == 'zichan_caigou':
+        path = exportZichancaigouAuditDoc(activity)
+        filename = '资产购置申请审批单.xlsx'
     else:
         pass
 
