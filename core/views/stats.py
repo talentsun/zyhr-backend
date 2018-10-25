@@ -133,9 +133,7 @@ def importTransactionRecords(request):
             createTransactionRecordByTuple(t, profile)
             success = success + 1
         except:
-            # TODO
-            # 导入数据的时候，如果中间出问题应该中断才对吧，而且必须提示用户从哪一条开始出问题的
-            # 要和产品经理确认
+            # 出现异常的数据，就终止导入
             logger.exception("fail to import customer, stop")
             break
 
