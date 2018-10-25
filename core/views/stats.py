@@ -224,7 +224,9 @@ def exportRecords(request):
             sheet.write(row + 1, col, getattr(r, prop, ''))
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+
+    filename = '资金信息{}.xls'.format(timezone.now().strftime('%Y%m%d'))
+    return sendfile(request, f, attachment=True, attachment_filename=filename)
 
 
 def resolve_op(op):

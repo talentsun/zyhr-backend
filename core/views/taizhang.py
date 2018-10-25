@@ -300,4 +300,5 @@ def exportRecords(request):
             sheet.write(row + 1, col, data.get(prop, ''))
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+    filename = '业务台账信息{}.xls'.format(timezone.now().strftime('%Y%m%d'))
+    return sendfile(request, f, attachment=True, attachment_filename=filename)
