@@ -227,23 +227,49 @@ class ProfileInfo(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     profile = models.OneToOneField(Profile, null=True, on_delete=models.CASCADE)
-    state = models.CharField(max_length=20, choices=StateChoices, default=StateTesting)  # 员工状态，默认是试用期
+    state = models.CharField(max_length=20, choices=StateChoices, default=StateTesting)  # 就职状态，默认是试用期
     realname = models.CharField(max_length=255, null=True)  # 姓名，可重复
     archived = models.BooleanField(default=False)
 
     # 基本信息，电话/邮件/部门/职位在 profile 表当中
     gender = models.IntegerField(default=0)  # 0：未知，1：男，2：女
+    id_number = models.CharField(max_length=255, null=True)  # 身份证/护照等
+    birthday = models.CharField(max_length=255, null=True)  # 出生年月日
     nation = models.CharField(max_length=255, null=True)  # 民族
+    hunyin = models.CharField(max_length=255, null=True)  # 婚姻情况
     jiguan = models.CharField(max_length=255, null=True)  # 籍贯
+    height = models.CharField(max_length=255, null=True)
+    weigh = models.CharField(max_length=255, null=True)
+    blood = models.CharField(max_length=255, null=True)  # 血型
+    zhengzhimianmao = models.CharField(max_length=255, null=True)  # 政治面貌
+    rudang_date = models.CharField(max_length=255, null=True)  # 入党时间
+    hukou_location = models.CharField(max_length=255, null=True)  # 户口所在地
+
+    # 教育情况
     education = models.CharField(max_length=255, null=True)  # 最高学历
+    graduation_date = models.CharField(max_length=255, null=True)  # 毕业时间
+    school = models.CharField(max_length=255, null=True)  # 毕业学校
+    spec = models.CharField(max_length=255, null=True)  # 专业
+    education_desc = models.TextField(null=True)
+    language = models.CharField(max_length=255, null=True)  # 外语级别
+    driving = models.CharField(max_length=255, null=True)  # 驾驶证
 
-    # 人事档案信息
+    # 工作信息
     join_at = models.DateTimeField(null=True)  # 入职时间
+    join_at_contract = models.DateTimeField(null=True)  # 入职时间（合同）
     positive_at = models.DateTimeField(null=True)  # 转正时间
-    contract = models.CharField(max_length=255, null=True)  # 劳动合同
-    shebao = models.CharField(max_length=255, null=True)  # 社保缴纳
+    positive_at_contract = models.DateTimeField(null=True)  # 转正时间（合同约定）
+    positive_desc = models.CharField(max_length=255, null=True)  # 转正情况
+    contract_due = models.CharField(max_length=255, null=True)  # 合同到期时间
+    leave_at = models.CharField(max_length=255, null=True)  # 离职时间
+    leave_reason = models.CharField(max_length=255, null=True)  # 离职原因
+    work_desc = models.CharField(max_length=255, null=True)  # 其他工作情况
+    work_transfer_desc = models.TextField(null=True)  # 工作变动情况
 
+    # 紧急联系人信息
+    contact_address = models.CharField(max_length=255, null=True)  # 通讯地址
     contact_name = models.CharField(max_length=255, null=True)  # 紧急联系人姓名
+    contact_relation = models.CharField(max_length=255, null=True)  # 联系人关系
     contact_phone = models.CharField(max_length=255, null=True)  # 紧急联系人电话
     desc = models.CharField(max_length=255)  # 备注
 
@@ -251,6 +277,16 @@ class ProfileInfo(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def age(self):
+        # 年龄
+        return None
+
+    @property
+    def work_years(self):
+        # 司龄
+        return None
 
 
 class AuditActivityConfig(models.Model):
@@ -582,7 +618,7 @@ class FinCustomer(models.Model):
     otherMemberPosition = models.CharField(max_length=255, null=True)
     desc = models.TextField(null=True)  # 沟通情况
     next = models.TextField(null=True)  # 后续工作安排
-    note = models.TextField(null=True) # 备注
+    note = models.TextField(null=True)  # 备注
 
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     archived = models.BooleanField(default=False)
