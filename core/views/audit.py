@@ -84,6 +84,9 @@ def recordBankAccountIfNeed(profile, code, data):
 def recordCompanyIfNeed(profile, code, data):
     if re.match('biz', code):
         company = data['base'].get('company')
+        if company is None or company == '':
+            return
+
         count = Company.objects.filter(name=company).count()
         if count == 0:
             Company.objects.create(profile=profile, name=company)
