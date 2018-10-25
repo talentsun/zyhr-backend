@@ -31,7 +31,7 @@ def resolve_transaction_record(record):
         'income': record.income,
         'outcome': record.outcome,
         'balance': record.balance,
-        'desc': record.desc,
+        'desc': record.desc or '-',
         'other': record.other
     }
 
