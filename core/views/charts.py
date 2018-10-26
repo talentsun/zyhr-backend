@@ -161,8 +161,8 @@ def funds_line(request):
         logger.info('filter funds line data by fromMonth: {} '.format(fromMonth))
         tss = tss.filter(startDayOfWeek__gte=fromMonth)
 
-    accounts = tss.values('account__pk', 'account__name').distinct()
-    accountNames = [a['account__name'] for a in accounts]
+    accounts = tss.values('account__pk', 'account__name', 'account__number').distinct()
+    accountNames = [a['account__name'] + '(' + a['account__number'] + ')' for a in accounts]
     accounts = [a['account__pk'] for a in accounts]
 
     weeks = tss.values('startDayOfWeek').distinct().order_by('startDayOfWeek')
