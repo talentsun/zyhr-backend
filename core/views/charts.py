@@ -640,10 +640,10 @@ def home_taizhang(request):
                     sum_kuchun_liang=Sum('kuchun_liang'),
                 )
                 valueItem = {
-                    'xiaoshoue': s['sum_xiaoshoue'] / Decimal(10000),
-                    'lirune': s['sum_lirune'] / Decimal(10000),
-                    'zijin_zhanya': s['sum_zijin_zhanya'] / Decimal(10000),
-                    'kuchun_liang': s['sum_kuchun_liang'] / Decimal(10000),
+                    'xiaoshoue': s['sum_xiaoshoue'],
+                    'lirune': s['sum_lirune'],
+                    'zijin_zhanya': s['sum_zijin_zhanya'],
+                    'kuchun_liang': s['sum_kuchun_liang'],
                 }
             values.append(valueItem)
         data['values'] = values
@@ -692,8 +692,8 @@ def home_customer(request):
                 }
             else:
                 valueItem = {
-                    'yewuliang': t.yewuliang / Decimal(10000),
-                    'avg_price': t.avg_price / Decimal(10000)
+                    'yewuliang': t.yewuliang,
+                    'avg_price': t.avg_price,
                 }
             values.append(valueItem)
         data['values'] = values
@@ -745,9 +745,9 @@ def home_funds(request):
                 }
             else:
                 valueItem = {
-                    'income': t.income / Decimal(10000),
-                    'outcome': t.outcome / Decimal(10000),
-                    'balance': t.balance / Decimal(10000)
+                    'income': t.income,
+                    'outcome': t.outcome,
+                    'balance': t.balance,
                 }
             values.append(valueItem)
         data['values'] = values
