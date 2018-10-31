@@ -495,7 +495,12 @@ def app_taizhang(request):
 @validateToken
 def app_funds(request):
     result = {}
-    weeks = resolve_recent_weeks()
+
+    weeks = TransactionStat.objects \
+        .filter(category='week') \
+        .values('startDayOfWeek') \
+        .distinct() \
+        .order_by('startDayOfWeek')
     result['weeks'] = weeks
 
     tss = TransactionStat.objects.filter(category='week', startDayOfWeek__in=weeks)
