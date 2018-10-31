@@ -501,7 +501,8 @@ def app_funds(request):
         .values('startDayOfWeek') \
         .distinct() \
         .order_by('startDayOfWeek')
-    result['weeks'] = [w['startDayOfWeek'] for w in weeks]
+    weeks = [w['startDayOfWeek'] for w in weeks]
+    result['weeks'] = weeks
 
     tss = TransactionStat.objects.filter(category='week', startDayOfWeek__in=weeks)
     if tss.count() == 0:
