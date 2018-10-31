@@ -16,6 +16,7 @@ from core.views import stats
 from core.views import taizhang
 from core.views import charts
 from core.views import profile
+from core.views import notification
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -137,4 +138,9 @@ urlpatterns = [
     # roles api
     path(r'roles', roles.index),
     path(r'roles/<uuid:roleId>', roles.detail),
+
+    # notifications api
+    path(r'notifications', notification.notifications),
+    path(r'view_notifications', notification.view_notifications),
+    path(r'notifications/<int:id>', notification.notification),
 ]

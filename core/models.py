@@ -582,7 +582,7 @@ class FinCustomer(models.Model):
     otherMemberPosition = models.CharField(max_length=255, null=True)
     desc = models.TextField(null=True)  # 沟通情况
     next = models.TextField(null=True)  # 后续工作安排
-    note = models.TextField(null=True) # 备注
+    note = models.TextField(null=True)  # 备注
 
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     archived = models.BooleanField(default=False)
@@ -782,3 +782,34 @@ class AsyncTask(models.Model):
     data = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+# 动态管理相关表
+class Notification(models.Model):
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    category = models.CharField(max_length=50)  # 动态类型：tongzhi/gonggao/xinwen/zhidu/zhoubao/yuebao
+    for_all = models.BooleanField(default=True)  # 是否发布给所有人
+
+    stick = models.BooleanField(default=False)  # 是否置顶
+    stick_duration = models.CharField(max_length=255)  # 24/48/72/forever
+    attachments = JSONField(null=True)
+    extra = JSONField(null=True)
+    views = models.IntegerField(default=0)  # 浏览量
+
+    archived = models.BooleanField(default=False)
+    published_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class NotDep(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+
+
+class NotificationViews(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    times = models.IntegerField(default=0)
