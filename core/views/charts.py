@@ -423,7 +423,7 @@ def app_taizhang(request):
     time = request.GET.get('time', None)
 
     result = {}
-    date = datetime.datetime.strptime(time, '%Y-%m')
+    date = datetime.datetime.strptime(time, '%Y-%m') if time is not None else timezone.now()
     months = TaizhangStat.objects \
         .filter(category='month', month__lte=date) \
         .values('month') \
@@ -566,7 +566,7 @@ def app_customers(request):
     result = {}
 
     time = request.GET.get('time', None)
-    date = datetime.datetime.strptime(time, '%Y-%m')
+    date = datetime.datetime.strptime(time, '%Y-%m') if time is not None else timezone.now()
     months = CustomerStat.objects \
         .filter(category='month', month__lte=date) \
         .values('month') \
