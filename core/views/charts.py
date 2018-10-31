@@ -423,7 +423,14 @@ def app_taizhang(request):
     time = request.GET.get('time', None)
 
     result = {}
-    months = resolve_recent_months(date=time)
+    date = datetime.datetime.strptime(time, '%Y-%m')
+    months = TaizhangStat.objects \
+        .filter(category='month', month__lte=date) \
+        .values('month') \
+        .distinct() \
+        .order_by('month')
+    months = [w['month'] for w in months]
+    # months = resolve_recent_months(date=time)
     result['months'] = months
 
     tss = TaizhangStat.objects.filter(category='month', month__in=months)
@@ -557,8 +564,16 @@ def app_funds(request):
 @validateToken
 def app_customers(request):
     result = {}
+
     time = request.GET.get('time', None)
-    months = resolve_recent_months(date=time)
+    date = datetime.datetime.strptime(time, '%Y-%m')
+    months = CustomerStat.objects \
+        .filter(category='month', month__lte=date) \
+        .values('month') \
+        .distinct() \
+        .order_by('month')
+    months = [w['month'] for w in months]
+    # months = resolve_recent_months(date=time)
     result['months'] = months
 
     css = CustomerStat.objects.filter(category='month', month__in=months)
