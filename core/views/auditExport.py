@@ -869,7 +869,7 @@ def exportTravelAuditDoc(activity):
     creator = activity.creator
     owner = creator.owner
     finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
-    finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accoutant')
+    finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
     hrOwner = resolveProfileFromAudit(activity, dep='hr', pos='owner')
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
     # 报销人/部分负责人/财务负责人

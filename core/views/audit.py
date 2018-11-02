@@ -275,12 +275,16 @@ def createActivity(profile, data, taskId=None):
     if submit and config.abnormal:
         return JsonResponse({'errorId': 'config-abnormal'}, status=400)
 
+    extra = data['extra']
+    amount = extra.get('amount', None)
+
     activity = AuditActivity.objects \
         .create(config=config,
                 config_data=resolve_config(config),
                 sn=generateActivitySN(),
                 state=AuditActivity.StateDraft,
                 creator=profile,
+                amount=amount,
                 extra=data['extra'])
 
     if submit:
@@ -360,6 +364,9 @@ def updateData(request, activityId):
     data = json.loads(request.body.decode('utf-8'))
     activity = AuditActivity.objects.get(pk=activityId)
     activity.extra = data
+    amount = data.get('amount', None)
+    if amount is not None:
+        activity.amount = amount
     activity.save()
 
     recordBankAccountIfNeed(request.profile, activity.config.subtype, data)
@@ -633,6 +640,8 @@ def mineActivities(request):
     auditType = request.GET.get('type', None)
     state = request.GET.get('state', None)
     search = request.GET.get('search', None)
+    amount_start = request.GET.get('amount_start', None)
+    amount_end = request.GET.get('amount_end', None)
     created_at_start = request.GET.get('created_at_start', None)
     created_at_end = request.GET.get('created_at_end', None)
 
@@ -656,6 +665,11 @@ def mineActivities(request):
     if notEmpty(created_at_end):
         date = iso8601.parse_date(created_at_end)
         activities = activities.filter(created_at__lt=date)
+
+    if notEmpty(amount_start):
+        activities = activities.filter(amount__gte=amount_start)
+    if notEmpty(amount_end):
+        activities = activities.filter(amount__lte=amount_end)
 
     if notEmpty(search):
         activities = activities.order_by('-updated_at')
@@ -744,6 +758,9 @@ def assignedActivities(request):
     created_at_start = request.GET.get('created_at_start', None)
     created_at_end = request.GET.get('created_at_end', None)
 
+    amount_start = request.GET.get('amount_start', None)
+    amount_end = request.GET.get('amount_end', None)
+
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
@@ -763,6 +780,11 @@ def assignedActivities(request):
     if notEmpty(created_at_end):
         date = iso8601.parse_date(created_at_end)
         steps = steps.filter(created_at__lt=date)
+
+    if notEmpty(amount_start):
+        steps = steps.filter(activity__amount__gte=amount_start)
+    if notEmpty(amount_end):
+        steps = steps.filter(activity__amount__lte=amount_end)
 
     activityIdx = [s.activity.pk for s in steps]
     activities = AuditActivity.objects \
@@ -786,10 +808,12 @@ def processedActivities(request):
     created_at_start = request.GET.get('created_at_start', None)
     created_at_end = request.GET.get('created_at_end', None)
 
+    amount_start = request.GET.get('amount_start', None)
+    amount_end = request.GET.get('amount_end', None)
+
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    # TODO: 处理职位变更问题
     steps = AuditStep.objects.filter(assignee=request.profile,
                                      activity__archived=False,
                                      state__in=[
@@ -808,6 +832,11 @@ def processedActivities(request):
     if notEmpty(created_at_end):
         date = iso8601.parse_date(created_at_end)
         steps = steps.filter(created_at__lt=date)
+
+    if notEmpty(amount_start):
+        steps = steps.filter(activity__amount__gte=amount_start)
+    if notEmpty(amount_end):
+        steps = steps.filter(activity__amount__lte=amount_end)
 
     activityIdx = [s.activity.pk for s in steps]
     activities = AuditActivity.objects \
