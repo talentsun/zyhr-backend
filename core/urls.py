@@ -54,6 +54,7 @@ urlpatterns = [
     path(r'audit-activities/<str:activityId>/actions/relaunch', audit.relaunch),
     path(r'audit-activities/<uuid:activityId>/actions/hurryup', audit.hurryup),
     path(r'audit-activities/<uuid:activityId>/actions/mark-task-finished', audit.markTaskFinished),
+    path(r'audit-activities/<uuid:activityId>/actions/mark-task-obsolete', audit.markTaskObsolete),
 
     path(r'audit-steps/<uuid:stepId>/actions/approve', audit.approveStep),
     path(r'audit-steps/<uuid:stepId>/actions/reject', audit.rejectStep),

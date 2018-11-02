@@ -523,22 +523,6 @@ def approveStep(request, stepId):
                                              'to_position': transfer['to_position'],
                                          })
 
-            if re.match('biz', activity.config.subtype):
-                info = activity.extra['info']
-                Taizhang.objects.create(
-                    auditId=activity.pk,
-                    date=activity.created_at.strftime('%Y-%m'),
-                    asset=info['asset'],
-                    upstream=info['upstream'],
-                    upstream_dunwei=info['tonnage'],
-                    buyPrice=info['buyPrice'],
-
-                    downstream=info.get('downstream', ''),
-                    downstream_dunwei=info['tonnage'],
-                    sellPrice=info['sellPrice'],
-                )
-                StatsEvent.objects.create(source='taizhang', event='invalidate')
-
             Message.objects.create(profile=activity.creator,
                                    activity=activity,
                                    category='finish',
@@ -852,14 +836,14 @@ def auditTasks(request):
 
     activities = AuditActivity.objects \
         .select_related('creator', 'config') \
-        .filter(state=AuditActivity.StateApproved,
+        .filter(state__in=[AuditActivity.StateApproved, AuditActivity.StateObsolete],
                 config__hasTask=True,
                 archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
     if notEmpty(state):
-        activities = activities.filter(taskState=state)
+        activities = activities.filter(taskState__in=state.split(','))
 
     if notEmpty(created_at_start):
         date = iso8601.parse_date(created_at_start)
@@ -914,4 +898,31 @@ def markTaskFinished(request, activityId):
     activity = AuditActivity.objects.get(pk=activityId)
     activity.taskState = 'finished'
     activity.save()
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+def markTaskObsolete(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.taskState = 'obsolete'
+    activity.state = AuditActivity.StateObsolete
+    activity.save()
+
+    if re.match('biz', activity.config.subtype):
+        info = activity.extra['info']
+        Taizhang.objects.create(
+            auditId=activity.pk,
+            date=activity.created_at.strftime('%Y-%m'),
+            asset=info['asset'],
+            upstream=info['upstream'],
+            upstream_dunwei=info['tonnage'],
+            buyPrice=info['buyPrice'],
+
+            downstream=info.get('downstream', ''),
+            downstream_dunwei=info['tonnage'],
+            sellPrice=info['sellPrice'],
+        )
+        StatsEvent.objects.create(source='taizhang', event='invalidate')
+
     return JsonResponse({'ok': True})
