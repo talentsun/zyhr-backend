@@ -123,6 +123,7 @@ def resolve_activity(activity, include_steps=True):
                                    include_memo=False,
                                    include_messages=False,
                                    include_pending_tasks=False),
+        'amount': activity.amount,
         'type': activity.config.subtype,
         'state': activity.state,
         'taskState': activity.taskState,

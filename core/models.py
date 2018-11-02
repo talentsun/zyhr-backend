@@ -189,6 +189,7 @@ class AuditActivity(models.Model):
     finished_at = models.DateTimeField(null=True)
     archived = models.BooleanField(default=False)  # 逻辑删除标志
     taskState = models.CharField(null=True, max_length=255)  # None or (pending / finished)
+    amount = models.DecimalField(max_digits=32, decimal_places=2, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
