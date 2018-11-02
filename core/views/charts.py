@@ -519,7 +519,7 @@ def app_funds(request):
         return JsonResponse(result)
 
     result['empty'] = False
-    accounts = tss.values('account__pk', 'account__name', 'account_number').distinct()
+    accounts = tss.values('account__pk', 'account__name', 'account__number').distinct()
     accounts = [{
         'id': a['account__pk'],
         'name': a['account__name'],
