@@ -927,16 +927,6 @@ def markTaskFinished(request, activityId):
     activity = AuditActivity.objects.get(pk=activityId)
     activity.taskState = 'finished'
     activity.save()
-    return JsonResponse({'ok': True})
-
-
-@require_http_methods(['POST'])
-@validateToken
-def markTaskObsolete(request, activityId):
-    activity = AuditActivity.objects.get(pk=activityId)
-    activity.taskState = 'obsolete'
-    activity.state = AuditActivity.StateObsolete
-    activity.save()
 
     if re.match('biz', activity.config.subtype):
         info = activity.extra['info']
@@ -953,5 +943,16 @@ def markTaskObsolete(request, activityId):
             sellPrice=info['sellPrice'],
         )
         StatsEvent.objects.create(source='taizhang', event='invalidate')
+
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+def markTaskObsolete(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.taskState = 'obsolete'
+    activity.state = AuditActivity.StateObsolete
+    activity.save()
 
     return JsonResponse({'ok': True})
