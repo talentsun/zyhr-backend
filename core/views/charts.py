@@ -290,13 +290,15 @@ def customers_bar(request):
     months = [w['month'] for w in months]
 
     d = {
-        'sum_yewuliang': Sum('yewuliang')
+        'sum_yewuliang': Sum('yewuliang'),
+        'sum_dunwei': Sum('dunwei')
     }
     css = css.values('month').annotate(**d)
     css = css.order_by('month')
     data = [{
         'yewuliang': c.get('sum_yewuliang', '0.00'),
-        'avg_price': c.get('sum_avg_price', '0.00')
+        'avg_price': c.get('sum_yewuliang') / c.get('sum_dunwei', '0.00') \
+            if c.get('sum_dunwei', '0.00') != '0.00' else '0.00'
     } for c in css]
 
     return JsonResponse({

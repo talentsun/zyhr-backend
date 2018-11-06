@@ -241,7 +241,7 @@ class Command(BaseCommand):
             yewuliang = yewuliang + r.hetong_jine
             dunwei = dunwei + r.upstream_dunwei
 
-        r = {'yewuliang': yewuliang}
+        r = {'yewuliang': yewuliang, 'dunwei': dunwei}
         if dunwei != 0:
             r['avg_price'] = yewuliang / dunwei
         else:
