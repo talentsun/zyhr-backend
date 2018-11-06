@@ -233,6 +233,8 @@ class Command(BaseCommand):
         if month is not None:
             records = records.filter(date=month)
 
+        logger.info("calCustomerStatsByCustomer customer: {}, month: {}, record count: {}".format(customer.name, month,
+                                                                                                  records.count()))
         yewuliang = Decimal('0.00')
         dunwei = Decimal('0.00')
         for r in records:
