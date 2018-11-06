@@ -260,7 +260,7 @@ def customers_line(request):
         css_by_customer = css_by_customer.order_by('month')
         s = [{
             'yewuliang': c.yewuliang,
-            'avg_price': '0.00'
+            'avg_price': c.avg_price
         } for c in css_by_customer]
         series.append(s)
 
