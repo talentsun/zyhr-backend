@@ -301,6 +301,7 @@ class AuditActivity(models.Model):
     StateProcessing = 'processing'
     StateApproved = 'approved'
     StateRejected = 'rejected'
+    StateObsolete = 'obsolete'  # v3 新状态，已作废
     StateCancelled = 'cancelled'
     StateAborted = 'aborted'  # v3 当中的新状态，表示审批由于审批流中负责人员无法正确更换而导致的审批异常中断
     StateChoices = (
@@ -322,7 +323,8 @@ class AuditActivity(models.Model):
     extra = JSONField()  # 审批相关数据，不同类型的审批，相关数据不一样，暂时使用 json 保存
     finished_at = models.DateTimeField(null=True)
     archived = models.BooleanField(default=False)  # 逻辑删除标志
-    taskState = models.CharField(null=True, max_length=255)  # None or (pending / finished)
+    taskState = models.CharField(null=True, max_length=255)  # None or (pending / finished / obsolete)
+    amount = models.DecimalField(max_digits=32, decimal_places=2, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

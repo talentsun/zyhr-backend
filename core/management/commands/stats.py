@@ -233,6 +233,8 @@ class Command(BaseCommand):
         if month is not None:
             records = records.filter(date=month)
 
+        logger.info("calCustomerStatsByCustomer customer: {}, month: {}, record count: {}".format(customer.name, month,
+                                                                                                  records.count()))
         yewuliang = Decimal('0.00')
         dunwei = Decimal('0.00')
         for r in records:
@@ -264,12 +266,22 @@ class Command(BaseCommand):
         stopMonth = self.calStopMonth()
         while month < stopMonth:
             monthText = month.strftime('%Y-%m')
-            for customer in customers:
-                data = self.calCustomerStatsByCustomer(c, month=monthText)
-                CustomerStat.objects.create(category='month',
-                                            customer=customer,
-                                            month=monthText,
-                                            **data)
+
+            for c in customers:
+                try:
+                    logger.info(
+                        "calculate customer stats by month: {} for customer {}".format(monthText, c.name))
+                    data = self.calCustomerStatsByCustomer(c, month=monthText)
+                    CustomerStat.objects.create(category='month',
+                                                customer=c,
+                                                month=monthText,
+                                                **data)
+                    logger.info(
+                        "calculate customer stats by month: {} for customer {}, data: {}".format(monthText, c.name,
+                                                                                                 data))
+                except:
+                    logger.exception("fail to calculate customer stats")
+
             month = nextMonth
             nextMonth = self.calNextMonth(month)
 
