@@ -16,6 +16,7 @@ from core.views import stats
 from core.views import taizhang
 from core.views import charts
 from core.views import profile
+from core.views import dev
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -138,4 +139,6 @@ urlpatterns = [
     # roles api
     path(r'roles', roles.index),
     path(r'roles/<uuid:roleId>', roles.detail),
+
+    path(r'dev/trigger-stats', dev.trigger_stats)
 ]

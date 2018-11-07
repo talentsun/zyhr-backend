@@ -411,6 +411,10 @@ class Command(BaseCommand):
                     user_org_update.send(sender=self, profile=profile)
                     task.finished = True
                     task.save()
+                elif task.category == 'stats':
+                    self._stats()
+                    task.finished = True
+                    task.save()
             except:
                 logger.exception("fail to handle task: {}".format(task.pk))
 
@@ -421,11 +425,11 @@ class Command(BaseCommand):
             return
 
         def job():
-            self._stats()
-            self.handleAsyncTasks()
+            AsyncTask.objects.create(category='stats', exec_at=timezone.now(), data={})
 
         schedule.every(20).minutes.do(job)
         while True:
             schedule.run_pending()
             self.sendAPNIfNeed()
+            self.handleAsyncTasks()
             time.sleep(1)
