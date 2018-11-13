@@ -16,3 +16,4 @@ def trigger_stats(request):
         time.sleep(1)
 
     return JsonResponse({'ok': True})
+

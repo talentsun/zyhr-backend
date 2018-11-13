@@ -365,7 +365,7 @@ def app_home(request):
         for p in ['sum_xiaoshoue', 'sum_lirune', 'sum_zijin_zhanya', 'sum_kuchun_liang']:
             if data[p] is None:
                 data[p] = Decimal(0)
-        taizhangData['xiaoshoue'].append(data['sum_xiaoshoue'] / Decimal(100000000))
+        taizhangData['xiaoshoue'].append(data['sum_xiaoshoue'] / Decimal(10000))
         taizhangData['lirune'].append(data['sum_lirune'] / Decimal(10000))
         taizhangData['zijin_zhanya'].append(data['sum_zijin_zhanya'] / Decimal(10000))
         taizhangData['kuchun_liang'].append(data['sum_kuchun_liang'] / Decimal(10000))
@@ -410,7 +410,7 @@ def app_home(request):
         for p in ['sum_yewuliang', 'sum_avg_price']:
             if data[p] is None:
                 data[p] = Decimal(0)
-        customersData['yewuliang'].append(data['sum_yewuliang'] / Decimal(100000000))
+        customersData['yewuliang'].append(data['sum_yewuliang'] / Decimal(10000))
         customersData['avg_price'].append(data['sum_avg_price'] / Decimal(10000))
         if css.count() > 0:
             customersData['empty'] = False
