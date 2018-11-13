@@ -114,7 +114,7 @@ class Command(BaseCommand):
         companies = list(companies)
 
         assets = set()
-        records = Taizhang.objects.all().values('asset').distinct()
+        records = Taizhang.objects.filter(archived=False).values('asset').distinct()
         for r in records:
             assets.add(r['asset'])
         assets = list(assets)
