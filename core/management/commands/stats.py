@@ -29,7 +29,7 @@ class Command(BaseCommand):
         if endDate is not None:
             records = records.filter(date__lt=endDate.strftime('%Y-%m-%d'))
 
-        lastRecord = records.order_by('-pk').first()
+        lastRecord = records.order_by('-date', '-pk').first()
         balance = Decimal(0)
         if lastRecord is not None:
             balance = Decimal(lastRecord.balance)
