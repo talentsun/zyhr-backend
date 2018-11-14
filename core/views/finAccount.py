@@ -45,6 +45,12 @@ def index(request):
         })
     elif request.method == 'POST':
         data = json.loads(request.body.decode('utf-8'))
+
+        number = data['number']
+        count = FinAccount.objects.filter(archived=False, number=number).count()
+        if count > 0:
+            return JsonResponse({'errorId': 'duplicated-number'})
+
         data['creator'] = profile
         FinAccount.objects.create(**data)
         return JsonResponse({'ok': True})
@@ -88,6 +94,10 @@ def createAccountByTuple(tuple, profile):
         currency = 'hkd'
     if currency == '美元':
         currency = 'dollar'
+
+    count = FinAccount.objects.filter(number=number, archived=False).count()
+    if count > 0:
+        raise Exception('duplicate number for fin account')
 
     FinAccount.objects.create(
         creator=profile,
