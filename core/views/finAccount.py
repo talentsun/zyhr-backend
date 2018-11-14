@@ -49,7 +49,7 @@ def index(request):
         number = data['number']
         count = FinAccount.objects.filter(archived=False, number=number).count()
         if count > 0:
-            return JsonResponse({'errorId': 'duplicated-number'})
+            return JsonResponse({'errorId': 'duplicated-number'}, status=400)
 
         data['creator'] = profile
         FinAccount.objects.create(**data)
