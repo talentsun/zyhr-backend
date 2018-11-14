@@ -53,7 +53,7 @@ def taizhang_line(request):
     for asset in assets:
         tss_by_asset = tss.filter(asset=asset)
         tss_by_asset = tss_by_asset.order_by('month')
-        s = [getattr(t, prop) for t in tss_by_asset]
+        s = [getattr(t, prop) / Decimal(10000) for t in tss_by_asset]
         series.append(s)
 
     return JsonResponse({
@@ -85,7 +85,7 @@ def taizhang_bar(request):
         d = {p: Sum(prop)}
         tss_by_prop = tss.values('month').annotate(**d)
         tss_by_prop = tss_by_prop.order_by('month')
-        s = [t.get(p, '0.00') for t in tss_by_prop]
+        s = [t.get(p, '0.00') / Decimal(10000) for t in tss_by_prop]
         series.append(s)
 
     return JsonResponse({
@@ -172,9 +172,9 @@ def funds_line(request):
     for account in accounts:
         tss_by_account = tss.filter(account__pk=account)
         s = [{
-            'income': t.income,
-            'outcome': t.outcome,
-            'balance': t.balance
+            'income': t.income / Decimal(10000),
+            'outcome': t.outcome / Decimal(10000),
+            'balance': t.balance / Decimal(10000)
         } for t in tss_by_account]
         series.append(s)
 
@@ -221,9 +221,9 @@ def funds_bar(request):
     tss = tss.values('startDayOfWeek').annotate(**ag)
     data = [{
         'startDayOfWeek': t['startDayOfWeek'],
-        'income': t['sum_income'],
-        'outcome': t['sum_outcome'],
-        'balance': t['sum_balance']
+        'income': t['sum_income'] / Decimal(10000),
+        'outcome': t['sum_outcome'] / Decimal(10000),
+        'balance': t['sum_balance'] / Decimal(10000)
     } for t in tss]
 
     return JsonResponse({
@@ -259,8 +259,8 @@ def customers_line(request):
         css_by_customer = css.filter(customer=c)
         css_by_customer = css_by_customer.order_by('month')
         s = [{
-            'yewuliang': c.yewuliang,
-            'avg_price': c.avg_price
+            'yewuliang': c.yewuliang / Decimal(10000),
+            'avg_price': c.avg_price / Decimal(10000)
         } for c in css_by_customer]
         series.append(s)
 
@@ -296,8 +296,8 @@ def customers_bar(request):
     css = css.values('month').annotate(**d)
     css = css.order_by('month')
     data = [{
-        'yewuliang': c.get('sum_yewuliang', '0.00'),
-        'avg_price': c.get('sum_yewuliang') / c.get('sum_dunwei', '0.00') \
+        'yewuliang': c.get('sum_yewuliang', Decimal(0)) / Decimal(10000),
+        'avg_price': c.get('sum_yewuliang', Decimal(0)) / c.get('sum_dunwei', Decimal(0)) / Decimal(10000) \
             if c.get('sum_dunwei', '0.00') != '0.00' else '0.00'
     } for c in css]
 
@@ -651,10 +651,10 @@ def home_taizhang(request):
             tss = TaizhangStat.objects.filter(category='month', month=month, company=company['name'])
             if tss.count() == 0:
                 valueItem = {
-                    'xiaoshoue': 0,
-                    'lirune': 0,
-                    'zijin_zhanya': 0,
-                    'kuchun_liang': 0,
+                    'xiaoshoue': Decimal(0),
+                    'lirune': Decimal(0),
+                    'zijin_zhanya': Decimal(0),
+                    'kuchun_liang': Decimal(0),
                 }
             else:
                 s = tss.aggregate(
@@ -664,10 +664,10 @@ def home_taizhang(request):
                     sum_kuchun_liang=Sum('kuchun_liang'),
                 )
                 valueItem = {
-                    'xiaoshoue': s['sum_xiaoshoue'],
-                    'lirune': s['sum_lirune'],
-                    'zijin_zhanya': s['sum_zijin_zhanya'],
-                    'kuchun_liang': s['sum_kuchun_liang'],
+                    'xiaoshoue': s['sum_xiaoshoue'] / Decimal(10000),
+                    'lirune': s['sum_lirune'] / Decimal(10000),
+                    'zijin_zhanya': s['sum_zijin_zhanya'] / Decimal(10000),
+                    'kuchun_liang': s['sum_kuchun_liang'] / Decimal(10000),
                 }
             values.append(valueItem)
         data['values'] = values
@@ -716,8 +716,8 @@ def home_customer(request):
                 }
             else:
                 valueItem = {
-                    'yewuliang': t.yewuliang,
-                    'avg_price': t.avg_price,
+                    'yewuliang': t.yewuliang / Decimal(10000),
+                    'avg_price': t.avg_price / Decimal(10000),
                 }
             values.append(valueItem)
         data['values'] = values
@@ -763,15 +763,15 @@ def home_funds(request):
             t = tss.first()
             if t is None:
                 valueItem = {
-                    'income': '0',
-                    'outcome': '0',
-                    'balance': '0'
+                    'income': Decimal(0),
+                    'outcome': Decimal(0),
+                    'balance': Decimal(0)
                 }
             else:
                 valueItem = {
-                    'income': t.income,
-                    'outcome': t.outcome,
-                    'balance': t.balance,
+                    'income': t.income / Decimal(10000),
+                    'outcome': t.outcome / Decimal(10000),
+                    'balance': t.balance / Decimal(10000),
                 }
             values.append(valueItem)
         data['values'] = values
