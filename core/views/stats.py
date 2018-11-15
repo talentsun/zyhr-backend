@@ -208,7 +208,7 @@ def transactionRecord(request, recordId):
 
 @require_http_methods(['GET'])
 def exportRecords(request):
-    records = StatsTransactionRecord.objects.filter(archived=False)
+    records = StatsTransactionRecord.objects.filter(archived=False).order_by('date', 'pk')
 
     f = '/tmp/{}.xls'.format(str(uuid.uuid4()))
     xf = xlwt.Workbook()

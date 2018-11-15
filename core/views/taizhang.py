@@ -158,7 +158,7 @@ def ops(request):
     if other is not None and other != '':
         ops = ops.filter(record__other__contains=other)
     if company is not None and company != '':
-        ops = ops.filter(Q(upstream__contains=company) | Q(downstream__contains=company))
+        ops = ops.filter(Q(record__upstream__contains=company) | Q(record__downstream__contains=company))
     if prop is not None and prop != '':
         ops = ops.filter(prop=prop)
     if id is not None and id != '':

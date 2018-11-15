@@ -17,6 +17,7 @@ from core.views import taizhang
 from core.views import charts
 from core.views import profile
 from core.views import notification
+from core.views import dev
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -144,4 +145,7 @@ urlpatterns = [
     path(r'notifications', notification.notifications),
     path(r'view_notifications', notification.view_notifications),
     path(r'notifications/<int:id>', notification.notification),
+
+    # stats task trigger api
+    path(r'dev/trigger-stats', dev.trigger_stats)
 ]

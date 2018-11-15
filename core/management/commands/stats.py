@@ -29,7 +29,7 @@ class Command(BaseCommand):
         if endDate is not None:
             records = records.filter(date__lt=endDate.strftime('%Y-%m-%d'))
 
-        lastRecord = records.order_by('-pk').first()
+        lastRecord = records.order_by('-date', '-pk').first()
         balance = Decimal(0)
         if lastRecord is not None:
             balance = Decimal(lastRecord.balance)
@@ -114,7 +114,7 @@ class Command(BaseCommand):
         companies = list(companies)
 
         assets = set()
-        records = Taizhang.objects.all().values('asset').distinct()
+        records = Taizhang.objects.filter(archived=False).values('asset').distinct()
         for r in records:
             assets.add(r['asset'])
         assets = list(assets)
@@ -241,7 +241,7 @@ class Command(BaseCommand):
             yewuliang = yewuliang + r.hetong_jine
             dunwei = dunwei + r.upstream_dunwei
 
-        r = {'yewuliang': yewuliang}
+        r = {'yewuliang': yewuliang, 'dunwei': dunwei}
         if dunwei != 0:
             r['avg_price'] = yewuliang / dunwei
         else:
@@ -411,6 +411,10 @@ class Command(BaseCommand):
                     user_org_update.send(sender=self, profile=profile)
                     task.finished = True
                     task.save()
+                elif task.category == 'stats':
+                    self._stats()
+                    task.finished = True
+                    task.save()
             except:
                 logger.exception("fail to handle task: {}".format(task.pk))
 
@@ -421,11 +425,11 @@ class Command(BaseCommand):
             return
 
         def job():
-            self._stats()
-            self.handleAsyncTasks()
+            AsyncTask.objects.create(category='stats', exec_at=timezone.now(), data={})
 
         schedule.every(20).minutes.do(job)
         while True:
             schedule.run_pending()
             self.sendAPNIfNeed()
+            self.handleAsyncTasks()
             time.sleep(1)
