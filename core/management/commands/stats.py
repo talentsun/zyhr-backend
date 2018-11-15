@@ -415,6 +415,18 @@ class Command(BaseCommand):
                     self._stats()
                     task.finished = True
                     task.save()
+                elif task.category == 'unstick_notifications':
+                    ns = Notification.objects \
+                        .filter(archived=False, stick=True) \
+                        .exclude(stick_duration='forever')
+                    for n in ns:
+                        expired_at = n.published_at + datetime.timedelta(hours=int(n.stick_duration or '0'))
+                        if expired_at >= timezone.now():
+                            n.stick = False
+                            n.stick_duration = None
+                            n.save()
+                    task.finished = True
+                    task.save()
             except:
                 logger.exception("fail to handle task: {}".format(task.pk))
 
@@ -427,7 +439,12 @@ class Command(BaseCommand):
         def job():
             AsyncTask.objects.create(category='stats', exec_at=timezone.now(), data={})
 
+        def job2():
+            AsyncTask.objects.create(category='unstick_notifications', exec_at=timezone.now(), data={})
+
         schedule.every(20).minutes.do(job)
+        schedule.every(5).minutes.do(job2)
+
         while True:
             schedule.run_pending()
             self.sendAPNIfNeed()

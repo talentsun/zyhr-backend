@@ -24,7 +24,7 @@ def resolve_notification(n, include_content=False):
                                      include_memo=False,
                                      include_info=False)
                      for nv in NotificationViews.objects.filter(notification=n)[0:10]],
-        'published': n.published_at >= timezone.now,
+        'published': n.published_at >= timezone.now(),
 
         'creator': {
             'name': n.creator.name
@@ -32,7 +32,7 @@ def resolve_notification(n, include_content=False):
 
         'published_at': n.published_at.isoformat(),
         'created_at': n.created_at.isoformat(),
-        'updated_at': n.created_at.updated_at(),
+        'updated_at': n.updated_at.isoformat(),
 
         'extra': n.extra
 
@@ -50,25 +50,22 @@ def resolve_notification(n, include_content=False):
 def view_notifications(request):
     profile = request.profile
     category = request.GET.get('category')
+
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
     nds = NotDep.objects \
-        .filter(notification__archived=False,
-                notification__category=category) \
-        .filter(Q(department=profile.department) | Q(notification__forall=True))
-    idx = [n.notification.pk for n in nds]
+        .filter(notification__archived=False) \
+        .filter(notification__category=category) \
+        .filter(Q(department=profile.department) | Q(notification__for_all=True)) \
+        .order_by('-notification__stick', '-notification__updated_at')
 
-    notifications = Notification.objects \
-        .filter(pk__in=idx) \
-        .order_by('-stick', '-updated_at')
-
-    total = notifications.count()
-    notifications = notifications[start:start + limit]
+    total = nds.count()
+    nds = nds[start:start + limit]
 
     return JsonResponse({
         'total': total,
-        'notifications': [resolve_notification(n) for n in notifications]
+        'notifications': [resolve_notification(nd.notification) for nd in nds]
     })
 
 
@@ -103,19 +100,8 @@ def notifications(request):
         })
     else:  # POST
         data = json.loads(request.body.decode('utf-8'))
-
-        deps = []
-        if 'deps' in data:
-            delattr(data, 'deps')
-            deps = data['deps']
-
-        n = Notification.objects.create(**data, profile=request.profile)
-
-        if 'for_all' in data and data['for_all'] is False:
-            for dep in deps:
-                d = Department.objects.filter(archived=False, pk=dep).first()
-                if d:
-                    NotDep.objects.create(notification=n, department=d)
+        n = Notification.objects.create(**data, creator=request.profile)
+        generateNotDepByScope(n)
 
         return JsonResponse({'ok': True})
 
@@ -139,29 +125,17 @@ def notification(request, id):
             if nv is None:
                 nv = NotificationViews.objects.create(notification=n, profile=request.profile)
 
-            nv.views = nv.views + 1
+            nv.times = nv.times + 1
             nv.save()
 
         return JsonResponse(resolve_notification(n, include_content=True))
     else:  # PUT
         data = json.loads(request.body.decode('utf-8'))
-
-        deps = []
-        if 'deps' in data:
-            delattr(data, 'deps')
-            deps = data['deps']
-
         if data.get('stick', None) is False:
             data['stick_duration'] = None
 
-        n = Notification.objects.filter(pk=id).update(**data)
-
-        if 'for_all' in data and data['for_all'] is False:
-            for dep in deps:
-                d = Department.objects.filter(archived=False, pk=dep).first()
-                if d:
-                    NotDep.objects.create(notification=n, department=d)
-        elif 'for_all' in data and data['for_all'] is True:
-            NotDep.objects.filter(notification=n).delete()
+        Notification.objects.filter(pk=id).update(**data)
+        n = Notification.objects.get(pk=id)
+        generateNotDepByScope(n)
 
         return JsonResponse({'ok': True})
