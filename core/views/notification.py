@@ -75,22 +75,23 @@ def view_notifications(request):
 def notifications(request):
     if request.method == 'GET':
         title = request.GET.get('title', None)
-        date = request.GET.get('date', None)
+        published = request.GET.get('published', None)
 
         start = int(request.GET.get('start', '0'))
         limit = int(request.GET.get('limit', '20'))
 
-        notifications = Notification.objects \
-            .filter(archived=False)
-        if title is not None and title != '':
-            notifications = notifications \
-                .filter(title__contain=title)
-        if date is not None:
-            notifications = notifications \
-                .filter(published_at__gte=date,
-                        published_at__lte=date + datetime.timedelta(days=1))
+        notifications = Notification.objects.filter(archived=False)
 
-        notifications = notifications.order_by('-stick', '-updated_at')
+        if title is not None and title != '':
+            notifications = notifications.filter(title__contains=title)
+
+        if published is not None and published != '':
+            if published == 'true':
+                notifications = notifications.filter(published_at__lte=timezone.now())
+            else:
+                notifications = notifications.filter(published_at__gt=timezone.now())
+
+        notifications = notifications.order_by('-updated_at')
         total = notifications.count()
         notifications = notifications[start:start + limit]
 
