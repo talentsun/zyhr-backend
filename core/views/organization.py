@@ -30,21 +30,23 @@ def createOrUpdateDepartment(data, dep=None):
     if name is None or name == '':
         return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
 
-    if parent is None:
-        parent = Department.objects.get(code='root').pk
-
-    parentDep = Department.objects.filter(pk=parent).first()
-    if parentDep is None:
-        return JsonResponse({'errorId': 'parent-not-found'}, status=400)
+    parentDep = None
+    if parent is not None:
+        parentDep = Department.objects.filter(pk=parent).first()
+        if parentDep is None:
+            return JsonResponse({'errorId': 'parent-not-found'}, status=400)
 
     count = Department.objects.filter(parent=parentDep, name=name).count()
     if count > 0:
         return JsonResponse({'errorId': 'department-name-duplicate'}, status=400)
 
     if dep is None:
+        # create new department
         Department.objects.create(parent=parentDep, name=name)
     else:
-        if dep.isAncestorOf(parentDep) or dep.pk == parentDep.pk:
+        # update department
+        if parentDep is not None and \
+                (dep.isAncestorOf(parentDep) or dep.pk == parentDep.pk):
             return JsonResponse({'errorId': 'parent-cycle'}, status=400)
 
         dep.name = name
