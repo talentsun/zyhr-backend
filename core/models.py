@@ -817,6 +817,14 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def no(self):
+        count = Notification.objects \
+            .filter(category=self.category, pk__lte=self.pk) \
+            .order_by('pk') \
+            .count()
+        return count
+
 
 class NotDep(models.Model):
     notification = models.ForeignKey(Notification, on_delete=models.CASCADE)

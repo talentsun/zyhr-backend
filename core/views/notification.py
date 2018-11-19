@@ -14,9 +14,11 @@ logger = logging.getLogger('app.core.views.notification')
 
 def resolve_notification(n, include_content=False):
     result = {
-        'id': n.creator.pk,
+        'id': n.pk,
+        'no': n.no,
         'title': n.title,
         'stick': n.stick,
+        'stick_duration': n.stick_duration,
         'views': n.views,
         'profiles': [resolve_profile(nv.profile,
                                      include_messages=False,
@@ -24,7 +26,7 @@ def resolve_notification(n, include_content=False):
                                      include_memo=False,
                                      include_info=False)
                      for nv in NotificationViews.objects.filter(notification=n)[0:10]],
-        'published': n.published_at >= timezone.now(),
+        'published': n.published_at <= timezone.now(),
 
         'creator': {
             'name': n.creator.name
@@ -34,8 +36,8 @@ def resolve_notification(n, include_content=False):
         'created_at': n.created_at.isoformat(),
         'updated_at': n.updated_at.isoformat(),
 
-        'extra': n.extra
-
+        'extra': n.extra,
+        'attachments': n.attachments
     }
 
     if include_content:
@@ -57,6 +59,7 @@ def view_notifications(request):
     nds = NotDep.objects \
         .filter(notification__archived=False) \
         .filter(notification__category=category) \
+        .filter(notification__published_at__lte=timezone.now()) \
         .filter(Q(department=profile.department) | Q(notification__for_all=True)) \
         .order_by('-notification__stick', '-notification__updated_at')
 
@@ -75,12 +78,13 @@ def view_notifications(request):
 def notifications(request):
     if request.method == 'GET':
         title = request.GET.get('title', None)
+        category = request.GET.get('category')
         published = request.GET.get('published', None)
 
         start = int(request.GET.get('start', '0'))
         limit = int(request.GET.get('limit', '20'))
 
-        notifications = Notification.objects.filter(archived=False)
+        notifications = Notification.objects.filter(archived=False, category=category)
 
         if title is not None and title != '':
             notifications = notifications.filter(title__contains=title)
@@ -135,7 +139,14 @@ def notification(request, id):
         if data.get('stick', None) is False:
             data['stick_duration'] = None
 
-        Notification.objects.filter(pk=id).update(**data)
+        partial = {}
+        props = ['title', 'content', 'stick', 'stick_duration', 'published_at',
+                 'extra', 'attachments', 'scope', 'for_all']
+        for prop in props:
+            if prop in data:
+                partial[prop] = data[prop]
+
+        Notification.objects.filter(pk=id).update(**partial)
         n = Notification.objects.get(pk=id)
         generateNotDepByScope(n)
 

@@ -10,7 +10,7 @@ from core.tests import helpers
 from core.tests.audit_test_mixin import AuditTestMixin
 
 
-class OrgTestCase(TestCase, AuditTestMixin):
+class ProfileTestCase(TestCase, AuditTestMixin):
     def test_query_profiles(self):
         self.prepareData()
 

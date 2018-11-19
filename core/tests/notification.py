@@ -45,7 +45,7 @@ class NotificationTestCase(TestCase, AuditTestMixin):
 
         token = generateToken(self.jack)
         client = Client()
-        r = client.get('/api/v1/notifications', HTTP_AUTHORIZATION=token)
+        r = client.get('/api/v1/notifications?category=tongzhi', HTTP_AUTHORIZATION=token)
         self.assertEqual(r.status_code, 200)
         result = json.loads(r.content.decode('utf-8'))
         self.assertEqual(result['total'], 1)
