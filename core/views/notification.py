@@ -25,18 +25,25 @@ def resolve_notification(n, include_content=False):
                                      include_pending_tasks=False,
                                      include_memo=False,
                                      include_info=False)
-                     for nv in NotificationViews.objects.filter(notification=n)[0:10]],
+                     for nv in NotificationViews.objects.filter(notification=n)],
         'published': n.published_at <= timezone.now(),
 
         'creator': {
             'name': n.creator.name
         },
+        'department': {
+            'id': str(n.department.pk),
+            'archived': n.department.archived,
+            'name': n.department.name
+        } if n.department else None,
 
         'published_at': n.published_at.isoformat(),
         'created_at': n.created_at.isoformat(),
         'updated_at': n.updated_at.isoformat(),
 
         'extra': n.extra,
+        'for_all': n.for_all,
+        'scope': n.scope,
         'attachments': n.attachments
     }
 
@@ -105,7 +112,7 @@ def notifications(request):
         })
     else:  # POST
         data = json.loads(request.body.decode('utf-8'))
-        n = Notification.objects.create(**data, creator=request.profile)
+        n = Notification.objects.create(**data, creator=request.profile, department=request.profile.department)
         generateNotDepByScope(n)
 
         return JsonResponse({'ok': True})

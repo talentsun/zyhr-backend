@@ -24,21 +24,26 @@ class OrgView:
 
 
 def createOrUpdateDepartment(data, dep=None):
+    dirty = False
+
     parent = data.get('parent', None)
     name = data.get('name', None)
 
     if name is None or name == '':
-        return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
+        return 'invalid-parameters', dirty
+        # return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
 
     parentDep = None
     if parent is not None:
         parentDep = Department.objects.filter(pk=parent).first()
         if parentDep is None:
-            return JsonResponse({'errorId': 'parent-not-found'}, status=400)
+            return 'parent-not-found', dirty
+            # return JsonResponse({'errorId': 'parent-not-found'}, status=400)
 
     count = Department.objects.filter(parent=parentDep, name=name).count()
     if count > 0:
-        return JsonResponse({'errorId': 'department-name-duplicate'}, status=400)
+        return 'department-name-duplicate', dirty
+        # return JsonResponse({'errorId': 'department-name-duplicate'}, status=400)
 
     if dep is None:
         # create new department
@@ -47,13 +52,16 @@ def createOrUpdateDepartment(data, dep=None):
         # update department
         if parentDep is not None and \
                 (dep.isAncestorOf(parentDep) or dep.pk == parentDep.pk):
-            return JsonResponse({'errorId': 'parent-cycle'}, status=400)
+            return 'parent-cycle', dirty
 
         dep.name = name
-        dep.parent = parentDep
+        if dep.parent != parentDep:
+            dep.parent = parentDep
+            dirty = True
+
         dep.save()
 
-    return JsonResponse({'ok': True})
+    return None, dirty
 
 
 @require_http_methods(['GET', 'POST'])
@@ -66,7 +74,15 @@ def departments(request):
         })
     else:  # POST
         data = json.loads(request.body.decode('utf-8'))
-        return createOrUpdateDepartment(data)
+        error, dirty = createOrUpdateDepartment(data)
+
+        if error is not None:
+            return JsonResponse({"errorId": error}, status=400)
+
+        if dirty:
+            OrgView().send_org_update()
+
+        return JsonResponse({'ok': True})
 
 
 def archiveDepartment(dep):
@@ -90,7 +106,16 @@ def department(request, dep):
 
     if request.method == 'PUT':
         data = json.loads(request.body.decode('utf-8'))
-        return createOrUpdateDepartment(data, dep=department)
+        error, dirty = createOrUpdateDepartment(data, dep=department)
+
+        if error is not None:
+            return JsonResponse({"errorId": error}, status=400)
+
+        if dirty:
+            OrgView().send_org_update()
+
+        return JsonResponse({'ok': True})
+
     else:  # DELETE
         if department.profiles > 0:
             return JsonResponse({'errorId': 'profiles-exist'}, status=400)

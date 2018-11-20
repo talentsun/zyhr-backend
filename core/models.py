@@ -800,6 +800,7 @@ class AsyncTask(models.Model):
 # 动态管理相关表
 class Notification(models.Model):
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=255)
     content = models.TextField()
     category = models.CharField(max_length=50)  # 动态类型：tongzhi/gonggao/xinwen/zhidu/zhoubao/yuebao

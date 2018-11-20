@@ -4,6 +4,8 @@ from core.models import *
 
 logger = logging.getLogger('core.signals')
 
+# TODO: 暂时把各种数据处理逻辑写在一起，有需要的时候再进行拆分
+
 # 部门、职位放生变化的时候发出这个信号
 org_update = django.dispatch.Signal(providing_args=['dep', 'pos'])
 # 用户离职或者所属的部门岗位发生变化的时候发出这个信号
@@ -14,6 +16,20 @@ user_org_update = django.dispatch.Signal(providing_args=['profile'])
 def on_org_update(sender, dep=None, pos=None, **kwargs):
     logger.info('check audit config on organization update')
     check_audit_config(sender, dep=None, pos=None)
+    check_notification()
+
+
+def check_notification():
+    """
+    当组织机构结构发生变化的时候，需要对动态文章的阅读范围重新计算
+    组织机构可能发生的变化：
+    1. 组织机构重命名
+    2. 部门层级被修改
+    3. 部门被删除
+    """
+    ns = Notification.objects.filter(archived=False)
+    for n in ns:
+        generateNotDepByScope(n)
 
 
 def check_config_step(step):
