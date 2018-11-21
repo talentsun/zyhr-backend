@@ -29,7 +29,7 @@ class Command(BaseCommand):
         if endDate is not None:
             records = records.filter(date__lt=endDate.strftime('%Y-%m-%d'))
 
-        lastRecord = records.order_by('-pk').first()
+        lastRecord = records.order_by('-date', '-pk').first()
         balance = Decimal(0)
         if lastRecord is not None:
             balance = Decimal(lastRecord.balance)
@@ -114,7 +114,7 @@ class Command(BaseCommand):
         companies = list(companies)
 
         assets = set()
-        records = Taizhang.objects.all().values('asset').distinct()
+        records = Taizhang.objects.filter(archived=False).values('asset').distinct()
         for r in records:
             assets.add(r['asset'])
         assets = list(assets)
@@ -233,13 +233,15 @@ class Command(BaseCommand):
         if month is not None:
             records = records.filter(date=month)
 
+        logger.info("calCustomerStatsByCustomer customer: {}, month: {}, record count: {}".format(customer.name, month,
+                                                                                                  records.count()))
         yewuliang = Decimal('0.00')
         dunwei = Decimal('0.00')
         for r in records:
             yewuliang = yewuliang + r.hetong_jine
             dunwei = dunwei + r.upstream_dunwei
 
-        r = {'yewuliang': yewuliang}
+        r = {'yewuliang': yewuliang, 'dunwei': dunwei}
         if dunwei != 0:
             r['avg_price'] = yewuliang / dunwei
         else:
@@ -264,12 +266,22 @@ class Command(BaseCommand):
         stopMonth = self.calStopMonth()
         while month < stopMonth:
             monthText = month.strftime('%Y-%m')
-            for customer in customers:
-                data = self.calCustomerStatsByCustomer(c, month=monthText)
-                CustomerStat.objects.create(category='month',
-                                            customer=customer,
-                                            month=monthText,
-                                            **data)
+
+            for c in customers:
+                try:
+                    logger.info(
+                        "calculate customer stats by month: {} for customer {}".format(monthText, c.name))
+                    data = self.calCustomerStatsByCustomer(c, month=monthText)
+                    CustomerStat.objects.create(category='month',
+                                                customer=c,
+                                                month=monthText,
+                                                **data)
+                    logger.info(
+                        "calculate customer stats by month: {} for customer {}, data: {}".format(monthText, c.name,
+                                                                                                 data))
+                except:
+                    logger.exception("fail to calculate customer stats")
+
             month = nextMonth
             nextMonth = self.calNextMonth(month)
 
@@ -399,6 +411,22 @@ class Command(BaseCommand):
                     user_org_update.send(sender=self, profile=profile)
                     task.finished = True
                     task.save()
+                elif task.category == 'stats':
+                    self._stats()
+                    task.finished = True
+                    task.save()
+                elif task.category == 'unstick_notifications':
+                    ns = Notification.objects \
+                        .filter(archived=False, stick=True) \
+                        .exclude(stick_duration='forever')
+                    for n in ns:
+                        expired_at = n.published_at + datetime.timedelta(hours=int(n.stick_duration or '0'))
+                        if expired_at >= timezone.now():
+                            n.stick = False
+                            n.stick_duration = None
+                            n.save()
+                    task.finished = True
+                    task.save()
             except:
                 logger.exception("fail to handle task: {}".format(task.pk))
 
@@ -409,11 +437,16 @@ class Command(BaseCommand):
             return
 
         def job():
-            self._stats()
-            self.handleAsyncTasks()
+            AsyncTask.objects.create(category='stats', exec_at=timezone.now(), data={})
+
+        def job2():
+            AsyncTask.objects.create(category='unstick_notifications', exec_at=timezone.now(), data={})
 
         schedule.every(20).minutes.do(job)
+        schedule.every(5).minutes.do(job2)
+
         while True:
             schedule.run_pending()
             self.sendAPNIfNeed()
+            self.handleAsyncTasks()
             time.sleep(1)

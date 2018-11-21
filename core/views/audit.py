@@ -275,12 +275,16 @@ def createActivity(profile, data, taskId=None):
     if submit and config.abnormal:
         return JsonResponse({'errorId': 'config-abnormal'}, status=400)
 
+    extra = data['extra']
+    amount = extra.get('amount', None)
+
     activity = AuditActivity.objects \
         .create(config=config,
                 config_data=resolve_config(config),
                 sn=generateActivitySN(),
                 state=AuditActivity.StateDraft,
                 creator=profile,
+                amount=amount,
                 extra=data['extra'])
 
     if submit:
@@ -360,6 +364,9 @@ def updateData(request, activityId):
     data = json.loads(request.body.decode('utf-8'))
     activity = AuditActivity.objects.get(pk=activityId)
     activity.extra = data
+    amount = data.get('amount', None)
+    if amount is not None:
+        activity.amount = amount
     activity.save()
 
     recordBankAccountIfNeed(request.profile, activity.config.subtype, data)
@@ -523,22 +530,6 @@ def approveStep(request, stepId):
                                              'to_position': transfer['to_position'],
                                          })
 
-            if re.match('biz', activity.config.subtype):
-                info = activity.extra['info']
-                Taizhang.objects.create(
-                    auditId=activity.pk,
-                    date=activity.created_at.strftime('%Y-%m'),
-                    asset=info['asset'],
-                    upstream=info['upstream'],
-                    upstream_dunwei=info['tonnage'],
-                    buyPrice=info['buyPrice'],
-
-                    downstream=info.get('downstream', ''),
-                    downstream_dunwei=info['tonnage'],
-                    sellPrice=info['sellPrice'],
-                )
-                StatsEvent.objects.create(source='taizhang', event='invalidate')
-
             Message.objects.create(profile=activity.creator,
                                    activity=activity,
                                    category='finish',
@@ -649,6 +640,8 @@ def mineActivities(request):
     auditType = request.GET.get('type', None)
     state = request.GET.get('state', None)
     search = request.GET.get('search', None)
+    amount_start = request.GET.get('amount_start', None)
+    amount_end = request.GET.get('amount_end', None)
     created_at_start = request.GET.get('created_at_start', None)
     created_at_end = request.GET.get('created_at_end', None)
 
@@ -672,6 +665,11 @@ def mineActivities(request):
     if notEmpty(created_at_end):
         date = iso8601.parse_date(created_at_end)
         activities = activities.filter(created_at__lt=date)
+
+    if notEmpty(amount_start):
+        activities = activities.filter(amount__gte=amount_start)
+    if notEmpty(amount_end):
+        activities = activities.filter(amount__lte=amount_end)
 
     if notEmpty(search):
         activities = activities.order_by('-updated_at')
@@ -760,6 +758,9 @@ def assignedActivities(request):
     created_at_start = request.GET.get('created_at_start', None)
     created_at_end = request.GET.get('created_at_end', None)
 
+    amount_start = request.GET.get('amount_start', None)
+    amount_end = request.GET.get('amount_end', None)
+
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
@@ -779,6 +780,11 @@ def assignedActivities(request):
     if notEmpty(created_at_end):
         date = iso8601.parse_date(created_at_end)
         steps = steps.filter(created_at__lt=date)
+
+    if notEmpty(amount_start):
+        steps = steps.filter(activity__amount__gte=amount_start)
+    if notEmpty(amount_end):
+        steps = steps.filter(activity__amount__lte=amount_end)
 
     activityIdx = [s.activity.pk for s in steps]
     activities = AuditActivity.objects \
@@ -802,10 +808,12 @@ def processedActivities(request):
     created_at_start = request.GET.get('created_at_start', None)
     created_at_end = request.GET.get('created_at_end', None)
 
+    amount_start = request.GET.get('amount_start', None)
+    amount_end = request.GET.get('amount_end', None)
+
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
-    # TODO: 处理职位变更问题
     steps = AuditStep.objects.filter(assignee=request.profile,
                                      activity__archived=False,
                                      state__in=[
@@ -824,6 +832,11 @@ def processedActivities(request):
     if notEmpty(created_at_end):
         date = iso8601.parse_date(created_at_end)
         steps = steps.filter(created_at__lt=date)
+
+    if notEmpty(amount_start):
+        steps = steps.filter(activity__amount__gte=amount_start)
+    if notEmpty(amount_end):
+        steps = steps.filter(activity__amount__lte=amount_end)
 
     activityIdx = [s.activity.pk for s in steps]
     activities = AuditActivity.objects \
@@ -852,14 +865,14 @@ def auditTasks(request):
 
     activities = AuditActivity.objects \
         .select_related('creator', 'config') \
-        .filter(state=AuditActivity.StateApproved,
+        .filter(state__in=[AuditActivity.StateApproved, AuditActivity.StateObsolete],
                 config__hasTask=True,
                 archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
             config__subtype__in=auditType.split(','))
     if notEmpty(state):
-        activities = activities.filter(taskState=state)
+        activities = activities.filter(taskState__in=state.split(','))
 
     if notEmpty(created_at_start):
         date = iso8601.parse_date(created_at_start)
@@ -914,4 +927,32 @@ def markTaskFinished(request, activityId):
     activity = AuditActivity.objects.get(pk=activityId)
     activity.taskState = 'finished'
     activity.save()
+
+    if re.match('biz', activity.config.subtype):
+        info = activity.extra['info']
+        Taizhang.objects.create(
+            auditId=activity.pk,
+            date=activity.created_at.strftime('%Y-%m'),
+            asset=info['asset'],
+            upstream=info['upstream'],
+            upstream_dunwei=info['tonnage'],
+            buyPrice=info['buyPrice'],
+
+            downstream=info.get('downstream', ''),
+            downstream_dunwei=info['tonnage'],
+            sellPrice=info['sellPrice'],
+        )
+        StatsEvent.objects.create(source='taizhang', event='invalidate')
+
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+def markTaskObsolete(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.taskState = 'obsolete'
+    activity.state = AuditActivity.StateObsolete
+    activity.save()
+
     return JsonResponse({'ok': True})

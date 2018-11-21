@@ -71,7 +71,7 @@ def index(request):
 
 
 def createCustomerByTuple(tuple, profile):
-    logger.info(tuple)
+    # logger.info(tuple)
 
     t = []
     for i in tuple:
@@ -79,7 +79,8 @@ def createCustomerByTuple(tuple, profile):
             t.append(i)
             continue
 
-        if isnan(i):
+        if pandas.isna(i):
+        # if isnan(i):
             t.append('')
         else:
             t.append(i)
@@ -98,10 +99,10 @@ def createCustomerByTuple(tuple, profile):
         'otherMemberPosition': t[11],
         'desc': t[12],
         'next': t[13],
-        'note': t[14],
+        'note': t[14] if len(t) >= 15 else None, # 备注可能不在 excel 文档当中
         'creator': profile
     }
-    logger.info(data)
+    # logger.info(data)
     FinCustomer.objects.create(**data)
 
 
@@ -145,13 +146,13 @@ def exportCustomers(request):
 
     titles = ['对接银行/机构', '银行/机构层级', '我方负责人', '对方对接人',
               '对接人职位', '对接人联系方式', '见面时间', '见面地点', '我方参与人员', '对方参与人员', '对方参与人员职务',
-              '沟通情况', '后续工作安排']
+              '沟通情况', '后续工作安排', '备注']
     for index, title in enumerate(titles):
         sheet.write(0, index, title)
 
     props = ['org', 'layer', 'owner', 'interface', 'interfacePosition',
              'interfacePhone', 'meetTime', 'meetPlace', 'member', 'otherMember', 'otherMemberPosition',
-             'desc', 'next']
+             'desc', 'next', 'note']
     for row, customer in enumerate(customers):
         for col, prop in enumerate(props):
             attr = getattr(customer, prop)

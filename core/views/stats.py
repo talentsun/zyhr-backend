@@ -208,7 +208,7 @@ def transactionRecord(request, recordId):
 
 @require_http_methods(['GET'])
 def exportRecords(request):
-    records = StatsTransactionRecord.objects.filter(archived=False)
+    records = StatsTransactionRecord.objects.filter(archived=False).order_by('date', 'pk')
 
     f = '/tmp/{}.xls'.format(str(uuid.uuid4()))
     xf = xlwt.Workbook()
@@ -224,7 +224,9 @@ def exportRecords(request):
             sheet.write(row + 1, col, getattr(r, prop, ''))
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+
+    filename = '资金信息{}.xls'.format(timezone.now().strftime('%Y%m%d'))
+    return sendfile(request, f, attachment=True, attachment_filename=filename)
 
 
 def resolve_op(op):

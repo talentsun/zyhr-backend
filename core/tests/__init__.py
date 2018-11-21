@@ -11,3 +11,4 @@ from .auditCategory import *
 
 from .org import *
 from .profile import *
+from .notification import *

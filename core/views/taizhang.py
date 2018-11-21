@@ -158,7 +158,7 @@ def ops(request):
     if other is not None and other != '':
         ops = ops.filter(record__other__contains=other)
     if company is not None and company != '':
-        ops = ops.filter(Q(upstream__contains=company) | Q(downstream__contains=company))
+        ops = ops.filter(Q(record__upstream__contains=company) | Q(record__downstream__contains=company))
     if prop is not None and prop != '':
         ops = ops.filter(prop=prop)
     if id is not None and id != '':
@@ -293,11 +293,16 @@ def exportRecords(request):
                 data[prop] = getattr(r, prop)
             else:
                 exp = calPathMapping[prop]
-                value = eval(exp, {'Decimal': Decimal}, data)
-                data[prop] = value
+                try:
+                    value = eval(exp, {'Decimal': Decimal}, data)
+                    data[prop] = value
+                except:
+                    logger.exception("fail to calculate {}".format(prop))
+                    data[prop] = None
 
         for col, prop in enumerate(props):
             sheet.write(row + 1, col, data.get(prop, ''))
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+    filename = '业务台账信息{}.xls'.format(timezone.now().strftime('%Y%m%d'))
+    return sendfile(request, f, attachment=True, attachment_filename=filename)

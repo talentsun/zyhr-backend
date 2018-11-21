@@ -74,6 +74,16 @@ class Department(models.Model):
 
         return result
 
+    def all_children(self):
+        result = set()
+        result.add(self.pk)
+
+        deps = Department.objects.filter(parent=self, archived=False)
+        for d in deps:
+            result = result.union(d.all_children())
+
+        return result
+
 
 class Position(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
@@ -337,6 +347,7 @@ class AuditActivity(models.Model):
     StateProcessing = 'processing'
     StateApproved = 'approved'
     StateRejected = 'rejected'
+    StateObsolete = 'obsolete'  # v3 新状态，已作废
     StateCancelled = 'cancelled'
     StateAborted = 'aborted'  # v3 当中的新状态，表示审批由于审批流中负责人员无法正确更换而导致的审批异常中断
     StateChoices = (
@@ -358,7 +369,8 @@ class AuditActivity(models.Model):
     extra = JSONField()  # 审批相关数据，不同类型的审批，相关数据不一样，暂时使用 json 保存
     finished_at = models.DateTimeField(null=True)
     archived = models.BooleanField(default=False)  # 逻辑删除标志
-    taskState = models.CharField(null=True, max_length=255)  # None or (pending / finished)
+    taskState = models.CharField(null=True, max_length=255)  # None or (pending / finished / obsolete)
+    amount = models.DecimalField(max_digits=32, decimal_places=2, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -802,7 +814,8 @@ class CustomerStat(models.Model):
     month = models.CharField(max_length=255, null=True)
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
-    yewuliang = models.DecimalField(decimal_places=2, max_digits=19)
+    yewuliang = models.DecimalField(decimal_places=2, max_digits=19, default='0.00')
+    dunwei = models.DecimalField(decimal_places=4, max_digits=19)
     avg_price = models.DecimalField(max_digits=32, decimal_places=4)  # 平均结算价格
 
 
@@ -818,3 +831,70 @@ class AsyncTask(models.Model):
     data = JSONField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+# 动态管理相关表
+class Notification(models.Model):
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True)
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    category = models.CharField(max_length=50)  # 动态类型：tongzhi/gonggao/xinwen/zhidu/zhoubao/yuebao
+    for_all = models.BooleanField(default=True)  # 是否发布给所有人
+
+    stick = models.BooleanField(default=False)  # 是否置顶
+    stick_duration = models.CharField(max_length=255, null=True)  # 24/48/72/forever
+    attachments = JSONField(null=True)
+    extra = JSONField(null=True)
+    scope = JSONField(null=True)  # for_all 为 false 的时候，scope 用来表示用户范围
+    views = models.IntegerField(default=0)  # 浏览量
+
+    archived = models.BooleanField(default=False)
+    published_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def no(self):
+        count = Notification.objects \
+            .filter(category=self.category, pk__lte=self.pk) \
+            .order_by('pk') \
+            .count()
+        return count
+
+
+class NotDep(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True)
+
+
+def generateNotDepByScope(notification):
+    if notification.for_all:
+        NotDep.objects.filter(notification=notification).delete()
+        NotDep.objects.create(notification=notification)
+        return
+
+    all_deps = set()
+    deps = notification.scope
+    for dep in deps:
+        d = Department.objects.filter(archived=False, pk=dep).first()
+        if not d:
+            continue
+
+        children = d.all_children()
+        for pk in children:
+            all_deps.add(pk)
+
+    NotDep.objects.filter(notification=notification).delete()
+    for dep in all_deps:
+        d = Department.objects.filter(archived=False, pk=dep).first()
+        if not d:
+            continue
+
+        NotDep.objects.create(notification=notification, department=d)
+
+
+class NotificationViews(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    times = models.IntegerField(default=0)

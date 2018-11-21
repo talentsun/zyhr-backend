@@ -16,6 +16,8 @@ from core.views import stats
 from core.views import taizhang
 from core.views import charts
 from core.views import profile
+from core.views import notification
+from core.views import dev
 
 urlpatterns = [
     path(r'upload', upload.upload),
@@ -54,6 +56,7 @@ urlpatterns = [
     path(r'audit-activities/<str:activityId>/actions/relaunch', audit.relaunch),
     path(r'audit-activities/<uuid:activityId>/actions/hurryup', audit.hurryup),
     path(r'audit-activities/<uuid:activityId>/actions/mark-task-finished', audit.markTaskFinished),
+    path(r'audit-activities/<uuid:activityId>/actions/mark-task-obsolete', audit.markTaskObsolete),
 
     path(r'audit-steps/<uuid:stepId>/actions/approve', audit.approveStep),
     path(r'audit-steps/<uuid:stepId>/actions/reject', audit.rejectStep),
@@ -137,4 +140,12 @@ urlpatterns = [
     # roles api
     path(r'roles', roles.index),
     path(r'roles/<uuid:roleId>', roles.detail),
+
+    # notifications api
+    path(r'notifications', notification.notifications),
+    path(r'view_notifications', notification.view_notifications),
+    path(r'notifications/<int:id>', notification.notification),
+
+    # stats task trigger api
+    path(r'dev/trigger-stats', dev.trigger_stats)
 ]

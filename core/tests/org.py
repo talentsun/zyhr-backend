@@ -53,18 +53,19 @@ class OrgTestCase(TestCase, AuditTestMixin):
         self.assertEqual(result['ok'], True)
 
         dep = Department.objects.get(name='foobar')
-        root = Department.objects.get(name='root')
-        self.assertEqual(dep.parent, root)
+        self.assertEqual(dep.parent, None)
 
     def test_create_department_with_same_name(self):
+        # TODO: 测试数据当中的组织结构和实际数据不一致，需要修改一下，保持一致，方便维护
         self.prepareData()
         self.prepareAuditConfig()
 
         token = generateToken(self.jack)
         client = Client()
+        root = Department.objects.get(code='root')
         r = client.post('/api/v1/departments',
                         json.dumps({
-                            'parent': None,
+                            'parent': str(root.pk),
                             'name': 'biz'
                         }),
                         content_type='application/json',
