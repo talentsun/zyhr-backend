@@ -71,7 +71,7 @@ def profiles(request):
 
         # by email
         if email is not None and email != '':
-            profiles = profiles.filter(email=email)
+            profiles = profiles.filter(email__contains=email)
 
         total = profiles.count()
         profiles = profiles[start:start + limit]
