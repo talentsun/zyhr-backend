@@ -223,7 +223,9 @@ def categories(request):
         if config == None:
             continue
 
-        steps = AuditActivityConfigStep.objects.filter(config=config)
+        steps = AuditActivityConfigStep.objects \
+            .filter(config=config) \
+            .order_by('position')
         steps = [{
             'dep': getattr(s.assigneeDepartment, 'name', None),
             'pos': getattr(s.assigneePosition, 'name', None)
