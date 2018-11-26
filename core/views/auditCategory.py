@@ -127,6 +127,7 @@ def updateFallbackAuditFlow(request, subtype):
 
         config.save()
         reset_steps(config, configData['steps'])
+        updateCategoryUpdatedAt(config.subtype)
 
     return JsonResponse({'ok': True})
 
