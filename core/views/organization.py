@@ -1,4 +1,5 @@
 import logging
+import time
 import datetime
 import json
 
@@ -93,6 +94,7 @@ def archiveDepartment(dep):
         archiveDepartment(d)
 
     dep.archived = True
+    dep.name = 'deleted-' + str(time.time()) + dep.name
     dep.save()
     DepPos.objects.filter(dep=dep).delete()
 
