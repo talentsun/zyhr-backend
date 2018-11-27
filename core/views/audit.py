@@ -204,13 +204,13 @@ def _compareValue(cond, boundary, value):
         else:
             return boundary == value
     elif cond == 'lt':
-        return value < boundary
+        return float(value) < float(boundary)
     elif cond == 'lte':
-        return value <= boundary
+        return float(value) <= float(boundary)
     elif cond == 'gt':
-        return value > boundary
+        return float(value) > float(boundary)
     elif cond == 'gte':
-        return value >= boundary
+        return float(value) >= float(boundary)
     else:
         return False
 
@@ -224,10 +224,10 @@ def _compareCreator(creator, dep, pos):
 
 def resolveConfigByConditions(subtype, auditData, creator):
     configs = AuditActivityConfig.objects \
-        .filter(subtype=subtype, fallback=False) \
+        .filter(subtype=subtype, fallback=False, archived=False) \
         .order_by('priority')
     fallback = AuditActivityConfig.objects \
-        .filter(subtype=subtype, fallback=True) \
+        .filter(subtype=subtype, fallback=True, archived=False) \
         .first()
 
     result = None
