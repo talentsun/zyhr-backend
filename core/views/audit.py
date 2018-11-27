@@ -234,7 +234,11 @@ def resolveConfigByConditions(subtype, auditData, creator):
     for config in configs:
         match = True
         for condition in config.conditions:
-            prop, cond, value = condition['prop'], condition['condition'], condition['value']
+            prop, cond, value = condition['prop'], condition['condition'], condition.get('value', None)
+            if value is None:
+                # invalid condition, ignore it
+                continue
+
             if prop == 'creator':
                 dep = value.get('department', None)
                 pos = value.get('position', None)
