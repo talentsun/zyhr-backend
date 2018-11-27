@@ -320,6 +320,7 @@ class Command(BaseCommand):
                 'title': title,
                 'alert': content,
                 'extras': {
+                    'category': msg.category,
                     'activity': str(msg.activity.pk)
                 }
             },
@@ -329,6 +330,7 @@ class Command(BaseCommand):
                     'body': content
                 },
                 'extras': {
+                    'category': msg.category,
                     'activity': str(msg.activity.pk)
                 }
             }
