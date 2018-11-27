@@ -208,7 +208,9 @@ def resolve_role(r):
         'profiles': r.profiles,
         'version': r.version,
         'desc': r.desc,
-        'extra': r.extra
+        'extra': r.extra,
+
+        'updated_at': r.updated_at
     }
 
 

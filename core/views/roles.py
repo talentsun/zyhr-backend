@@ -57,6 +57,9 @@ def detail(request, roleId):
         for prop in ['name', 'desc', 'extra']:
             if data.get(prop, None) != None:
                 partial[prop] = data.get(prop)
+
+        partial['updated_at'] = timezone.now()
+
         Role.objects.filter(pk=roleId).update(**partial)
         return JsonResponse({'ok': True})
     else:
