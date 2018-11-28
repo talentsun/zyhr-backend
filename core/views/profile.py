@@ -237,4 +237,4 @@ def export(request):
                 sheet.write(row + 1, col, prop['prop'](pi))
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+    return sendfile(request, f, attachment=True, attachment_filename='员工档案{}.xls'.format(timezone.now().strftime('%Y%m%d')))
