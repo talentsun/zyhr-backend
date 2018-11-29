@@ -1,5 +1,7 @@
 import re
+
 from django.utils import timezone
+from django.forms.models import model_to_dict
 
 from core.models import *
 
@@ -131,22 +133,10 @@ def resolve_profile(profile,
 
     if include_info:
         info = ProfileInfo.objects.get(profile=profile)
-        result['info'] = {
-            'state': info.state,
-            'realname': info.realname,
-            'gender': info.gender,
-            'nation': info.nation,
-            'jiguan': info.jiguan,
-            'education': info.education,
-            'join_at': info.join_at.isoformat() if info.join_at else None,
-            'positive_at': info.positive_at.isoformat() if info.positive_at else None,
-            'contract': info.contract,
-            'shebao': info.shebao,
-            'desc': info.desc,
-            'attachments': info.attachments,
-            'contact_name': info.contact_name,
-            'contact_phone': info.contact_phone,
-        }
+        info_dict = model_to_dict(info)
+        info_dict['join_at'] = info.join_at.isoformat() if info.join_at else None
+        info_dict['positive_at'] = info.positive_at.isoformat() if info.positive_at else None
+        result['info'] = info_dict
 
     return result
 
