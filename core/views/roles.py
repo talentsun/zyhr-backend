@@ -20,8 +20,8 @@ logger = logging.getLogger('app.core.views.emps')
 @transaction.atomic
 def index(request):
     if request.method == 'GET':
-        roles = Role.objects\
-            .filter(archived=False)\
+        roles = Role.objects \
+            .filter(archived=False) \
             .order_by('-updated_at')
         return JsonResponse({
             'roles': [resolve_role(r) for r in roles]
@@ -48,7 +48,13 @@ def index(request):
 @validateToken
 def detail(request, roleId):
     if request.method == 'DELETE':
-        # TODO: check whether some user has this role
+        role = Role.objects.filter(pk=roleId).first()
+        if role is None:
+            return JsonResponse({'ok': True})
+
+        # delete profile's role if match
+        Profile.objects.filter(role=role).update(role=None)
+
         Role.objects.filter(pk=roleId).update(archived=True)
         return JsonResponse({'ok': True})
     elif request.method == 'PUT':
@@ -57,6 +63,9 @@ def detail(request, roleId):
         for prop in ['name', 'desc', 'extra']:
             if data.get(prop, None) != None:
                 partial[prop] = data.get(prop)
+
+        partial['updated_at'] = timezone.now()
+
         Role.objects.filter(pk=roleId).update(**partial)
         return JsonResponse({'ok': True})
     else:

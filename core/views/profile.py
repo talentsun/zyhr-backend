@@ -71,7 +71,7 @@ def profiles(request):
 
         # by email
         if email is not None and email != '':
-            profiles = profiles.filter(email=email)
+            profiles = profiles.filter(email__contains=email)
 
         total = profiles.count()
         profiles = profiles[start:start + limit]
@@ -212,7 +212,7 @@ def export(request):
         {'title': '姓名', 'prop': 'realname'},
         {'title': '部门', 'prop': lambda p: p.profile.department.name},
         {'title': '职位', 'prop': lambda p: p.profile.position.name},
-        {'title': '性别', 'prop': 'gender'},
+        {'title': '性别', 'prop': lambda p: ['未知', '男', '女'][p.gender]},
         {'title': '民族', 'prop': 'nation'},
         {'title': '籍贯', 'prop': 'jiguan'},
         {'title': '最高学历', 'prop': 'education'},
@@ -237,4 +237,5 @@ def export(request):
                 sheet.write(row + 1, col, prop['prop'](pi))
 
     xf.save(f)
-    return sendfile(request, f, attachment=True, attachment_filename='export.xls')
+    return sendfile(request, f, attachment=True,
+                    attachment_filename='员工档案{}.xls'.format(timezone.now().strftime('%Y%m%d')))

@@ -1,4 +1,5 @@
 import logging
+import time
 import datetime
 import json
 
@@ -41,6 +42,9 @@ def createOrUpdateDepartment(data, dep=None):
             # return JsonResponse({'errorId': 'parent-not-found'}, status=400)
 
     count = Department.objects.filter(parent=parentDep, name=name).count()
+    if dep is not None and dep.name == name:
+        count = count - 1
+
     if count > 0:
         return 'department-name-duplicate', dirty
         # return JsonResponse({'errorId': 'department-name-duplicate'}, status=400)
@@ -93,6 +97,7 @@ def archiveDepartment(dep):
         archiveDepartment(d)
 
     dep.archived = True
+    dep.name = 'deleted-' + str(time.time()) + dep.name
     dep.save()
     DepPos.objects.filter(dep=dep).delete()
 

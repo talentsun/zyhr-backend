@@ -188,6 +188,8 @@ def resolve_step(step):
         'desc': step.desc,
         'extra': step.extra,
 
+        'abnormal': step.abnormal,
+
         'activated_at': step.activated_at.isoformat() if step.activated_at else None,
         'finished_at': step.finished_at.isoformat() if step.finished_at else None,
 
@@ -206,7 +208,9 @@ def resolve_role(r):
         'profiles': r.profiles,
         'version': r.version,
         'desc': r.desc,
-        'extra': r.extra
+        'extra': r.extra,
+
+        'updated_at': r.updated_at
     }
 
 

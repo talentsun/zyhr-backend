@@ -14,11 +14,20 @@ from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from sendfile import sendfile
 
+from core.signals import *
 from core.models import *
 from core.auth import validateToken
 from core.common import *
 
 logger = logging.getLogger('app.core.views.auditConfig')
+
+
+class AuditCategoryView:
+    def __init__(self):
+        self.source = 'audit-category'
+
+    def send_config_change(self, subtype):
+        audit_config_change.send(sender=self, subtype=subtype)
 
 
 def updateCategoryUpdatedAt(subtype):
@@ -100,6 +109,7 @@ def updateAuditFlow(request, subtype):
 
         reset_steps(config, steps)
         updateCategoryUpdatedAt(config.subtype)
+        AuditCategoryView().send_config_change(subtype=config.subtype)
 
     return JsonResponse({'ok': True})
 
@@ -127,6 +137,8 @@ def updateFallbackAuditFlow(request, subtype):
 
         config.save()
         reset_steps(config, configData['steps'])
+        updateCategoryUpdatedAt(config.subtype)
+        AuditCategoryView().send_config_change(subtype=config.subtype)
 
     return JsonResponse({'ok': True})
 
@@ -157,6 +169,7 @@ def createAuditFlow(request, subtype):
 
         reset_steps(config, steps)
         updateCategoryUpdatedAt(config.subtype)
+        AuditCategoryView().send_config_change(subtype=config.subtype)
 
     return JsonResponse({'ok': True, 'id': str(config.pk)})
 
@@ -182,6 +195,8 @@ def deleteAuditFlow(request, subtype):
         for index, config in enumerate(configs):
             config.priority = index + 1
             config.save()
+
+        AuditCategoryView().send_config_change(subtype=subtype)
 
     return JsonResponse({'ok': True})
 
@@ -223,7 +238,9 @@ def categories(request):
         if config == None:
             continue
 
-        steps = AuditActivityConfigStep.objects.filter(config=config)
+        steps = AuditActivityConfigStep.objects \
+            .filter(config=config) \
+            .order_by('position')
         steps = [{
             'dep': getattr(s.assigneeDepartment, 'name', None),
             'pos': getattr(s.assigneePosition, 'name', None)
