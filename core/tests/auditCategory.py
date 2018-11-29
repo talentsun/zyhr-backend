@@ -208,7 +208,40 @@ class AuditCategoryTestCase(TestCase):
             [{'prop': 'amount', 'condition': 'lte', 'value': 4000}]
         )
 
-    def test_update_audit_flow(self):
+    def test_restore_audit_config_on_abnormal_flow_changed(self):
+        config = self._create_audit_flow()
+
+        # 手动这是为异常状态
+        config.abnormal = True
+
+        client = Client()
+        r = client.post(
+            '/api/v1/audit-categories/cost/actions/update-flow',
+            json.dumps({
+                'config': str(config.pk),
+                'conditions': [{'prop': 'amount', 'condition': 'lte', 'value': 4000}],
+                'steps': [
+                    {'dep': self.dep_pk('fin'), 'pos': self.pos_pk('owner')},
+                    {'dep': self.dep_pk('root'), 'pos': self.pos_pk('ceo')}
+                ]
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.generateToken
+        )
+        self.assertEqual(r.status_code, 200)
+
+        config = AuditActivityConfig.objects.get(pk=config.pk)
+        self.assert_config_steps(config, [
+            {'dep': 'fin', 'pos': 'owner', 'position': 0},
+            {'dep': 'root', 'pos': 'ceo', 'position': 1},
+        ])
+        self.assertListEqual(
+            config.conditions,
+            [{'prop': 'amount', 'condition': 'lte', 'value': 4000}]
+        )
+        self.assertEqual(config.abnormal, False)
+
+    def test_update_fallback_audit_flow(self):
         client = Client()
         r = client.post(
             '/api/v1/audit-categories/cost/actions/update-fallback-flow',

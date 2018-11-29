@@ -10,12 +10,13 @@ logger = logging.getLogger('core.signals')
 org_update = django.dispatch.Signal(providing_args=['dep', 'pos'])
 # 用户离职或者所属的部门岗位发生变化的时候发出这个信号
 user_org_update = django.dispatch.Signal(providing_args=['profile'])
+audit_config_change = django.dispatch.Signal(providing_args=['subtype'])
 
 
 @django.dispatch.receiver(org_update)
 def on_org_update(sender, dep=None, pos=None, **kwargs):
     logger.info('check audit config on organization update')
-    check_audit_config(sender, dep=None, pos=None)
+    check_audit_configs(sender, dep=None, pos=None)
     check_notification()
 
 
@@ -52,7 +53,7 @@ def check_config_step(step):
     return True
 
 
-def check_audit_config(sender, dep=None, pos=None):
+def check_audit_configs(sender, dep=None, pos=None):
     """
     当部门和岗位关系恢复的时候，应该自动恢复异常的审批配置
     如果某些审批环节的配置恢复但是整个审批配置没有恢复的话，需要将恢复正常的环节的 abnormal flag 更新回来
@@ -63,27 +64,7 @@ def check_audit_config(sender, dep=None, pos=None):
 
     configs = AuditActivityConfig.objects.filter(archived=False, abnormal=True)
     for config in configs:
-        steps = AuditActivityConfigStep.objects \
-            .select_related('assigneeDepartment', 'assigneePosition') \
-            .filter(config=config) \
-            .order_by('position')
-
-        abnormal = False
-        for step in steps:
-            if not check_config_step(step):
-                abnormal = True
-            else:
-                step.abnormal = False
-                step.save()
-                logger.info("{} reset step abnormal flag, step: {}".format(taskId, str(step.pk)))
-
-        if not abnormal:
-            config.abnormal = False
-            config.save()
-            AuditActivityConfigStep.objects \
-                .filter(config=config) \
-                .update(abnormal=False)
-            logger.info("{} reset config abnormal flag, config: {}".format(taskId, str(config.pk)))
+        try_restore_audit_config(config, taskId=taskId)
 
     """
     检查现有的审批流配置是否受影响，有以下几种情况：
@@ -97,23 +78,72 @@ def check_audit_config(sender, dep=None, pos=None):
     logger.info("{} check whether there are some configs which should be abnormal.".format(taskId))
     configs = AuditActivityConfig.objects.filter(archived=False)
     for config in configs:
-        steps = AuditActivityConfigStep.objects \
-            .select_related('assigneeDepartment', 'assigneePosition') \
+        check_audit_config(config, taskId=taskId)
+
+
+def check_audit_config(config, taskId=None):
+    if taskId is None:
+        taskId = uuid.uuid4()
+
+    logger.info("{} check audit config:, config: {}".format(taskId, str(config.pk)))
+
+    steps = AuditActivityConfigStep.objects \
+        .select_related('assigneeDepartment', 'assigneePosition') \
+        .filter(config=config) \
+        .order_by('position')
+
+    affected = False
+    for step in steps:
+        if not check_config_step(step):
+            affected = True
+            step.abnormal = True
+            logger.info("{} set step abnormal, step: {}".format(taskId, str(step.pk)))
+            step.save()
+
+    if affected:
+        logger.info("{} set config abnormal, config: {}".format(taskId, str(config.pk)))
+        config.abnormal = True
+        config.save()
+
+
+def try_restore_audit_config(config, taskId=None):
+    if taskId is None:
+        taskId = uuid.uuid4()
+
+    logger.info('{} try to restore audit config if it is not abnormal, config: {}'.format(taskId, str(config.pk)))
+
+    steps = AuditActivityConfigStep.objects \
+        .select_related('assigneeDepartment', 'assigneePosition') \
+        .filter(config=config) \
+        .order_by('position')
+
+    abnormal = False
+    for step in steps:
+        if not check_config_step(step):
+            abnormal = True
+        else:
+            step.abnormal = False
+            step.save()
+            logger.info("{} reset step abnormal flag, step: {}".format(taskId, str(step.pk)))
+
+    if not abnormal:
+        config.abnormal = False
+        config.save()
+        AuditActivityConfigStep.objects \
             .filter(config=config) \
-            .order_by('position')
+            .update(abnormal=False)
+        logger.info("{} reset config abnormal flag, config: {}".format(taskId, str(config.pk)))
 
-        affected = False
-        for step in steps:
-            if not check_config_step(step):
-                affected = True
-                step.abnormal = True
-                logger.info("{} set step abnormal, step: {}".format(taskId, str(step.pk)))
-                step.save()
 
-        if affected:
-            logger.info("{} set config abnormal, config: {}".format(taskId, str(config.pk)))
-            config.abnormal = True
-            config.save()
+@django.dispatch.receiver(audit_config_change)
+def on_audit_config_change(sender, subtype=None, **kwargs):
+    taskId = uuid.uuid4()
+
+    logger.info("{} try to restore configs if some config of the subtype changed, subtype: {}", subtype)
+
+    configs = AuditActivityConfig.objects.filter(subtype=subtype, archived=False)
+    for config in configs:
+        try_restore_audit_config(config, taskId=taskId)
 
 
 @django.dispatch.receiver(user_org_update)
