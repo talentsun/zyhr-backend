@@ -418,31 +418,36 @@ class Command(BaseCommand):
                     task.finished = True
                     task.save()
                 elif task.category == 'unstick_notifications':
+                    logger.info("unstick notifications if need")
                     ns = Notification.objects \
                         .filter(archived=False, stick=True) \
                         .exclude(stick_duration='forever')
                     for n in ns:
                         expired_at = n.published_at + datetime.timedelta(hours=int(n.stick_duration or '0'))
-                        if expired_at >= timezone.now():
+                        if expired_at < timezone.now():
+                            logger.info("unstick notification {}".format(n.pk))
                             n.stick = False
                             n.stick_duration = None
                             n.save()
                     task.finished = True
                     task.save()
+                    logger.info("unstick notifications if need done")
             except:
                 logger.exception("fail to handle task: {}".format(task.pk))
 
     def handle(self, *args, **kwargs):
-        if kwargs["once"]:
-            self._stats()
-            self.handleAsyncTasks()
-            return
-
         def job():
             AsyncTask.objects.create(category='stats', exec_at=timezone.now(), data={})
 
         def job2():
             AsyncTask.objects.create(category='unstick_notifications', exec_at=timezone.now(), data={})
+
+        if kwargs["once"]:
+            job2()
+
+            self._stats()
+            self.handleAsyncTasks()
+            return
 
         schedule.every(20).minutes.do(job)
         schedule.every(5).minutes.do(job2)

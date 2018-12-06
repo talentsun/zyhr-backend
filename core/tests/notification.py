@@ -75,7 +75,7 @@ class NotificationTestCase(TestCase, AuditTestMixin):
             n = Notification.objects.all().first()
             self.assertEqual(n.stick, True)
 
-        with freeze_time('2018-01-02'):
+        with freeze_time('2018-01-03'):
             AsyncTask.objects.create(category='unstick_notifications', exec_at=timezone.now(), data={})
             Command().handleAsyncTasks()
             n = Notification.objects.all().first()
