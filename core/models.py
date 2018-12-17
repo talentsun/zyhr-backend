@@ -236,6 +236,7 @@ class ProfileInfo(models.Model):
     员工档案表
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    avatar = models.CharField(max_length=255, null=True)
     profile = models.OneToOneField(Profile, null=True, on_delete=models.CASCADE)
     state = models.CharField(max_length=20, choices=StateChoices, default=StateTesting)  # 就职状态，默认是试用期
     realname = models.CharField(max_length=255, null=True)  # 姓名，可重复
@@ -246,44 +247,52 @@ class ProfileInfo(models.Model):
     id_number = models.CharField(max_length=255, null=True)  # 身份证/护照等
     birthday = models.CharField(max_length=255, null=True)  # 出生年月日
     nation = models.CharField(max_length=255, null=True)  # 民族
-    hunyin = models.CharField(max_length=255, null=True)  # 婚姻情况
-    jiguan = models.CharField(max_length=255, null=True)  # 籍贯
+    hunyin = models.CharField(max_length=255, null=True)  # 婚姻情况，TODO: 0: 未婚, 1: 已婚
+
+
+    # 身高体重血腥
     height = models.CharField(max_length=255, null=True)
-    weigh = models.CharField(max_length=255, null=True)
+    weight = models.CharField(max_length=255, null=True)
     blood = models.CharField(max_length=255, null=True)  # 血型
-    zhengzhimianmao = models.CharField(max_length=255, null=True)  # 政治面貌
+
+    zhengzhimianmao = models.CharField(max_length=255, null=True)  # 政治面貌 0: 无党派人士 1: 党员
     rudang_date = models.CharField(max_length=255, null=True)  # 入党时间
+
+    # 籍贯，户口所在地
+    # TODO: 支持城市筛选
+    jiguan = models.CharField(max_length=255, null=True)  # 籍贯
     hukou_location = models.CharField(max_length=255, null=True)  # 户口所在地
 
     # 教育情况
-    education = models.CharField(max_length=255, null=True)  # 最高学历
-    graduation_date = models.CharField(max_length=255, null=True)  # 毕业时间
+    education = models.CharField(max_length=255, null=True)  # 最高学历 0: 本科, 1: 硕士, 2: 博士
     school = models.CharField(max_length=255, null=True)  # 毕业学校
     spec = models.CharField(max_length=255, null=True)  # 专业
-    education_desc = models.TextField(null=True)
-    language = models.CharField(max_length=255, null=True)  # 外语级别
-    driving = models.CharField(max_length=255, null=True)  # 驾驶证
+    graduation_date = models.CharField(max_length=255, null=True)  # 毕业时间
+    language = models.CharField(max_length=255, null=True)  # 外语级别 0: 四级, 1: 六级, 2 英语专八
+    driving = models.CharField(max_length=255, null=True)  # 驾驶证 0: 无 1: 有
+
+    education_desc = models.TextField(null=True) # 其他学历教育经历
+    skill_certs = models.TextField(null=True) # 职业技能证书
 
     # 工作信息
+    work_category = models.CharField(max_length=255, null=True) # 岗位类型 TODO: 修改成可选项
     join_at = models.DateTimeField(null=True)  # 入职时间
     join_at_contract = models.DateTimeField(null=True)  # 入职时间（合同）
     positive_at = models.DateTimeField(null=True)  # 转正时间
     positive_at_contract = models.DateTimeField(null=True)  # 转正时间（合同约定）
     positive_desc = models.CharField(max_length=255, null=True)  # 转正情况
     contract_due = models.CharField(max_length=255, null=True)  # 合同到期时间
+    # TODO: 劳动合同提醒
     leave_at = models.CharField(max_length=255, null=True)  # 离职时间
     leave_reason = models.CharField(max_length=255, null=True)  # 离职原因
     work_desc = models.CharField(max_length=255, null=True)  # 其他工作情况
-    work_transfer_desc = models.TextField(null=True)  # 工作变动情况
+    work_transfer_desc = models.TextField(null=True)  # 其他工作变动情况
 
     # 紧急联系人信息
     contact_address = models.CharField(max_length=255, null=True)  # 通讯地址
     contact_name = models.CharField(max_length=255, null=True)  # 紧急联系人姓名
-    contact_relation = models.CharField(max_length=255, null=True)  # 联系人关系
+    contact_relation = models.CharField(max_length=255, null=True)  # 联系人关系 TODO: 修改成可选项
     contact_phone = models.CharField(max_length=255, null=True)  # 紧急联系人电话
-    desc = models.CharField(max_length=255)  # 备注
-
-    attachments = JSONField(null=True)  # 相关附件
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

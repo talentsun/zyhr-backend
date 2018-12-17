@@ -7,7 +7,7 @@ import jsonfield.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0019_add_profile_info_data'),
+        ('core', '0018_auto_20181019_0810'),
     ]
 
     operations = [
