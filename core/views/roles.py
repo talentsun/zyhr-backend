@@ -31,11 +31,11 @@ def index(request):
 
         data = json.loads(request.body.decode('utf-8'))
         extra = data.get('extra', [])
-        for item in extra:
-            if item not in P_V1:
-                return JsonResponse({
-                    'errorId': 'invalid-permission'
-                }, status=400)
+        # for item in extra:
+        #     if item not in P_V1:
+        #         return JsonResponse({
+        #             'errorId': 'invalid-permission'
+        #         }, status=400)
 
         data = json.loads(request.body.decode('utf-8'))
         Role.objects.create(name=data['name'],

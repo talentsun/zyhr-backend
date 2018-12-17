@@ -34,20 +34,20 @@ class RolesTestCase(TestCase):
         self.assertListEqual(role.extra,
                              [P_V1_VIEW_EMP, P_V1_ADD_EMP, P_V1_MANAGE_EMP])
 
-    def test_create_role_with_invalid_permission(self):
-        client = Client()
-        response = client.post('/api/v1/roles',
-                               json.dumps({
-                                   'name': 'test',
-                                   'extra': [
-                                       'wtf'
-                                   ]
-                               }),
-                               content_type='application/json',
-                               HTTP_AUTHORIZATION=self.token)
-        self.assertEqual(response.status_code, 400)
-        result = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(result['errorId'], 'invalid-permission')
+    # def test_create_role_with_invalid_permission(self):
+    #     client = Client()
+    #     response = client.post('/api/v1/roles',
+    #                            json.dumps({
+    #                                'name': 'test',
+    #                                'extra': [
+    #                                    'wtf'
+    #                                ]
+    #                            }),
+    #                            content_type='application/json',
+    #                            HTTP_AUTHORIZATION=self.token)
+    #     self.assertEqual(response.status_code, 400)
+    #     result = json.loads(response.content.decode('utf-8'))
+    #     self.assertEqual(result['errorId'], 'invalid-permission')
 
     def test_query_roles(self):
         Role.objects.create(name='r1', extra={})
