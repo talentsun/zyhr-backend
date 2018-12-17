@@ -210,21 +210,60 @@ def export(request):
 
     props = [
         {'title': '姓名', 'prop': 'realname'},
+        {'title': '身份证号', 'prop': 'id_number'},
         {'title': '部门', 'prop': lambda p: p.profile.department.name},
         {'title': '职位', 'prop': lambda p: p.profile.position.name},
+        {'title': '生日', 'prop': 'birthday'},
         {'title': '性别', 'prop': lambda p: ['未知', '男', '女'][p.gender]},
         {'title': '民族', 'prop': 'nation'},
-        {'title': '籍贯', 'prop': 'jiguan'},
-        {'title': '最高学历', 'prop': 'education'},
-        {'title': '手机', 'prop': lambda p: p.profile.phone},
         {'title': '邮箱', 'prop': lambda p: p.profile.email},
-        {'title': '入职时间', 'prop': lambda p: p.join_at.strftime('%Y-%m-%d') if p.join_at else ''},
-        {'title': '转正时间', 'prop': lambda p: p.positive_at.strftime('%Y-%m-%d') if p.positive_at else ''},
-        {'title': '社保', 'prop': 'shebao'},
+        {'title': '手机', 'prop': lambda p: p.profile.phone},
+        {'title': '身高', 'prop': 'height'},
+        {'title': '体重', 'prop': 'weight'},
+        {'title': '血型', 'prop': 'blood'},
+        {'title': '政治面貌',
+         'prop': lambda p: ['群众', '共产党员', '民主党院', '民进党员'][int(p.zhengzhimianmao)] \
+             if p.zhengzhimianmao is not None and p.zhengzhimianmao != '' else ''},
+        {'title': '入党时间', 'prop': lambda p: p.rudang_date if p.zhengzhimianmao is not None else ''},
+        {'title': '籍贯', 'prop': 'jiguan'},
+        {'title': '户口所在地', 'prop': 'hukou_location'},
+
+        {'title': '岗位类别',
+         'prop': lambda p: ['前台', '中台', '后台', '待定'][int(p.work_category)] \
+             if p.work_category is not None and p.work_category != '' else ''},
+        {'title': '就职状态',
+         'prop': lambda p: {'testing': '试用', 'normal': '正式员工', 'left': '离职'}[p.state]},
+        {'title': '入司日期', 'prop': 'join_at'},
+        {'title': '入司日期（合同）', 'prop': 'join_at_contract'},
+        {'title': '转正日期', 'prop': 'positive_at'},
+        {'title': '转正日期（合同）', 'prop': 'positive_at_contract'},
+        {'title': '转正情况', 'prop': 'positive_desc'},
+        {'title': '合同到期时间', 'prop': 'contract_due'},
+        {'title': '其他工作情况', 'prop': 'work_desc'},
+        {'title': '其他工作变动', 'prop': 'work_transfer_desc'},
+
         {'title': '最高学历', 'prop': 'education'},
+        {'title': '最高学历毕业时间', 'prop': 'graduation_date'},
+        {'title': '最高学历毕业学校', 'prop': 'school'},
+        {'title': '最高学历专业', 'prop': 'spec'},
+        {'title': '最高学位',
+         'prop': lambda p: ['本科', '硕士', '博士', '专科'][int(p.education)] \
+             if p.education is not None and p.education != '' else ''},
+        {'title': '驾驶证',
+         'prop': lambda p: '有' if p.driving == '1' else '无'},
+        {'title': '外语等级及语种',
+         'prop': lambda p: ['CET4', 'CET6', '英语专八', '英语专四', '雅思', '托福', '日语', '阿拉伯语', '法语'][int(p.language)] \
+             if p.language is not None and p.language != '' else '无'},
+        {'title': '其他教育经历', 'prop': 'education_desc'},
+        {'title': '职业技能证书', 'prop': 'skill_certs'},
+
+        {'title': '通讯地址', 'prop': 'contact_address'},
         {'title': '紧急联系人姓名', 'prop': 'contact_name'},
         {'title': '紧急联系人电话', 'prop': 'contact_phone'},
-        {'title': '备注', 'prop': 'desc'}
+        {'title': '紧急联系人与本人关系',
+         'prop': lambda p: {'father': '父子/父女', 'mother': '母子/母女', 'other': '夫妻/朋友'}[p.contact_relation] \
+             if p.contact_relation is not None and p.contact_relation != '' else ''}
+
     ]
     for index, prop in enumerate(props):
         sheet.write(0, index, prop['title'])
@@ -237,5 +276,6 @@ def export(request):
                 sheet.write(row + 1, col, prop['prop'](pi))
 
     xf.save(f)
+
     return sendfile(request, f, attachment=True,
                     attachment_filename='员工档案{}.xls'.format(timezone.now().strftime('%Y%m%d')))

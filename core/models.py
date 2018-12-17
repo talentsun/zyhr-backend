@@ -253,7 +253,7 @@ class ProfileInfo(models.Model):
     # 身高体重血腥
     height = models.CharField(max_length=255, null=True)
     weight = models.CharField(max_length=255, null=True)
-    blood = models.CharField(max_length=255, null=True)  # 血型
+    blood = models.CharField(max_length=255, null=True)  # 血型 A/AB/B/O/未知
 
     zhengzhimianmao = models.CharField(max_length=255, null=True)  # 政治面貌 0: 无党派人士 1: 党员
     rudang_date = models.CharField(max_length=255, null=True)  # 入党时间
