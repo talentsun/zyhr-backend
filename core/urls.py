@@ -84,6 +84,7 @@ urlpatterns = [
     path(r'profiles', profile.profiles),
     path(r'profiles/<uuid:profileId>', profile.profile),
     path(r'profiles/actions/export', profile.export),
+    path(r'profiles/actions/import', profile.importProfiles),
 
     # customers api
     path(r'customers', customer.index),
