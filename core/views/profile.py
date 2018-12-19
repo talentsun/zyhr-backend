@@ -317,8 +317,8 @@ excel_props = [
          if p.education is not None and p.education != '' else '',
      'mapper': map_arr('education', ['本科', '硕士', '博士', '专科'])},
     {'title': '驾驶证',
-     'prop': lambda p: '有' if p.driving == '1' else '无',
-     'mapper': map_arr('driving', ['无', '有'])},
+     'prop': lambda p: ['无', 'C1', 'C2', 'A2'][int(p.driving)] if p.driving else '无',
+     'mapper': map_arr('driving', ['无', 'C1', 'C2', 'A2'])},
     {'title': '外语等级及语种',
      'prop': lambda p: ['CET4', 'CET6', '英语专八', '英语专四', '雅思', '托福', '日语', '阿拉伯语', '法语'][int(p.language)] \
          if p.language is not None and p.language != '' else '无',
