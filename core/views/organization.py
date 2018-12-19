@@ -148,6 +148,9 @@ def positions(request):
         if name is None or name == '':
             return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
 
+        if Position.objects.filter(name=name).count() > 0:
+            return JsonResponse({'errorId': 'position-exists'}, status=400)
+
         pos = Position.objects.create(name=name)
         for dep in departments:
             department = Department.objects.get(pk=dep)
@@ -170,6 +173,9 @@ def position(request, pos):
 
         if name is None or name == '':
             return JsonResponse({'errorId': 'invalid-parameters'}, status=400)
+
+        if Position.objects.filter(name=name).exclude(pk=pos).count() > 0:
+            return JsonResponse({'errorId': 'position-exists'}, status=400)
 
         # 检查某些部门和岗位下是否还存在正常状态下的员工，如果存在那么不应该更新部门和岗位之间的关系
         items = DepPos.objects.filter(pos=position)

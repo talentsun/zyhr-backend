@@ -30,6 +30,11 @@ def index(request):
         # TODO: check profile permission
 
         data = json.loads(request.body.decode('utf-8'))
+        name = data['name']
+        exist = Role.objects.filter(name=name).count() > 0
+        if exist:
+            return JsonResponse({'errorId': 'role-exists'}, status=400)
+
         extra = data.get('extra', [])
         # for item in extra:
         #     if item not in P_V1:
@@ -63,6 +68,12 @@ def detail(request, roleId):
         for prop in ['name', 'desc', 'extra']:
             if data.get(prop, None) != None:
                 partial[prop] = data.get(prop)
+
+        if 'name' in data:
+            name = data['name']
+            exist = Role.objects.filter(name=name).exclude(pk=roleId).count() > 0
+            if exist:
+                return JsonResponse({'errorId': 'role-exists'}, status=400)
 
         partial['updated_at'] = timezone.now()
 
