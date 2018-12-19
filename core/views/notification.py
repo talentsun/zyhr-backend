@@ -17,6 +17,7 @@ def resolve_notification(n, include_content=False):
         'id': n.pk,
         'no': n.no,
         'title': n.title,
+        'category': n.category,
         'stick': n.stick,
         'stick_duration': n.stick_duration,
         'views': n.views,
@@ -63,9 +64,14 @@ def view_notifications(request):
     start = int(request.GET.get('start', '0'))
     limit = int(request.GET.get('limit', '20'))
 
+    if ',' in category:
+        category = category.split(',')
+    else:
+        category = [category]
+
     nds = NotDep.objects \
         .filter(notification__archived=False) \
-        .filter(notification__category=category) \
+        .filter(notification__category__in=category) \
         .filter(notification__published_at__lte=timezone.now()) \
         .filter(Q(department=profile.department) | Q(notification__for_all=True)) \
         .order_by('-notification__stick', '-notification__updated_at')
