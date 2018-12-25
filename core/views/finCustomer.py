@@ -47,27 +47,33 @@ def resolve_fin_customer(fc):
     }
 
 
-@require_http_methods(['GET'])
+@require_http_methods(['GET', 'POST'])
 @validateToken
 def index(request):
-    org = request.GET.get('org', None)
-    interface = request.GET.get('interface', None)
-    start = int(request.GET.get('start', '0'))
-    limit = int(request.GET.get('limit', '20'))
+    if request.method == 'GET':
+        org = request.GET.get('org', None)
+        interface = request.GET.get('interface', None)
+        start = int(request.GET.get('start', '0'))
+        limit = int(request.GET.get('limit', '20'))
 
-    customers = FinCustomer.objects.filter(archived=False)
-    if org is not None and org != '':
-        customers = customers.filter(org__contains=org)
-    if interface is not None and interface != '':
-        customers = customers.filter(interface__contains=interface)
+        customers = FinCustomer.objects.filter(archived=False)
+        if org is not None and org != '':
+            customers = customers.filter(org__contains=org)
+        if interface is not None and interface != '':
+            customers = customers.filter(interface__contains=interface)
 
-    customers = customers.order_by('-id')
-    total = customers.count()
-    customers = customers[start:start + limit]
-    return JsonResponse({
-        'total': total,
-        'customers': [resolve_fin_customer(c) for c in customers]
-    })
+        customers = customers.order_by('-id')
+        total = customers.count()
+        customers = customers[start:start + limit]
+        return JsonResponse({
+            'total': total,
+            'customers': [resolve_fin_customer(c) for c in customers]
+        })
+    else:  # POST
+        data = json.loads(request.body.decode('utf-8'))
+        data['creator'] = request.profile
+        FinCustomer.objects.create(**data)
+        return JsonResponse({'ok': True})
 
 
 def createCustomerByTuple(tuple, profile):
@@ -80,7 +86,7 @@ def createCustomerByTuple(tuple, profile):
             continue
 
         if pandas.isna(i):
-        # if isnan(i):
+            # if isnan(i):
             t.append('')
         else:
             t.append(i)
@@ -99,7 +105,7 @@ def createCustomerByTuple(tuple, profile):
         'otherMemberPosition': t[11],
         'desc': t[12],
         'next': t[13],
-        'note': t[14] if len(t) >= 15 else None, # 备注可能不在 excel 文档当中
+        'note': t[14] if len(t) >= 15 else None,  # 备注可能不在 excel 文档当中
         'creator': profile
     }
     # logger.info(data)
