@@ -298,7 +298,7 @@ def customers_bar(request):
     data = [{
         'yewuliang': c.get('sum_yewuliang', Decimal(0)) / Decimal(10000),
         'avg_price': c.get('sum_yewuliang', Decimal(0)) / c.get('sum_dunwei', Decimal(0)) / Decimal(10000) \
-            if c.get('sum_dunwei', '0.00') != '0.00' else '0.00'
+            if c.get('sum_dunwei', Decimal(0)) != Decimal(0) else '0.00'
     } for c in css]
 
     return JsonResponse({
