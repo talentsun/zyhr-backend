@@ -11,7 +11,7 @@ def rename_owner(app, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0035_import_data'),
+        ('core', '0010_auto_20181102_0754'),
     ]
 
     operations = [
