@@ -5,7 +5,7 @@ from core.models import *
 
 
 def rename_owner(app, schema_editor):
-    Position.objects.filter(code='owner').update(name='负责人')
+    Position.objects.filter(code='owner').update(name='总经理')
     Department.objects.filter(code='jinrong').update(name='金融中心')
 
 
