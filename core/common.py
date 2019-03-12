@@ -63,6 +63,7 @@ def resolve_profile(profile,
         messages = Message.objects \
             .filter(profile=profile, read=False) \
             .order_by('-updated_at')
+        messages = messages[0:50]
         result['messages'] = [{
             'id': str(m.pk),
             'read': m.read,
