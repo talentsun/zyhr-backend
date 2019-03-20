@@ -882,6 +882,54 @@ def exportTravelAuditDoc(activity):
     return path
 
 
+def exportRongzitikuanAudit(activity):
+    auditData = activity.extra
+    info = auditData['info']
+    template = 'rongzitikuan'
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/{}.xlsx'.format(template))
+    ws = wb.active
+
+    ws['B2'] = info['applicants']
+    ws['D2'] = activity.created_at.strftime('%Y-%m-%d')
+
+    ws['B3'] = info['guarantee']
+    ws['B5'] = info.get('money', '')
+    ws['D5'] = info['productType']
+    ws['B6'] = info['marginRatio']
+    ws['D6'] = info.get('cunkuan_lixi', '')
+    ws['B7'] = info.get('tiexi_lilv', '')
+    ws['D7'] = info.get('cost', '')
+    ws['B8'] = info.get('timelimit', '')
+    ws['B9'] = info.get('desc', '')
+
+    creator = activity.creator
+    ws['B10'] = '{}'.format(getattr(creator, 'name', ''))
+    jinrongOner = resolveProfileFromAudit(activity, dep='jinrong', pos='owner')
+    finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
+    finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
+    ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
+    ws['B11'] = '{}'.format(getattr(jinrongOner, 'name', ''))
+    ws['B12'] = '{}'.format(getattr(finAccountant, 'name', ''))
+    ws['B13'] = '{}'.format(getattr(finOwner, 'name', ''))
+    ws['B14'] = '{}'.format(getattr(ceo, 'name', ''))
+
+    for cell in ws.merged_cells:
+        if not inBounds('A1:D14', cell):
+            logger.info('ignore cell: {}'.format(cell.coord))
+            continue
+
+        logger.info('fix border style {}'.format(cell.coord))
+        style_range(ws, cell.coord, Border(top=thin, left=thin, right=thin, bottom=thin))
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
 def _export(activity):
     path, filename = None, None
     if activity.config.subtype == 'open_account':
@@ -902,6 +950,9 @@ def _export(activity):
     elif re.match('fn', activity.config.subtype):
         path = exportFnContractAuditDoc(activity)
         filename = '职能合同会签审批.xlsx'
+    elif re.match('rongzitikuan', activity.config.subtype):
+        path = exportRongzitikuanAudit(activity)
+        filename = '融资提款申请.xlsx'
     else:
         # travel
         path = exportTravelAuditDoc(activity)
