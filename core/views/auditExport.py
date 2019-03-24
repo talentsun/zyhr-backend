@@ -901,21 +901,22 @@ def exportRongzitikuanAudit(activity):
     ws['B7'] = info.get('tiexi_lilv', '')
     ws['D7'] = info.get('cost', '')
     ws['B8'] = info.get('timelimit', '')
-    ws['B9'] = info.get('desc', '')
+    ws['B9'] = info.get('plan', '')
+    ws['B10'] = info.get('desc', '')
 
     creator = activity.creator
-    ws['B10'] = '{}'.format(getattr(creator, 'name', ''))
+    ws['B11'] = '{}'.format(getattr(creator, 'name', ''))
     jinrongOner = resolveProfileFromAudit(activity, dep='jinrong', pos='owner')
     finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
     finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
-    ws['B11'] = '{}'.format(getattr(jinrongOner, 'name', ''))
-    ws['B12'] = '{}'.format(getattr(finAccountant, 'name', ''))
-    ws['B13'] = '{}'.format(getattr(finOwner, 'name', ''))
-    ws['B14'] = '{}'.format(getattr(ceo, 'name', ''))
+    ws['B12'] = '{}'.format(getattr(jinrongOner, 'name', ''))
+    ws['B13'] = '{}'.format(getattr(finAccountant, 'name', ''))
+    ws['B14'] = '{}'.format(getattr(finOwner, 'name', ''))
+    ws['B15'] = '{}'.format(getattr(ceo, 'name', ''))
 
     for cell in ws.merged_cells:
-        if not inBounds('A1:D14', cell):
+        if not inBounds('A1:D15', cell):
             logger.info('ignore cell: {}'.format(cell.coord))
             continue
 
