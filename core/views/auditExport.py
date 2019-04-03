@@ -223,7 +223,7 @@ def exportOpenAccountAuditDoc(activity):
     ws['D6'].value = owner.name if owner is not None else ''
     ws['D6'].alignment = Alignment(horizontal='center', vertical='center')
 
-    finOwner = resolveProfileFromAudit(activity, 'fin', 'onwer')
+    finOwner = resolveProfileFromAudit(activity, 'fin', 'owner')
     # finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['B7'].value = finOwner.name if finOwner is not None else ''
     ws['B7'].alignment = Alignment(horizontal='center', vertical='center')
