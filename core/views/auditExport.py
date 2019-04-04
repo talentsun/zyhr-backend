@@ -208,7 +208,7 @@ def exportOpenAccountAuditDoc(activity):
         {'value': "temporary", 'label': "临时账户"},
         {'value': "special", 'label': "专用账户"}
     ]
-    nature = account['nature']
+    nature = account.get('nature', '')
     for n in natures:
         if n['value'] == nature:
             ws['D4'].value = n['label']
