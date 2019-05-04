@@ -929,17 +929,30 @@ def exportYongrenAuditDoc(activity):
     step = resolveDepOwnerStepFromAudit(activity)
     ws['B7'] = getattr(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.assignee != None:
+        ws['B8'] = '审批人：' + step.assignee.name + "      "
+        ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B8'] = getattr(step, 'desc', '无')
-    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
-
-    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
     ws['B9'] = getattr(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.assignee != None:
+        ws['B10'] = '审批人：' + step.assignee.name + "     "
+        ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A3:F9')
-    set_border(ws, 'A3:F9', 'medium')
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.assignee != None:
+        ws['B12'] = '审批人：' + step.assignee.name + "     "
+        ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:F12')
+    set_border(ws, 'A3:F12', 'medium')
+
+    # style_range(ws, 'B7:F7', Border(left=medium, top=medium, right=medium, bottom=empty))
+    # style_range(ws, 'B9:F9', Border(left=medium, top=medium, right=medium, bottom=empty))
+    # style_range(ws, 'B11:F11', Border(left=medium, top=medium, right=medium, bottom=empty))
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
