@@ -79,6 +79,7 @@ def resolve_profile(profile,
         messages = Message.objects \
             .filter(profile=profile, read=False) \
             .order_by('-updated_at')
+        messages = messages[0:20]
         result['messages'] = [{
             'id': str(m.pk),
             'read': m.read,
@@ -149,6 +150,7 @@ def resolve_activity(activity, include_steps=True):
                                    include_memo=False,
                                    include_messages=False,
                                    include_pending_tasks=False),
+        'cancellable': activity.isCancellable(),
         'amount': activity.amount,
         'type': activity.config.subtype,
         'state': activity.state,

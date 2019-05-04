@@ -29,6 +29,13 @@ empty = Side(border_style=None, color=None)
 medium = Side(border_style="medium", color="000000")
 
 
+def try_convert_float(s):
+    if s[-1] == '元':
+        return float(s[0:-1])
+    else:
+        return float(s)
+
+
 def style_range(ws, cell_range, border=Border(), fill=None, font=None, alignment=None):
     """
     Apply styles to a range of cells as if they were a single cell.
@@ -247,7 +254,7 @@ def exportOpenAccountAuditDoc(activity):
         {'value': "temporary", 'label': "临时账户"},
         {'value': "special", 'label': "专用账户"}
     ]
-    nature = account['nature']
+    nature = account.get('nature', '')
     for n in natures:
         if n['value'] == nature:
             ws['D4'].value = n['label']
@@ -262,7 +269,7 @@ def exportOpenAccountAuditDoc(activity):
     ws['D6'].value = owner.name if owner is not None else ''
     ws['D6'].alignment = Alignment(horizontal='center', vertical='center')
 
-    finOwner = resolveProfileFromAudit(activity, 'fin', 'onwer')
+    finOwner = resolveProfileFromAudit(activity, 'fin', 'owner')
     # finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     ws['B7'].value = finOwner.name if finOwner is not None else ''
     ws['B7'].alignment = Alignment(horizontal='center', vertical='center')
@@ -325,10 +332,10 @@ def exportCostAuditDoc(activity):
         tuibukuan = tuibukuan + Decimal(item['tuibukuan'])
         yuanjiekuan = yuanjiekuan + Decimal(item['yuanjiekuan'])
 
-        amount = float(item['amount'])
+        amount = try_convert_float(item['amount'])
         totalAmount = amount + totalAmount
 
-        amount = paddingAmount(float(item['amount']))
+        amount = paddingAmount(try_convert_float(item['amount']))
         for j, ch in enumerate(amount):
             col = chr(ord('E') + j)
             ws[col + r] = ch
@@ -419,12 +426,12 @@ def exportLoanAuditDoc(activity):
                activity.sn)
 
     # 人民币大写
-    amount = float(auditData['loan']['amount'])
+    amount = try_convert_float(auditData['loan']['amount'])
     ws['B5'] = '人民币（大写） {}  此据'.format(convertToDaxieAmount(amount))
     ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
 
     # 人民币小写
-    ws['B6'] = '（小写）￥ {}'.format(amountFixed(float(auditData['loan']['amount'])))
+    ws['B6'] = '（小写）￥ {}'.format(amountFixed(try_convert_float(auditData['loan']['amount'])))
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
 
     # 借款用途说明
@@ -528,8 +535,8 @@ def exportMoneyAuditDoc(activity):
     ws['B3'] = inAccount['name']
     ws['B4'] = inAccount['bank']
     ws['H4'] = inAccount['number']
-    ws['B5'] = '（大写）{}'.format(convertToDaxieAmount(float(info['amount'])))
-    ws['J5'] = '￥' + amountFixed(float(info['amount']))
+    ws['B5'] = '（大写）{}'.format(convertToDaxieAmount(try_convert_float(info['amount'])))
+    ws['J5'] = '￥' + amountFixed(try_convert_float(info['amount']))
 
     # 出款信息
     outAccount = auditData['outAccount']
@@ -598,11 +605,11 @@ def exportBizContractAuditDoc(activity):
 
     ws['F5'] = info.get('downstream', '')
     ws['B6'] = info['asset']
-    ws['B7'] = amountFixed(float(info['tonnage'])) + '吨'
-    ws['F7'] = amountFixed(float(info['buyPrice'])) + '元/吨'
+    ws['B7'] = amountFixed(try_convert_float(info['tonnage'])) + '吨'
+    ws['F7'] = amountFixed(try_convert_float(info['buyPrice'])) + '元/吨'
 
     ws['B8'] = '现金' if info['settlementType'] == 'cash' else '转账'
-    ws['F8'] = amountFixed(float(info['sellPrice'])) + '元/吨'
+    ws['F8'] = amountFixed(try_convert_float(info['sellPrice'])) + '元/吨'
     ws['B9'] = info['profitsPerTon']
     ws['F9'] = info['grossMargin'] + '%'
     ws['B10'] = info.get('desc', '')
@@ -646,7 +653,7 @@ def exportFnContractAuditDoc(activity):
     info = auditData['info']
     base = auditData['base']
     template = 'fn_contract'
-    if float(info['amount']) == 0:
+    if try_convert_float(info['amount']) == 0:
         template = 'fn_contract_zero'
 
     wb = load_workbook(os.getcwd() + '/xlsx-templates/{}.xlsx'.format(template))
@@ -655,7 +662,7 @@ def exportFnContractAuditDoc(activity):
     ws['B3'] = base['name']
     ws['D3'] = base['other']
 
-    ws['B4'] = float(info['amount'])
+    ws['B4'] = try_convert_float(info['amount'])
     ws['B4'].number_format = '#,##0.00'
     ws['D4'] = info.get('date', '')
     ws['B5'] = info['count']
@@ -764,42 +771,42 @@ def exportTravelAuditDoc(activity):
         ws['L' + row] = item['spec']
         ws['L' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        normal = float(item['spec']) * days
+        normal = try_convert_float(item['spec']) * days
         total['normal'] = total['normal'] + normal
         ws['M' + row] = normal
         ws['M' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        train = float(item.get('train', '0'))
+        train = try_convert_float(item.get('train', '0'))
         total['train'] = total['train'] + train
         ws['N' + row] = amountFixed(train)
         ws['N' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        car = float(item.get('car', '0'))
+        car = try_convert_float(item.get('car', '0'))
         total['car'] = total['car'] + car
         ws['O' + row] = amountFixed(car)
         ws['O' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        ship = float(item.get('ship', '0'))
+        ship = try_convert_float(item.get('ship', '0'))
         total['ship'] = total['ship'] + ship
         ws['P' + row] = amountFixed(ship)
         ws['P' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        plane = float(item.get('plane', '0'))
+        plane = try_convert_float(item.get('plane', '0'))
         total['plane'] = total['plane'] + plane
         ws['Q' + row] = amountFixed(plane)
         ws['Q' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        hotel = float(item.get('hotel', '0'))
+        hotel = try_convert_float(item.get('hotel', '0'))
         total['hotel'] = total['hotel'] + hotel
         ws['R' + row] = amountFixed(hotel)
         ws['R' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        traffic = float(item.get('traffic', '0'))
+        traffic = try_convert_float(item.get('traffic', '0'))
         total['traffic'] = total['traffic'] + traffic
         ws['S' + row] = amountFixed(traffic)
         ws['S' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        other = float(item.get('other', '0'))
+        other = try_convert_float(item.get('other', '0'))
         total['other'] = total['other'] + other
         ws['T' + row] = amountFixed(other)
         ws['T' + row].alignment = Alignment(vertical='center', horizontal='center')
@@ -831,8 +838,8 @@ def exportTravelAuditDoc(activity):
     ws['C' + str(r + 1)] = '合计人民币（大写）    {}'.format(convertToDaxieAmount(t))
     info = auditData['info']
     ws['C' + str(r + 2)] = '原借差旅费 {} 元                 剩余交回 {} 元'.format(
-        amountFixed(float(info['yuanjiekuan'])),
-        amountFixed(float(info.get('shengyu', '0')))
+        amountFixed(try_convert_float(info['yuanjiekuan'])),
+        amountFixed(try_convert_float(info.get('shengyu', '0')))
     )
     ws['D' + str(r + 3)] = info.get('reason', '')
     ws['X4'] = '附件共（{}）张'.format(len(auditData.get('attachments', [])))
@@ -879,9 +886,9 @@ def exportTravelAuditDoc(activity):
     ## 金额大写
     ws['B9'] = '金额大写：{}'.format(convertToDaxieAmount(t))
 
-    ws['D9'] = '原借款：{} 元'.format(amountFixed(float(info['yuanjiekuan'])))
+    ws['D9'] = '原借款：{} 元'.format(amountFixed(try_convert_float(info['yuanjiekuan'])))
     if info.get('tuibukuan', None) is not None:
-        ws['N9'] = '退补款：{} 元'.format(amountFixed(float(info.get('tuibukuan'))))
+        ws['N9'] = '退补款：{} 元'.format(amountFixed(try_convert_float(info.get('tuibukuan'))))
 
     creator = activity.creator
     owner = creator.owner
@@ -1323,7 +1330,7 @@ def exportZichancaigouAuditDoc(activity):
         ws['B' + str(r)] = item.get('model', '')
         ws['C' + str(r)] = item.get('num', '')
         ws['D' + str(r)] = item.get('price', '')
-        ws['E' + str(r)] = amountFixed(float(item['price']) * float(item['num']))
+        ws['E' + str(r)] = amountFixed(try_convert_float(item['price']) * try_convert_float(item['num']))
         ws['F' + str(r)] = item.get('date', '')
         ws['G' + str(r)] = item.get('channel', '')
         ws['H' + str(r)] = item.get('desc', '')
