@@ -1409,6 +1409,122 @@ def exportZhuanzhengAuditDoc(activity):
     return path
 
 
+def exportLeaveHandoverAuditDoc(activity):
+    info = activity.extra
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/leave_handover.xlsx')
+    ws = wb.active
+
+    ws['A3'] = activity.creator.name
+    ws['A3'].alignment = Alignment(vertical='center', horizontal='center')
+
+    ws['B3'] = activity.creator.department.name
+    ws['B3'].alignment = Alignment(vertical='center', horizontal='center')
+
+    ws['C3'] = activity.creator.position.name
+    ws['C3'].alignment = Alignment(vertical='center', horizontal='center')
+
+    pi = ProfileInfo.objects.get(profile=activity.creator)
+    if pi.join_at:
+        ws['D3'] = pi.join_at.strftime('%Y-%m-%d')
+        ws['D3'].alignment = Alignment(vertical='center', horizontal='center')
+
+    ws['A5'] = info.get('reason', '')
+    ws['A5'].alignment = Alignment(vertical='center', horizontal='center')
+    owner = activity.creator.owner
+    ws['C5'] = owner.name if owner is not None else ''
+    ws['C5'].alignment = Alignment(vertical='center', horizontal='center')
+    checklist = info['checklist']
+
+    if 'dep' in checklist:
+        depCheck = checklist['dep']
+        checks = depCheck.get('checks', [])
+        if '1' in checks:
+            ws['B7'] = '√工作交接已完成（附工作交接清单）'
+        else:
+            ws['B7'] = '□工作交接已完成（附工作交接清单）'
+        ws['B7'].alignment = Alignment(vertical='center', horizontal='left')
+        if '2' in checks:
+            ws['B8'] = '√办公设备、办公用品已交接；'
+        else:
+            ws['B8'] = '□办公设备、办公用品已交接；'
+        ws['B8'].alignment = Alignment(vertical='center', horizontal='left')
+        if '3' in checks:
+            ws['B9'] = '√其他交接说明:' + depCheck.get('desc', '')
+        else:
+            ws['B9'] = '□其他交接说明:'
+        ws['B9'].alignment = Alignment(vertical='center', horizontal='left')
+        if '4' in checks:
+            ws['B10'] = '√该员工与本部门所有手续已交接完毕,同意办理离职手续。'
+        else:
+            ws['B10'] = '□该员工与本部门所有手续已交接完毕,同意办理离职手续。'
+        ws['B10'].alignment = Alignment(vertical='center', horizontal='left')
+    step = resolveDepOwnerStepFromAudit(activity)
+    if step != None:
+        ws['B11'] = '部门负责人： {}     (签字)                年      月     日  '.format(step.assignee.name)
+        ws['B11'].alignment = Alignment(vertical='center', horizontal='right')
+
+    if 'fin' in checklist:
+        finCheck = checklist['fin']
+        checks = finCheck.get('checks', [])
+        if '1' in checks:
+            ws['B12'] = '√员工负责业务结算已完成或转委托；'
+        else:
+            ws['B12'] = '□员工负责业务结算已完成或转委托；'
+        ws['B12'].alignment = Alignment(vertical='center', horizontal='left')
+        if '2' in checks:
+            ws['B13'] = '√员工个人借款已清理;'
+        else:
+            ws['B13'] = '□员工个人借款已清理;'
+        ws['B13'].alignment = Alignment(vertical='center', horizontal='left')
+        if '3' in checks:
+            ws['B14'] = '√其他交接说明:' + finCheck.get('desc', '')
+        else:
+            ws['B14'] = '□其他交接说明:'
+        ws['B14'].alignment = Alignment(vertical='center', horizontal='left')
+    assignee = resolveProfileFromAudit(activity, dep='fin', pos='owner')
+    if assignee != None:
+        ws['B15'] = '部门负责人： {}     (签字)                年      月     日  '.format(assignee.name)
+        ws['B15'].alignment = Alignment(vertical='center', horizontal='right')
+
+    if 'hr' in checklist:
+        hrCheck = checklist['hr']
+        checks = hrCheck.get('checks', [])
+        if '1' in checks:
+            ws['B16'] = '√劳动合同、人事档案、社会保险等已解除、转出；'
+        else:
+            ws['B16'] = '□劳动合同、人事档案、社会保险等已解除、转出；'
+        ws['B16'].alignment = Alignment(vertical='center', horizontal='left')
+        if '2' in checks and 'date' in hrCheck and hrCheck['date']:
+            ws['B17'] = '√工资已结算，于 {} 发放；'.format(hrCheck.get('date', ''))
+        else:
+            ws['B17'] = '□工资已结算，于________________发放；'
+        ws['B17'].alignment = Alignment(vertical='center', horizontal='left')
+        if '3' in checks:
+            ws['B18'] = '√其他交接说明:' + hrCheck.get('desc', '')
+        else:
+            ws['B18'] = '□其他交接说明:'
+        ws['B18'].alignment = Alignment(vertical='center', horizontal='left')
+    assignee = resolveProfileFromAudit(activity, dep='hr', pos='owner')
+    if assignee != None:
+        ws['B19'] = '部门负责人： {}     (签字)                年      月     日  '.format(assignee.name)
+        ws['B19'].alignment = Alignment(vertical='center', horizontal='right')
+
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B20'] = getattr(step, 'desc', '无')
+    ws['B20'].alignment = Alignment(vertical='center', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A2:D25')
+    set_border(ws, 'A2:D25', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
 def exportLeaveAuditDoc(activity):
     info = activity.extra
 
@@ -1526,6 +1642,9 @@ def _export(activity):
     elif activity.config.subtype == 'leave':
         path = exportLeaveAuditDoc(activity)
         filename = '离职申请审批单.xlsx'
+    elif activity.config.subtype == 'leave_handover':
+        path = exportLeaveHandoverAuditDoc(activity)
+        filename = '离职交接审批单.xlsx'
     else:
         pass
 
