@@ -1419,19 +1419,28 @@ def exportLeaveAuditDoc(activity):
     step = resolveDepOwnerStepFromAudit(activity)
     ws['B9'] = getattr(step, 'desc', '无') or '无'
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.assignee != None:
+        ws['B11'] = '审批人：' + step.assignee.name
+        ws['B11'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
     ws['B13'] = getattr(step, 'desc', '无') or '无'
     ws['B13'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.assignee != None:
+        ws['B14'] = '审批人：' + step.assignee.name
+        ws['B14'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     # TODO: 面谈信息
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B14'] = getattr(step, 'desc', '无') or '无'
-    ws['B14'].alignment = Alignment(vertical='center', wrapText=True)
+    ws['B15'] = getattr(step, 'desc', '无') or '无'
+    ws['B15'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.assignee != None:
+        ws['B16'] = '审批人：' + step.assignee.name
+        ws['B16'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A2:F14')
-    set_border(ws, 'A2:F14', 'medium')
+    fix_merged_cells_border(ws, 'A2:F16')
+    set_border(ws, 'A2:F16', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
