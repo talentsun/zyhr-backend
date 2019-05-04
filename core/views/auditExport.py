@@ -920,7 +920,7 @@ def exportYongrenAuditDoc(activity):
     ws['F3'] = info['date']
     ws['B4'] = info['desc']
     ws['B4'].alignment = Alignment(vertical='center', wrapText=True)
-    gender = '男' if usage['gender'] == '1' else '女'
+    gender = '男' if (usage['gender'] == '1' or usage['gender'] == 1) else '女'
     ws['B5'] = '性别：{}        年龄：{}\n学历：{}        专业：{}'.format(gender, usage['age'], usage['education'], usage['specs'])
     ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
     ws['B6'] = info['zige']
