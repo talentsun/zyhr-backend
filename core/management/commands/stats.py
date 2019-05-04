@@ -344,8 +344,8 @@ class Command(BaseCommand):
             if profile is None or \
                     profile.archived or \
                     profile.blocked or \
-                            profile.deviceId is None or \
-                            profile.deviceId == '':
+                    profile.deviceId is None or \
+                    profile.deviceId == '':
                 message.apn_sent = True
                 message.save()
                 return
@@ -437,6 +437,8 @@ class Command(BaseCommand):
                 logger.exception("fail to handle task: {}".format(task.pk))
 
     def handle(self, *args, **kwargs):
+        logger.info("stats launched, handle tasks")
+
         def job():
             AsyncTask.objects.create(category='stats', exec_at=timezone.now(), data={})
 
