@@ -157,7 +157,7 @@ def resolveDepOwnerStepFromAudit(activity):
 
     for step in steps:
         if step.assigneeDepartment == activity.creator.department and \
-                        step.assigneePosition.code == 'owner':
+                step.assigneePosition.code == 'owner':
             return step
 
     # step not found

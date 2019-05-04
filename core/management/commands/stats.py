@@ -215,6 +215,7 @@ class Command(BaseCommand):
         stopMonth = self.calStopMonth()
         while month < stopMonth:
             monthText = month.strftime('%Y-%m')
+            logger.info("calTaizhangStats for month: {}".format(monthText))
             for company in companies:
                 for asset in assets:
                     data = self.calTaizhangStateByCompanyAndAsset(
@@ -293,7 +294,7 @@ class Command(BaseCommand):
             self.calCustomerStats()
             logger.info('cal stats done')
         except:
-            logger.exception("some error happend")
+            logger.exception("some error happened")
 
     def resolveNotification(self, msg):
         activity = msg.activity
