@@ -1409,6 +1409,62 @@ def exportZhuanzhengAuditDoc(activity):
     return path
 
 
+def exportTransferAudit(activity):
+    info = activity.extra
+    pi = ProfileInfo.objects.get(profile=activity.creator)
+
+    wb = load_workbook(os.getcwd() + '/xlsx-templates/transfer.xlsx')
+    ws = wb.active
+
+    ws['C3'] = pi.realname
+    ws['C3'].alignment = Alignment(vertical='center', horizontal='center')
+    if pi.gender == 1 or pi.gender == 2:
+        ws['F3'] = '男' if pi.gender == 1 else '女'
+        ws['F3'].alignment = Alignment(vertical='center', horizontal='center')
+    if pi.birthday:
+        ws['J3'] = pi.birthday
+        ws['J3'].alignment = Alignment(vertical='center', horizontal='center')
+    if pi.join_at:
+        ws['M3'] = pi.join_at.strftime('%Y-%m-%d')
+        ws['M3'].alignment = Alignment(vertical='center', horizontal='center')
+    if pi.school:
+        ws['C4'] = pi.school
+        ws['C4'].alignment = Alignment(vertical='center', horizontal='center')
+    if pi.education:
+        ws['F4'] = pi.education
+        ws['F4'].alignment = Alignment(vertical='center', horizontal='center')
+    if pi.spec:
+        ws['J4'] = pi.spec
+        ws['J4'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['M4'] = info['info']['transfer_date']
+    ws['M4'].alignment = Alignment(vertical='center', horizontal='center')
+
+    ws['D5'] = info['transfer']['department']['name']
+    ws['D5'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['D6'] = info['transfer']['position']['name']
+    ws['D6'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['K5'] = info['transfer']['to_department']['name']
+    ws['K5'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['K6'] = info['transfer']['to_position']['name']
+    ws['K6'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['D7'] = info['transfer']['reason']
+    ws['D7'].alignment = Alignment(vertical='center', horizontal='center')
+
+    # step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    # ws['B20'] = getattr(step, 'desc', '无')
+    # ws['B20'].alignment = Alignment(vertical='center', wrapText=True)
+    #
+    fix_merged_cells_border(ws, 'A3:M15')
+    set_border(ws, 'A3:M15', 'medium')
+
+    ws.protection.sheet = True
+    ws.protection.set_password('zyhr2018')
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return path
+
+
 def exportLeaveHandoverAuditDoc(activity):
     info = activity.extra
 
@@ -1645,6 +1701,9 @@ def _export(activity):
     elif activity.config.subtype == 'leave_handover':
         path = exportLeaveHandoverAuditDoc(activity)
         filename = '离职交接审批单.xlsx'
+    elif activity.config.subtype == 'transfer':
+        path = exportTransferAudit(activity)
+        filename = '内部调动审批单.xlsx'
     else:
         pass
 
