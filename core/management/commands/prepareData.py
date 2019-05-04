@@ -4,7 +4,7 @@ import string
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 
-from core.models import *
+from core.models_v1 import *
 from core import specs
 
 
@@ -17,17 +17,17 @@ class Command(BaseCommand):
         user = User.objects.create(username=name)
         user.set_password('123456')
         user.save()
-        return Profile.objects.create(user=user,
-                                      name=name,
-                                      phone=random_generator(),
-                                      position=pos,
-                                      department=dep)
+        return ProfileLegacy.objects.create(user=user,
+                                            name=name,
+                                            phone=random_generator(),
+                                            position=pos,
+                                            department=dep)
 
     def handle(self, *args, **options):
         # use for v1 only
 
-        roleSuperuser = Role.objects.create(name='超级管理员', extra=P_V1)
-        roleMember = Role.objects.create(name='普通员工', extra=[
+        roleSuperuser = RoleLegacy.objects.create(name='超级管理员', extra=P_V1)
+        roleMember = RoleLegacy.objects.create(name='普通员工', extra=[
             P_V1_VIEW_HOME,
             P_V1_VIEW_HOME_ASSIGNED_AUDIT,
             P_V1_VIEW_HOME_MINE_AUDIT,
@@ -63,7 +63,9 @@ class Command(BaseCommand):
             {'name': '业务专员', 'code': 'dazong_member'},  # 业务专员
         ]
         for pos in positions:
-            Position.objects.create(**pos)
+            position = PositionLegacy.objects.filter(code=pos['code']).first()
+            if position is None:
+                PositionLegacy.objects.create(**pos)
 
         departments = [
             {'name': '总部', 'code': 'root', 'positions': ['ceo']},
@@ -77,16 +79,19 @@ class Command(BaseCommand):
              'positions': ['owner', 'hr_mgr', 'hr_admin_member', 'hr_member']
              },
             {'name': '地产事业部', 'code': 'dichan', 'positions': ['owner']},
-            {'name': '金融事业部', 'code': 'jinrong', 'positions': []},
+            {'name': '金融事业部', 'code': 'jinrong', 'positions': ['owner']},
         ]
         for dep in departments:
             positions = dep['positions']
             del dep['positions']
 
-            department = Department.objects.create(**dep)
+            department = DepartmentLegacy.objects.filter(code=dep['code']).first()
+            if department is None:
+                department = DepartmentLegacy.objects.create(**dep)
             for pos in positions:
-                position = Position.objects.get(code=pos)
-                DepPos.objects.create(pos=position, dep=department)
+                position = PositionLegacy.objects.get(code=pos)
+                if DepPosLegacy.objects.filter(pos=position, dep=department).count() <= 0:
+                    DepPosLegacy.objects.create(pos=position, dep=department)
 
         profiles = [
             {'name': 'ceo', 'dep': 'root', 'pos': 'ceo'},
@@ -111,8 +116,8 @@ class Command(BaseCommand):
             {'name': 'dollars', 'dep': 'dichan', 'pos': 'owner'},
         ]
         for profile in profiles:
-            dep = Department.objects.get(code=profile['dep'])
-            pos = Position.objects.get(code=profile['pos'])
+            dep = DepartmentLegacy.objects.get(code=profile['dep'])
+            pos = PositionLegacy.objects.get(code=profile['pos'])
             p = self.createProfile(profile['name'], dep, pos)
             if profile['name'] == 'ceo':
                 p.role = roleSuperuser

@@ -1,11 +1,12 @@
 from django.db import transaction
-from core.models import *
+from core.models_v1 import *
 
 
 def createAuditConfig(spec=None):
     '''
     spec format: {category}.{subtype}:dep.pos->dep.pos->...
     '''
+
     hasTask = spec.endswith('...')
     if hasTask:
         spec = spec[0:-3]
@@ -14,7 +15,7 @@ def createAuditConfig(spec=None):
     categorySpecs, flowSpecs = categorySpecs.strip(), flowSpecs.strip()
     category, subtype = categorySpecs.split('.')
 
-    config = AuditActivityConfig.objects \
+    config = AuditActivityConfigLegacy.objects \
         .create(category=category,
                 hasTask=hasTask,
                 subtype=subtype)
@@ -23,13 +24,13 @@ def createAuditConfig(spec=None):
     for index, step in enumerate(stepSpecs):
         dep, pos = step.split('.')
         dep, pos = dep.strip(), pos.strip()
-        pos = Position.objects.get(code=pos)
+        pos = PositionLegacy.objects.get(code=pos)
         if dep == '_':
             dep = None
         else:
-            dep = Department.objects.get(code=dep)
+            dep = DepartmentLegacy.objects.get(code=dep)
 
-        AuditActivityConfigStep.objects \
+        AuditActivityConfigStepLegacy.objects \
             .create(config=config,
                     assigneeDepartment=dep,
                     assigneePosition=pos,
@@ -47,24 +48,24 @@ def updateAuditConfig(spec=None):
         categorySpecs, flowSpecs = categorySpecs.strip(), flowSpecs.strip()
         category, subtype = categorySpecs.split('.')
 
-        config = AuditActivityConfig.objects \
+        config = AuditActivityConfigLegacy.objects \
             .filter(category=category, subtype=subtype) \
             .first()
         if config == None:
             print('Warning!! config not found')
 
-        AuditActivityConfigStep.objects.filter(config=config).delete()
+        AuditActivityConfigStepLegacy.objects.filter(config=config).delete()
         stepSpecs = flowSpecs.split('->')
         for index, step in enumerate(stepSpecs):
             dep, pos = step.split('.')
             dep, pos = dep.strip(), pos.strip()
-            pos = Position.objects.get(code=pos)
+            pos = PositionLegacy.objects.get(code=pos)
             if dep == '_':
                 dep = None
             else:
-                dep = Department.objects.get(code=dep)
+                dep = DepartmentLegacy.objects.get(code=dep)
 
-            AuditActivityConfigStep.objects \
+            AuditActivityConfigStepLegacy.objects \
                 .create(config=config,
                         assigneeDepartment=dep,
                         assigneePosition=pos,

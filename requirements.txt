@@ -27,6 +27,7 @@ openpyxl==2.5.4
 pandas==0.23.3
 pre-commit==1.10.4
 pycodestyle==2.3.1
+pypinyin==0.35.2
 python-dateutil==2.7.3
 pytz==2017.3
 PyYAML==3.13
