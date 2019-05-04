@@ -127,6 +127,19 @@ def setupSteps(activity, taskId=None):
         .filter(config=activity.config) \
         .order_by('position')
 
+    if activity.config.subtype == 'transfer':
+        # FIXME: hack for transfer audit
+        steps = list(configSteps)
+        transfer = activity.extra['transfer']
+        dep = Department.objects.get(pk=transfer['to_department']['id'])
+        dp = DepPos.objects.filter(dep=dep, pos__code='owner').first()
+        if dp:
+            step = AuditActivityConfigStep(assigneeDepartment=dep, assigneePosition=dp.pos)
+            steps.insert(1, step)
+            for i, step in enumerate(steps):
+                step.position = i
+            configSteps = steps
+
     logger.info('{} resolve assignee for every step'.format(taskId))
     stepAssigneeTuples = []
     for index, step in enumerate(configSteps):

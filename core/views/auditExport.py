@@ -181,6 +181,23 @@ def resolveStepFromAudit(activity, dep=None, pos=None):
     return None
 
 
+def resolveStepFromAuditWithDepId(activity, dep=None, pos=None):
+    steps = activity.steps()
+
+    for step in steps:
+        assignee_dep = None
+        if step.assigneeDepartment is not None:
+            assignee_dep = step.assigneeDepartment.pk
+
+        assignee_pos = step.assigneePosition.code
+
+        if str(assignee_dep) == dep and assignee_pos == pos:
+            return step
+
+    # step not found
+    return None
+
+
 def resolveProfileFromAudit(activity, dep=None, pos=None):
     steps = activity.steps()
 
@@ -1439,18 +1456,30 @@ def exportTransferAudit(activity):
     ws['M4'] = info['info']['transfer_date']
     ws['M4'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ws['D5'] = info['transfer']['department']['name']
+    transfer = info['transfer']
+    ws['D5'] = transfer['department']['name']
     ws['D5'].alignment = Alignment(vertical='center', horizontal='center')
-    ws['D6'] = info['transfer']['position']['name']
+    ws['D6'] = transfer['position']['name']
     ws['D6'].alignment = Alignment(vertical='center', horizontal='center')
-    ws['K5'] = info['transfer']['to_department']['name']
+    ws['K5'] = transfer['to_department']['name']
     ws['K5'].alignment = Alignment(vertical='center', horizontal='center')
-    ws['K6'] = info['transfer']['to_position']['name']
+    ws['K6'] = transfer['to_position']['name']
     ws['K6'].alignment = Alignment(vertical='center', horizontal='center')
-    ws['D7'] = info['transfer']['reason']
+    ws['D7'] = transfer['reason']
     ws['D7'].alignment = Alignment(vertical='center', horizontal='center')
 
-    # step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    step = resolveStepFromAuditWithDepId(activity, dep=transfer['department']['id'], pos='owner')
+    if step:
+        ws['D10'] = step.desc or '无'
+        ws['D10'].alignment = Alignment(vertical='center', horizontal='center', wrapText=True)
+        ws['D15'] = '签名: {}      年   月  日  '.format(step.assignee.name)
+        ws['D15'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
+    step = resolveStepFromAuditWithDepId(activity, dep=transfer['to_department']['id'], pos='owner')
+    if step:
+        ws['K10'] = step.desc or '无'
+        ws['K10'].alignment = Alignment(vertical='center', horizontal='center', wrapText=True)
+        ws['K15'] = '签名: {}       年   月  日  '.format(step.assignee.name)
+        ws['K15'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
     # ws['B20'] = getattr(step, 'desc', '无')
     # ws['B20'].alignment = Alignment(vertical='center', wrapText=True)
     #
