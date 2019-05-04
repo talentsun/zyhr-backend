@@ -1373,15 +1373,33 @@ def exportZhuanzhengAuditDoc(activity):
     ws['C13'].alignment = Alignment(vertical='center', horizontal='center')
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B16'] = getattr(step, 'desc', '无') or '无'
-    ws['B16'].alignment = Alignment(vertical='center', wrapText=True)
+    ws['B15'] = '审批意见: ' + (getattr(step, 'desc', '无') or '无')
+    ws['B15'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.extra != None:
+        eva = step.extra.get('evaluation', '')
+        if eva == 'approve':
+            ws['D15'] = '综合评价: 建议转正,担任 {} 岗位'.format(step.extra.get('position', ''))
+        elif eva == 'continue':
+            ws['D15'] = '综合评价: 建议继续试用'
+        elif eva == 'terminate':
+            ws['D15'] = '综合评价: 建议终止试用'
+        ws['D15'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B17'] = getattr(step, 'desc', '无') or '无'
+    ws['B17'] = '审批意见:' + (getattr(step, 'desc', '无') or '无')
     ws['B17'].alignment = Alignment(vertical='center', wrapText=True)
+    if step != None and step.extra != None:
+        eva = step.extra.get('evaluation', '')
+        if eva == 'approve':
+            ws['D17'] = '综合评价: 建议转正,担任 {} 岗位'.format(step.extra.get('position', ''))
+        elif eva == 'continue':
+            ws['D17'] = '综合评价: 建议继续试用'
+        elif eva == 'terminate':
+            ws['D17'] = '综合评价: 建议终止试用'
+        ws['D17'].alignment = Alignment(vertical='center', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A3:G17')
-    set_border(ws, 'A3:G17', 'medium')
+    fix_merged_cells_border(ws, 'A3:G18')
+    set_border(ws, 'A3:G18', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
