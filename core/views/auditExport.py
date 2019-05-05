@@ -1018,23 +1018,41 @@ def exportQingjiaAuditDoc(activity):
 
     startDate = datetime.datetime.strptime(info['date'][0], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
     endDate = datetime.datetime.strptime(info['date'][1], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
-    ws['B6'] = startDate.strftime('%Y-%m-%d %H:%M') + '-' + endDate.strftime('%Y-%m-%d %H:%M')
+    dateStr = startDate.strftime('%Y-%m-%d %H:%M') + ' - ' + endDate.strftime('%Y-%m-%d %H:%M')
+    if 'days' in info:
+        dateStr = dateStr + '   ' + '共 {} 天'.format(info['days'])
+    ws['B6'] = dateStr
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveDepOwnerStepFromAudit(activity)
     ws['B7'] = getattr(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B8'] = '审批人: ' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B8'] = '审批人: 无'
+    ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B8'] = getattr(step, 'desc', '无')
-    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
-
-    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
     ws['B9'] = getattr(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B10'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B10'] = '审批人: 无'
+    ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A3:D9')
-    set_border(ws, 'A3:D9', 'medium')
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B12'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B12'] = '审批人: 无'
+    ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:D12')
+    set_border(ws, 'A3:D12', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
@@ -1057,7 +1075,10 @@ def exportChuchaiAuditDoc(activity):
     ws['B4'] = info['reason']
     ws['B4'].alignment = Alignment(vertical='center', wrapText=True)
 
-    ws['B5'] = info['startTime'] + '-' + info['endTime']
+    dayStr = info['startTime'] + '-' + info['endTime']
+    if 'days' in info:
+        dayStr = dayStr + '   共 {} 天'.format(info['days'])
+    ws['B5'] = dayStr
     ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
 
     ws['B6'] = info['location']
@@ -1066,17 +1087,32 @@ def exportChuchaiAuditDoc(activity):
     step = resolveDepOwnerStepFromAudit(activity)
     ws['B7'] = getattr(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B8'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B8'] = '审批人: 无'
+    ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B8'] = getattr(step, 'desc', '无')
-    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
-
-    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
     ws['B9'] = getattr(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B10'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B10'] = '审批人: 无'
+    ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A3:D9')
-    set_border(ws, 'A3:D9', 'medium')
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B12'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B12'] = '审批人: 无'
+    ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:D12')
+    set_border(ws, 'A3:D12', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
@@ -1101,23 +1137,41 @@ def exportKaoqinyichangAuditDoc(activity):
 
     startDate = datetime.datetime.strptime(info['date'][0], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
     endDate = datetime.datetime.strptime(info['date'][1], "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
-    ws['B4'] = startDate.strftime('%Y-%m-%d %H:%M') + '-' + endDate.strftime('%Y-%m-%d %H:%M')
+    dayStr = '自' + startDate.strftime('%Y-%m-%d %H:%M') + '到' + endDate.strftime('%Y-%m-%d %H:%M')
+    if 'days' in info:
+        dayStr = dayStr + '   共 {} 天'.format(info['days'])
+    ws['B4'] = dayStr
     ws['B4'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveDepOwnerStepFromAudit(activity)
     ws['B6'] = getattr(step, 'desc', '无')
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B7'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B7'] = '审批人: 无'
+    ws['B7'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B7'] = getattr(step, 'desc', '无')
-    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
-
-    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
     ws['B8'] = getattr(step, 'desc', '无')
     ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B9'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B9'] = '审批人: 无'
+    ws['B9'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A3:D8')
-    set_border(ws, 'A3:D8', 'medium')
+    step = resolveStepFromAudit(activity, dep='root', pos='ceo')
+    ws['B10'] = getattr(step, 'desc', '无')
+    ws['B10'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B11'] = '审批人:' + getattr(step.assignee, 'name', '无')
+    else:
+        ws['B11'] = '审批人: 无'
+    ws['B11'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
+
+    fix_merged_cells_border(ws, 'A3:D11')
+    set_border(ws, 'A3:D11', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
