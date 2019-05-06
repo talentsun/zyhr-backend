@@ -29,7 +29,9 @@ def index(request):
         profiles = profiles[start:start + limit]
         return JsonResponse({
             'total': total,
-            'emps': [resolve_profile(p) for p in profiles]
+            'emps': [resolve_profile(p, include_memo=False,
+                                     include_messages=False,
+                                     include_pending_tasks=False) for p in profiles]
         })
     if request.method == 'POST':
         data = json.loads(request.body.decode('utf-8'))
