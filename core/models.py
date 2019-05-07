@@ -187,7 +187,7 @@ class Role(models.Model):
 
     @property
     def profiles(self):
-        return Profile.objects.filter(role=self).count()
+        return Profile.objects.filter(role=self, archived=False).count()
 
 
 class Profile(models.Model):
