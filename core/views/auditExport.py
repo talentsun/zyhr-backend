@@ -901,7 +901,7 @@ def exportTravelAuditDoc(activity):
     ws['C11'] = '部门负责人：{}'.format(getattr(owner, 'name', ''))
     ws['C12'] = '财务负责人：{}'.format(getattr(finOwner, 'name'))
 
-    ## 财务会计/人力行政负责人/公司负责人
+    # 财务会计/人力行政负责人/公司负责人
     ws['D10'] = '财务会计：{}'.format(getattr(finAccountant, 'name', ''))
     ws['D11'] = '人力行政负责人：{}'.format(getattr(hrOwner, 'name', ''))
     ws['D12'] = '公司负责人：{}'.format(getattr(ceo, 'name', ''))
@@ -1324,6 +1324,15 @@ def exportZichanbaofeiAuditDoc(activity):
     wb = load_workbook(os.getcwd() + '/xlsx-templates/zichan_baofei.xlsx')
     ws = wb.active
 
+    ws['D2'] = info.get('name', '')
+    ws['D2'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['B3'] = info.get('date', '')
+    ws['B3'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['D3'] = info.get('price', '')
+    ws['D3'].alignment = Alignment(vertical='center', horizontal='center')
+    ws['B4'] = info.get('desc', '')
+    ws['B4'].alignment = Alignment(vertical='center', horizontal='center')
+
     ws['B2'] = activity.creator.department.name
     ws['B2'].alignment = Alignment(vertical='center', horizontal='left')
 
@@ -1342,17 +1351,33 @@ def exportZichanbaofeiAuditDoc(activity):
     step = resolveDepOwnerStepFromAudit(activity)
     ws['B5'] = getattr(step, 'desc', '无')
     ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B6'] = '审批人:' + step.assignee.name
+        ws['B6'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B6'] = getattr(step, 'desc', '无')
-    ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
+    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B8'] = '审批人:' + step.assignee.name
+        ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='fin', pos='owner')
+    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B10'] = '审批人:' + step.assignee.name
+        ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B8'] = getattr(step, 'desc', '无')
-    ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
+    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B12'] = '审批人:' + step.assignee.name
+        ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A2:D8')
-    set_border(ws, 'A2:D8', 'medium')
+    fix_merged_cells_border(ws, 'A2:D13')
+    set_border(ws, 'A2:D13', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
@@ -1390,20 +1415,32 @@ def exportZichancaigouAuditDoc(activity):
         ws['H' + str(r)] = item.get('desc', '')
         ws['H' + str(r)].alignment = Alignment(vertical='center', horizontal='left')
 
-    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B10'] = getattr(step, 'desc', '无') or '无'
-    ws['B10'].alignment = Alignment(vertical='center', wrapText=True)
+    ws['B10'] = items[0].get('application', '')
+    ws['B10'].alignment = Alignment(vertical='center', horizontal='left')
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
     ws['B11'] = getattr(step, 'desc', '无') or '无'
     ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B12'] = '审批人: ' + step.assignee.name
+        ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
+
+    step = resolveStepFromAudit(activity, dep='hr', pos='owner')
+    ws['B13'] = getattr(step, 'desc', '无') or '无'
+    ws['B13'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B14'] = '审批人: ' + step.assignee.name
+        ws['B14'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B12'] = getattr(step, 'desc', '无') or '无'
-    ws['B12'].alignment = Alignment(vertical='center', wrapText=True)
+    ws['B15'] = getattr(step, 'desc', '无') or '无'
+    ws['B15'].alignment = Alignment(vertical='center', wrapText=True)
+    if step:
+        ws['B16'] = '审批人: ' + step.assignee.name
+        ws['B16'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
-    fix_merged_cells_border(ws, 'A2:H16')
-    set_border(ws, 'A2:H16', 'medium')
+    fix_merged_cells_border(ws, 'A2:H21')
+    set_border(ws, 'A2:H21', 'medium')
 
     ws.protection.sheet = True
     ws.protection.set_password('zyhr2018')
