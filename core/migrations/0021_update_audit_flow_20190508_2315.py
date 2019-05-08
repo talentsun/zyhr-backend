@@ -29,7 +29,7 @@ def update_audit_flow(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0020_add_hr_risk_department_master'),
+        ('core', '0020_add_hr_risk_department'),
     ]
 
     operations = [
