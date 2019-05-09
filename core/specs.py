@@ -70,3 +70,17 @@ def updateAuditConfig(spec=None):
                         assigneePosition=pos,
                         position=index)
     return config
+
+
+def auditFlowToString(config):
+    ret = '{}.{}:'.format(config.category, config.subtype)
+    steps = AuditActivityConfigStep.objects.filter(config=config).order_by('position')
+    for index, step in enumerate(steps):
+        ret += getattr(step.assigneeDepartment, 'code', '_')
+        ret += '.'
+        ret += getattr(step.assigneePosition, 'code', '_')
+        if index != len(steps) - 1:
+            ret += '->'
+    if config.hasTask:
+        ret += '...'
+    return ret
