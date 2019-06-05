@@ -17,7 +17,7 @@ def addProfileInfo(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0023_auto_20190504_1602'),
+        ('core', '0027_auto_20190504_1602'),
     ]
 
     operations = [

@@ -18,7 +18,7 @@ def import_data(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0020_auto_20190504_1441'),
+        ('core', '0024_auto_20190504_1441'),
     ]
 
     operations = [

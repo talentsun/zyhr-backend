@@ -34,7 +34,7 @@ def update_default_role(app, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0021_auto_20190504_1556'),
+        ('core', '0025_auto_20190504_1556'),
     ]
 
     operations = [

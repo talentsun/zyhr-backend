@@ -248,7 +248,7 @@ def prepareV3AuditCofigurationData(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('core', '0022_auto_20190504_1559'),
+        ('core', '0026_auto_20190504_1559'),
     ]
 
     operations = [
