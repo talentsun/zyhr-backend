@@ -249,7 +249,6 @@ class ProfileInfo(models.Model):
     nation = models.CharField(max_length=255, null=True)  # 民族
     hunyin = models.CharField(max_length=255, null=True)  # 婚姻情况，TODO: 0: 未婚, 1: 已婚
 
-
     # 身高体重血腥
     height = models.CharField(max_length=255, null=True)
     weight = models.CharField(max_length=255, null=True)
@@ -271,11 +270,11 @@ class ProfileInfo(models.Model):
     language = models.CharField(max_length=255, null=True)  # 外语级别 0: 四级, 1: 六级, 2 英语专八
     driving = models.CharField(max_length=255, null=True)  # 驾驶证 0: 无 1: 有
 
-    education_desc = models.TextField(null=True) # 其他学历教育经历
-    skill_certs = models.TextField(null=True) # 职业技能证书
+    education_desc = models.TextField(null=True)  # 其他学历教育经历
+    skill_certs = models.TextField(null=True)  # 职业技能证书
 
     # 工作信息
-    work_category = models.CharField(max_length=255, null=True) # 岗位类型 TODO: 修改成可选项
+    work_category = models.CharField(max_length=255, null=True)  # 岗位类型 TODO: 修改成可选项
     join_at = models.DateTimeField(null=True)  # 入职时间
     join_at_contract = models.DateTimeField(null=True)  # 入职时间（合同）
     positive_at = models.DateTimeField(null=True)  # 转正时间
@@ -370,7 +369,7 @@ class AuditActivity(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     sn = models.CharField(max_length=255)
-    config = models.ForeignKey(AuditActivityConfig, on_delete=models.CASCADE)
+    config = models.ForeignKey(AuditActivityConfig, on_delete=models.CASCADE, null=True)
     config_data = JSONField(null=True)  # 对审批配置数据进行备份
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
     state = models.CharField(
@@ -745,7 +744,7 @@ class Taizhang(models.Model):
     @property
     def xiaoshou_jine(self):
         if self.kaipiao_dunwei_trade is None or \
-                        self.downstream_jiesuan_price is None:
+                self.downstream_jiesuan_price is None:
             return 0
         else:
             return self.kaipiao_dunwei_trade * self.downstream_jiesuan_price
@@ -753,7 +752,7 @@ class Taizhang(models.Model):
     @property
     def caigou_jine(self):
         if self.kaipiao_dunwei is None or \
-                        self.upstream_jiesuan_price is None:
+                self.upstream_jiesuan_price is None:
             return 0
         else:
             return self.kaipiao_dunwei * self.upstream_jiesuan_price
@@ -761,7 +760,7 @@ class Taizhang(models.Model):
     @property
     def kuchun_jine(self):
         if self.shangyou_kuchun_liang is None or \
-                        self.shangyou_kuchun_yuji_danjia is None:
+                self.shangyou_kuchun_yuji_danjia is None:
             return 0
         else:
             return self.shangyou_kuchun_liang * self.shangyou_kuchun_yuji_danjia
@@ -769,7 +768,7 @@ class Taizhang(models.Model):
     @property
     def hetong_jine(self):
         if self.upstream_dunwei is None or \
-                        self.buyPrice is None:
+                self.buyPrice is None:
             return 0
         else:
             return self.buyPrice * self.upstream_dunwei

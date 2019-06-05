@@ -41,9 +41,16 @@ def updateCategoryUpdatedAt(subtype):
 @require_http_methods(['GET'])
 @validateToken
 def category(request, subtype):
-    configs = AuditActivityConfig.objects \
-        .filter(subtype=subtype, archived=False) \
-        .order_by('priority')
+    auditData = request.GET.get('auditData', None)
+    if auditData is not None:
+        auditData = json.loads(auditData)
+        configs, fallback = matchConfigs(subtype, auditData, request.profile)
+        if fallback is not None:
+            configs = [fallback] + configs
+    else:
+        configs = AuditActivityConfig.objects \
+            .filter(subtype=subtype, archived=False) \
+            .order_by('priority')
     return JsonResponse({
         'configs': [resolve_config(c) for c in configs]
     })

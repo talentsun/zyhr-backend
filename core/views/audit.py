@@ -196,82 +196,37 @@ def setupSteps(activity, taskId=None):
         pos = pos + 1
 
 
-def _resolveProp(auditData, path, creator):
-    props = path.split('.')
-
-    value = auditData
-    for prop in props:
-        value = value.get(prop, None)
-        if value is None:
-            break
-
-    return value
-
-
-def _compareValue(cond, boundary, value):
-    if cond == 'eq':
-        if type(boundary) == str:
-            return boundary == value
-        elif isinstance(boundary, Iterable):
-            return value in boundary
-        else:
-            return boundary == value
-    elif cond == 'lt':
-        return float(value) < float(boundary)
-    elif cond == 'lte':
-        return float(value) <= float(boundary)
-    elif cond == 'gt':
-        return float(value) > float(boundary)
-    elif cond == 'gte':
-        return float(value) >= float(boundary)
-    else:
-        return False
-
-
-def _compareCreator(creator, dep, pos):
-    if pos is None:
-        return str(creator.department.pk) == dep
-    else:
-        return str(creator.department.pk) == dep and str(creator.position.pk) == pos
-
-
 def resolveConfigByConditions(subtype, auditData, creator):
-    configs = AuditActivityConfig.objects \
-        .filter(subtype=subtype, fallback=False, archived=False) \
-        .order_by('priority')
-    fallback = AuditActivityConfig.objects \
-        .filter(subtype=subtype, fallback=True, archived=False) \
-        .first()
-
-    result = None
-    for config in configs:
-        match = True
-        for condition in config.conditions:
-            prop, cond, value = condition['prop'], condition['condition'], condition.get('value', None)
-            if value is None:
-                # invalid condition, ignore it
-                continue
-
-            if prop == 'creator':
-                dep = value.get('department', None)
-                pos = value.get('position', None)
-                if not _compareCreator(creator, dep, pos):
-                    match = False
-                    break
-            else:
-                v = _resolveProp(auditData, prop, creator)
-                if not _compareValue(cond, value, v):
-                    match = False
-                    break
-
-        if match:
-            result = config
-            break
-
-    if result is None:
-        return fallback
+    configs, fallback = matchConfigs(subtype, auditData, creator)
+    if len(configs) > 0:
+        return configs[0]
     else:
-        return result
+        return fallback
+
+
+def createOrLoadAuditConfig(subtype, auditConfigData):
+    if 'pk' in auditConfigData:
+        auditConfig = AuditActivityConfig.objects.get(pk=auditConfigData.get('pk'))
+    elif 'id' in auditConfigData:
+        auditConfig = AuditActivityConfig.objects.get(pk=auditConfigData.get('id'))
+    else:  # custom
+        auditConfig = AuditActivityConfig.objects \
+            .create(archived=True,
+                    subtype=subtype,
+                    fallback=False,
+                    priority=65535)
+        for index, step in enumerate(auditConfigData.get('steps', [])):
+            params = {
+                'config': auditConfig,
+                'position': index,
+            }
+            if step.get('department', None) is not None:
+                params['assigneeDepartment'] = Department.objects.get(pk=step.get('department').get('id'))
+            if step.get('position', None) is not None:
+                params['assigneePosition'] = Position.objects.get(pk=step.get('position').get('id'))
+            AuditActivityConfigStep.objects.create(**params)
+
+    return auditConfig
 
 
 @transaction.atomic
@@ -281,23 +236,37 @@ def createActivity(profile, data, taskId=None):
     # TODO: validate user permission
     subtype = data.get('code', None)  # audit acitivity config code
     submit = data.get('submit', False)  # 是否提交审核
-    config = resolveConfigByConditions(subtype, data['extra'], profile)
+    auditConfig = data.get('auditConfig', None)  # 是否手动选择审批流
+    if auditConfig is None:
+        auditConfig = resolveConfigByConditions(subtype, data['extra'], profile)
 
-    if config is None:
-        return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
+    if auditConfig is None:
+        if submit:
+            # 如果提交, 必须确保找到匹配的 audit config
+            return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
+        else:  # 如果不提交,创建一个空的 audit config
+            auditConfig = AuditActivityConfig.objects \
+                .create(archived=True,
+                        subtype=subtype,
+                        fallback=False,
+                        priority=65535)
+            AuditActivityConfigStep.objects.create(config=auditConfig, position=0)
+    elif type(auditConfig) == dict:
+        # 根据前端界面控制,只有提交的时候 auditConfig 才不为空
+        auditConfig = createOrLoadAuditConfig(subtype, auditConfig)
 
     logger.info('{} create activity base on config: {}'.format(
-        taskId, config.subtype))
+        taskId, auditConfig.subtype))
 
-    if submit and config.abnormal:
+    if submit and auditConfig.abnormal:
         return JsonResponse({'errorId': 'config-abnormal'}, status=400)
 
     extra = data['extra']
     amount = extra.get('amount', None)
 
     activity = AuditActivity.objects \
-        .create(config=config,
-                config_data=resolve_config(config),
+        .create(config=auditConfig,
+                config_data=resolve_config(auditConfig),
                 sn=generateActivitySN(),
                 state=AuditActivity.StateDraft,
                 creator=profile,
@@ -394,6 +363,7 @@ def updateData(request, activityId):
 
 @require_http_methods(['POST'])
 @validateToken
+@transaction.atomic
 def submitAudit(request, activityId):
     # TODO: validate user permission
     taskId = uuid.uuid4()
@@ -404,16 +374,23 @@ def submitAudit(request, activityId):
             and activity.state != AuditActivity.StateCancelled:
         return JsonResponse({'errorId': 'invalid-state'}, status=400)
 
-    # update config if submit
-    config = resolveConfigByConditions(activity.config.subtype, activity.extra, request.profile)
-    if config is None:
-        return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
+    # TODO: 支持自定义审批
+    data = json.loads(request.body.decode('utf-8'))
+    auditConfig = data.get('auditConfig', None)
+    if auditConfig is None:
+        # update config if submit
+        auditConfig = resolveConfigByConditions(activity.config.subtype, activity.extra, request.profile)
+        if auditConfig is None:
+            return JsonResponse({'errorId': 'audit-config-not-found'}, status=400)
+    else:
+        # 用户手动选择审批流,创建或加载指定的审批流
+        auditConfig = createOrLoadAuditConfig(activity.config.subtype, auditConfig)
 
-    if config.abnormal:
+    if auditConfig.abnormal:
         return JsonResponse({'errorId': 'config-abnormal'}, status=400)
 
-    activity.config = config
-    activity.config_data = resolve_config(config)
+    activity.config = auditConfig
+    activity.config_data = resolve_config(auditConfig)
     activity.save()
 
     setupSteps(activity, taskId=taskId)

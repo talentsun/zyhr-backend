@@ -1,6 +1,7 @@
 import re
 
 from django.utils import timezone
+from collections.abc import Iterable
 from django.forms.models import model_to_dict
 
 from core.models import *
@@ -256,6 +257,8 @@ def resolve_config(config):
 
     return {
         'id': str(config.pk),
+        'subtype': config.subtype,
+        'category': config.category,
         'abnormal': config.abnormal,
         'priority': config.priority,
         'fallback': config.fallback,
@@ -271,3 +274,75 @@ def resolveCategoryForAudit(activity):
         return '财务'
     else:
         return '行政'
+
+def _compareValue(cond, boundary, value):
+    if cond == 'eq':
+        if type(boundary) == str:
+            return boundary == value
+        elif isinstance(boundary, Iterable):
+            return value in boundary
+        else:
+            return boundary == value
+    elif cond == 'lt':
+        return float(value) < float(boundary)
+    elif cond == 'lte':
+        return float(value) <= float(boundary)
+    elif cond == 'gt':
+        return float(value) > float(boundary)
+    elif cond == 'gte':
+        return float(value) >= float(boundary)
+    else:
+        return False
+
+def _resolveProp(auditData, path, creator):
+    props = path.split('.')
+
+    value = auditData
+    for prop in props:
+        value = value.get(prop, None)
+        if value is None:
+            break
+
+    return value
+
+
+def _compareCreator(creator, dep, pos):
+    if pos is None:
+        return str(creator.department.pk) == dep
+    else:
+        return str(creator.department.pk) == dep and str(creator.position.pk) == pos
+
+
+def matchConfigs(subtype, auditData, creator):
+    configs = AuditActivityConfig.objects \
+        .filter(subtype=subtype, fallback=False, archived=False) \
+        .order_by('priority')
+    fallback = AuditActivityConfig.objects \
+        .filter(subtype=subtype, fallback=True, archived=False) \
+        .first()
+
+    result = []
+    for config in configs:
+        match = True
+        for condition in config.conditions:
+            prop, cond, value = condition['prop'], condition['condition'], condition.get('value', None)
+            if value is None:
+                # invalid condition, ignore it
+                continue
+
+            if prop == 'creator':
+                dep = value.get('department', None)
+                pos = value.get('position', None)
+                if not _compareCreator(creator, dep, pos):
+                    match = False
+                    break
+            else:
+                v = _resolveProp(auditData, prop, creator)
+                if not _compareValue(cond, value, v):
+                    match = False
+                    break
+
+        if match:
+            result.append(config)
+
+    return result, fallback
