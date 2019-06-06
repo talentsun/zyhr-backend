@@ -124,9 +124,10 @@ class Migrator():
         audit.save()
 
     def migrateBizContractAudit(self):
-        AuditActivityConfig.objects.filter(subtype='biz_contract').delete()
+        AuditActivityConfig.objects \
+            .filter(subtype='biz_contract') \
+            .update(subtype='biz_contract_legacy')
         specs_v3.createAuditConfig('law.biz:fin.fin_accountant->dichan.law_mgr->_.owner', fallback=True)
-
 
         audit = AuditActivityConfig.objects.get(subtype='biz_contract_no_risk')
         audit.subtype = 'biz'
@@ -241,7 +242,9 @@ def prepareV3AuditCofigurationData(apps, schema_editor):
     specs_v3.createAuditConfig(spec='hr.chuchai:_.owner->hr.owner', fallback=True)
     specs_v3.createAuditConfig(spec='hr.kaoqin_yichang:_.owner->hr.owner', fallback=True)
 
-    AuditActivityConfig.objects.filter(subtype='rongzitikuan').delete()
+    AuditActivityConfig.objects \
+        .filter(subtype='rongzitikuan') \
+        .update(subtype='rongzitikuan_legacy')
     specs_v3.createAuditConfig(spec='law.rongzitikuan:jinrong.owner->fin.fin_accountant->fin.owner->root.ceo',
                                fallback=True)
 
