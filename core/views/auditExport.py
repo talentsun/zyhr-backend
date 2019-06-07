@@ -806,7 +806,10 @@ def exportTravelAuditDoc(activity):
         ws['S' + row] = amountFixed(traffic)
         ws['S' + row].alignment = Alignment(vertical='center', horizontal='center')
 
-        other = try_convert_float(item.get('other', '0'))
+        item_value = item.get('other', '0')
+        if item_value == '':
+            item_value = '0'
+        other = try_convert_float(item_value)
         total['other'] = total['other'] + other
         ws['T' + row] = amountFixed(other)
         ws['T' + row].alignment = Alignment(vertical='center', horizontal='center')
