@@ -1,4 +1,5 @@
 import re
+import datetime
 
 from django.utils import timezone
 from collections.abc import Iterable
@@ -76,6 +77,7 @@ def resolve_profile(profile,
         'updated_at': profile.updated_at.isoformat(),
     }
 
+    t1 = datetime.datetime.now()
     if include_messages:
         messages = Message.objects \
             .filter(profile=profile, read=False) \
@@ -96,6 +98,10 @@ def resolve_profile(profile,
             'extra': m.extra
         } for m in messages]
 
+    t2 = datetime.datetime.now()
+    d1 = t2 - t1
+    print("get messsages: {}".format(d1))
+
     if include_pending_tasks:
         pendingTasks = AuditActivity.objects \
             .filter(state=AuditActivity.StateApproved,
@@ -108,10 +114,17 @@ def resolve_profile(profile,
 
         pendingTasks = pendingTasks.count()
         result['pendingTasks'] = pendingTasks
+    t3 = datetime.datetime.now()
+    d2 = t3 - t2
+    print("get tasks: {}".format(d2))
 
     if orgs:
         deps = Department.objects.filter(archived=False)
         result['departments'] = [resolve_department(d) for d in deps]
+
+    t4 = datetime.datetime.now()
+    d3 = t4 - t3
+    print("get departments: {}".format(d3))
 
     if include_memo:
         accounts = BankAccount.objects.all()
@@ -133,12 +146,20 @@ def resolve_profile(profile,
             'value': m.value
         } for m in memo]
 
+    t5 = datetime.datetime.now()
+    d4 = t5 - t4
+    print("get memo: {}".format(d4))
+
     if include_info:
         info = ProfileInfo.objects.get(profile=profile)
         info_dict = model_to_dict(info)
         info_dict['join_at'] = info.join_at.isoformat() if info.join_at else None
         info_dict['positive_at'] = info.positive_at.isoformat() if info.positive_at else None
         result['info'] = info_dict
+
+    t6 = datetime.datetime.now()
+    d5 = t6 - t5
+    print("get info: {}".format(d5))
 
     return result
 
