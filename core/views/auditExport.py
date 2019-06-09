@@ -12,16 +12,20 @@ import iso8601
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.shortcuts import redirect
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from sendfile import sendfile
+from urllib.parse import urlencode
 from openpyxl import load_workbook
 from openpyxl.styles import Border, Side, Alignment
 
 from core.models import *
 from core.auth import validateToken
 from core.common import *
+from core.views.auditExportPDF import exportPDFData
 
 logger = logging.getLogger('app.core.views.auditExport')
 thin = Side(border_style="thin", color="000000")
@@ -1899,6 +1903,13 @@ def export(request, activityId):
     return sendfile(request, path,
                     attachment=True,
                     attachment_filename=filename)
+
+
+@require_http_methods(['GET'])
+def exportPDF(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    payload = exportPDFData(activity)
+    return JsonResponse(payload)
 
 
 def zipdir(path, ziph):
