@@ -134,18 +134,44 @@ def exportCostAuditPDF(activity):
     return ret
 
 
+def exportLoanAuditPDF(activity):
+    auditData = activity.extra
+    ret = resolve_activity(activity)
+    ret['createdAt'] = activity.created_at.strftime('%Y-%m-%d')
+    amount = try_convert_float(auditData['loan']['amount'])
+    ret['extra']['rmb_big_text'] = '人民币（大写） {}  此据'.format(convertToDaxieAmount(amount))
+    ret['extra']['rmb_normal_text'] = '（小写）￥ {}'.format(amountFixed(try_convert_float(auditData['loan']['amount'])))
+    account = auditData['account']
+    ret['extra']['fukuan_text'] = '户名：{}\n收款账号:{} \n开户行：{}' \
+        .format(account['name'], account['number'], account['bank'])
+    return ret
+
+
+def exportMoneyAuditPDF(activity):
+    auditData = activity.extra
+    info = auditData['info']
+
+    ret = resolve_activity(activity)
+    ret['createdAt'] = activity.created_at.strftime('%Y-%m-%d')
+
+    ret['extra']['daxie_yingfu'] = '（大写）{}'.format(convertToDaxieAmount(try_convert_float(info['amount'])))
+    ret['extra']['xiaoxie_yingfu'] = '￥' + amountFixed(try_convert_float(info['amount']))
+    outAccount = auditData['outAccount']
+    ret['extra']['fukuan_fangshi'] = '现金' if outAccount['type'] == 'cash' else '转账'
+
+    return ret
+
+
 def exportPDFData(activity):
     payload = None
     if activity.config.subtype == 'open_account':
         payload = exportOpenAccountPDF(activity)
     elif re.match('cost', activity.config.subtype):
         payload = exportCostAuditPDF(activity)
-    # elif re.match('loan', activity.config.subtype):
-    #    payload = exportLoanAuditDoc(activity)
-    #    filename = '借款审批单.xlsx'
-    # elif re.match('money', activity.config.subtype):
-    #    payload = exportMoneyAuditDoc(activity)
-    #    filename = '用款审批单.xlsx'
+    elif re.match('loan', activity.config.subtype):
+        payload = exportLoanAuditPDF(activity)
+    elif re.match('money', activity.config.subtype):
+        payload = exportMoneyAuditPDF(activity)
     # elif re.match('biz', activity.config.subtype):
     #    path = exportBizContractAuditDoc(activity)
     #    filename = '业务合同会签审批.xlsx'
