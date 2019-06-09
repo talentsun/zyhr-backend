@@ -162,6 +162,42 @@ def exportMoneyAuditPDF(activity):
     return ret
 
 
+def exportRongzitikuanPDF(activity):
+    # auditData = activity.extra
+    # info = auditData['info']
+
+    ret = resolve_activity(activity)
+    ret['createdAt'] = activity.created_at.strftime('%Y-%m-%d')
+
+    return ret
+
+
+def exportFnContractAuditPDF(activity):
+    auditData = activity.extra
+    info = auditData['info']
+
+    ret = resolve_activity(activity)
+    ret['extra']['hetong_jine'] = try_convert_float(info['amount'])
+
+    return ret
+
+
+def exportBizContractAuditPDF(activity):
+    auditData = activity.extra
+    base = auditData['base']
+    info = auditData['info']
+
+    ret = resolve_activity(activity)
+    ret['extra']['hetong_leixing'] = '大宗类' if base['type'] == 'dazong' else '其他类'
+    ret['extra']['hetong_shuliang'] = amountFixed(try_convert_float(info['tonnage'])) + '吨'
+    ret['extra']['caigou_jiage'] = amountFixed(try_convert_float(info['buyPrice'])) + '元/吨'
+
+    ret['extra']['jiesuan_fangshi'] = '现金' if info['settlementType'] == 'cash' else '转账'
+    ret['extra']['xiaoshou_jiage'] = amountFixed(try_convert_float(info['sellPrice'])) + '元/吨'
+
+    return ret
+
+
 def exportPDFData(activity):
     payload = None
     if activity.config.subtype == 'open_account':
@@ -172,12 +208,10 @@ def exportPDFData(activity):
         payload = exportLoanAuditPDF(activity)
     elif re.match('money', activity.config.subtype):
         payload = exportMoneyAuditPDF(activity)
-    # elif re.match('biz', activity.config.subtype):
-    #    path = exportBizContractAuditDoc(activity)
-    #    filename = '业务合同会签审批.xlsx'
-    # elif re.match('fn', activity.config.subtype):
-    #    path = exportFnContractAuditDoc(activity)
-    #    filename = '职能合同会签审批.xlsx'
+    elif re.match('biz', activity.config.subtype):
+        payload = exportBizContractAuditPDF(activity)
+    elif re.match('fn', activity.config.subtype):
+        payload = exportFnContractAuditPDF(activity)
     # elif re.match('travel', activity.config.subtype):
     #    # travel
     #    path = exportTravelAuditDoc(activity)
@@ -222,9 +256,8 @@ def exportPDFData(activity):
     # elif activity.config.subtype == 'transfer':
     #    path = exportTransferAudit(activity)
     #    filename = '内部调动审批单.xlsx'
-    # elif re.match('rongzitikuan', activity.config.subtype):
-    #    path = exportRongzitikuanAudit(activity)
-    #    filename = '融资提款申请.xlsx'
+    elif re.match('rongzitikuan', activity.config.subtype):
+        payload = exportRongzitikuanPDF(activity)
     else:
         pass
 
