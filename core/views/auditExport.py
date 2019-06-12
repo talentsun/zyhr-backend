@@ -373,7 +373,10 @@ def exportCostAuditDoc(activity):
     # 报销人/部分负责人/财务负责人
     ws['C' + str(r + 1)] = '报销人：{}'.format(getattr(creator, 'name', ''))
     ws['C' + str(r + 2)] = '部门负责人：{}'.format(getattr(owner, 'name', ''))
-    ws['C' + str(r + 3)] = '财务负责人：{}'.format(getattr(finOwner, 'name'))
+    if finOwner is None:
+        ws['C' + str(r + 3)] = '财务负责人：'
+    else:
+        ws['C' + str(r + 3)] = '财务负责人：{}'.format(getattr(finOwner, 'name'))
 
     ## 财务会计/人力行政负责人/公司负责人
     ws['D' + str(r + 1)] = '财务会计：{}'.format(getattr(finAccountant, 'name', ''))
