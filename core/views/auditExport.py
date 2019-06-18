@@ -33,6 +33,13 @@ empty = Side(border_style=None, color=None)
 medium = Side(border_style="medium", color="000000")
 
 
+def getAttrEvenNone(obj, attr, default=None):
+    try:
+        getattr(obj, attr, default)
+    except:
+        return default
+
+
 def try_convert_float(s):
     if s[-1] == '元':
         return float(s[0:-1])
@@ -371,17 +378,17 @@ def exportCostAuditDoc(activity):
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
 
     # 报销人/部分负责人/财务负责人
-    ws['C' + str(r + 1)] = '报销人：{}'.format(getattr(creator, 'name', ''))
-    ws['C' + str(r + 2)] = '部门负责人：{}'.format(getattr(owner, 'name', ''))
+    ws['C' + str(r + 1)] = '报销人：{}'.format(getAttrEvenNone(creator, 'name', ''))
+    ws['C' + str(r + 2)] = '部门负责人：{}'.format(getAttrEvenNone(owner, 'name', ''))
     if finOwner is None:
         ws['C' + str(r + 3)] = '财务负责人：'
     else:
-        ws['C' + str(r + 3)] = '财务负责人：{}'.format(getattr(finOwner, 'name'))
+        ws['C' + str(r + 3)] = '财务负责人：{}'.format(getAttrEvenNone(finOwner, 'name'))
 
     ## 财务会计/人力行政负责人/公司负责人
-    ws['D' + str(r + 1)] = '财务会计：{}'.format(getattr(finAccountant, 'name', ''))
-    ws['D' + str(r + 2)] = '人力行政负责人：{}'.format(getattr(hrOwner, 'name', ''))
-    ws['D' + str(r + 3)] = '公司负责人：{}'.format(getattr(ceo, 'name', ''))
+    ws['D' + str(r + 1)] = '财务会计：{}'.format(getAttrEvenNone(finAccountant, 'name', ''))
+    ws['D' + str(r + 2)] = '人力行政负责人：{}'.format(getAttrEvenNone(hrOwner, 'name', ''))
+    ws['D' + str(r + 3)] = '公司负责人：{}'.format(getAttrEvenNone(ceo, 'name', ''))
 
     ## 表头信息
     dp = creator.department.name if creator.department is not None else ''
@@ -428,7 +435,7 @@ def exportLoanAuditDoc(activity):
     auditData = activity.extra
     creator = activity.creator
     ws['B3'] = '部门:{}                {}                      编号:{}'. \
-        format(getattr(creator.department, 'name', ''),
+        format(getAttrEvenNone(creator.department, 'name', ''),
                datetime.datetime.now().strftime('%Y-%m-%d'),
                activity.sn)
 
@@ -455,17 +462,17 @@ def exportLoanAuditDoc(activity):
     ws['C11'] = creator.name
     ws['C11'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ws['F11'] = getattr(creator.owner, 'name', '')
+    ws['F11'] = getAttrEvenNone(creator.owner, 'name', '')
     ws['F11'].alignment = Alignment(vertical='center', horizontal='center')
 
     # finOwner = Profile.objects.filter(department__code='fin', position__code='owner', archived=False).first()
     finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
-    ws['I11'] = getattr(finOwner, 'name', '')
+    ws['I11'] = getAttrEvenNone(finOwner, 'name', '')
     ws['I11'].alignment = Alignment(vertical='center', horizontal='center')
 
     # ceo = Profile.objects.filter(department__code='root', position__code='ceo', archived=False).first()
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
-    ws['M11'] = getattr(ceo, 'name', '')
+    ws['M11'] = getAttrEvenNone(ceo, 'name', '')
     ws['M11'].alignment = Alignment(vertical='center', horizontal='center')
 
     # fix border style
@@ -533,7 +540,7 @@ def exportMoneyAuditDoc(activity):
 
     auditData = activity.extra
     creator = activity.creator
-    ws['A2'] = '  用款部门:{}'.format(getattr(creator.department, 'name', ''))
+    ws['A2'] = '  用款部门:{}'.format(getAttrEvenNone(creator.department, 'name', ''))
     ws['K2'] = datetime.datetime.now().strftime('%Y-%m-%d')
 
     # 收款信息
@@ -560,19 +567,19 @@ def exportMoneyAuditDoc(activity):
     ws['B10'] = creator.name
     ws['B10'].alignment = Alignment(vertical='center', horizontal='center')
 
-    ws['H10'] = getattr(creator.owner, 'name', '')
+    ws['H10'] = getAttrEvenNone(creator.owner, 'name', '')
     ws['H10'].alignment = Alignment(vertical='center', horizontal='center')
 
     accountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
-    ws['B12'] = getattr(accountant, 'name', '')
+    ws['B12'] = getAttrEvenNone(accountant, 'name', '')
     ws['B12'].alignment = Alignment(vertical='center', horizontal='center')
 
     finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
-    ws['H12'] = getattr(finOwner, 'name', '')
+    ws['H12'] = getAttrEvenNone(finOwner, 'name', '')
     ws['H12'].alignment = Alignment(vertical='center', horizontal='center')
 
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
-    ws['H13'] = getattr(ceo, 'name', '')
+    ws['H13'] = getAttrEvenNone(ceo, 'name', '')
     ws['H13'].alignment = Alignment(vertical='center', horizontal='center')
 
     # A3:M3
@@ -623,20 +630,20 @@ def exportBizContractAuditDoc(activity):
     ws['B10'].alignment = Alignment(horizontal='center', vertical='center')
     ws['B11'] = creator.name
     ws['B11'].alignment = Alignment(horizontal='center', vertical='center')
-    ws['F11'] = getattr(creator.owner, 'name', '')
+    ws['F11'] = getAttrEvenNone(creator.owner, 'name', '')
     ws['F11'].alignment = Alignment(horizontal='center', vertical='center')
 
     accountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
-    ws['F12'] = getattr(accountant, 'name', '')
+    ws['F12'] = getAttrEvenNone(accountant, 'name', '')
     ws['F12'].alignment = Alignment(horizontal='center', vertical='center')
 
     # TODO: 法务负责人
     finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
-    ws['B13'] = getattr(finOwner, 'name', '')
+    ws['B13'] = getAttrEvenNone(finOwner, 'name', '')
     ws['B13'].alignment = Alignment(horizontal='center', vertical='center')
 
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
-    ws['B14'] = getattr(ceo, 'name', '')
+    ws['B14'] = getAttrEvenNone(ceo, 'name', '')
     ws['B14'].alignment = Alignment(horizontal='center', vertical='center')
 
     for cell in ws.merged_cells:
@@ -732,7 +739,7 @@ def exportTravelAuditDoc(activity):
     ws = wb.worksheets[0]
     ws['C3'] = '姓名: {}                 部门: {}                    {}'.format(
         creator.name,
-        getattr(creator.department, 'name', ''),
+        getAttrEvenNone(creator.department, 'name', ''),
         datetime.datetime.now().strftime('%Y-%m-%d')
     )
 
@@ -857,7 +864,7 @@ def exportTravelAuditDoc(activity):
     finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accoutant')
     hr = resolveProfileFromAudit(activity, dep='hr', pos='hr_member')
     ws['C' + str(r + 5)] = '会计：{}              人资专员：{}              出差人员签字：{}'.format(
-        getattr(finAccountant, 'name', ''), getattr(hr, 'name', ''), creator.name)
+        getAttrEvenNone(finAccountant, 'name', ''), getAttrEvenNone(hr, 'name', ''), creator.name)
 
     for cell in ws.merged_cells:
         if not inBounds('C4:W' + str(r + 4), cell):
@@ -880,7 +887,7 @@ def exportTravelAuditDoc(activity):
     ws['L2'] = '单据及附件共 1 页'
 
     ws['B5'] = '差旅报销'
-    ws['C5'] = getattr(info, 'reason', '')
+    ws['C5'] = getAttrEvenNone(info, 'reason', '')
     amount = paddingAmount(t)
     for j, ch in enumerate(amount):
         col = chr(ord('E') + j)
@@ -907,14 +914,14 @@ def exportTravelAuditDoc(activity):
     hrOwner = resolveProfileFromAudit(activity, dep='hr', pos='owner')
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
     # 报销人/部分负责人/财务负责人
-    ws['C10'] = '报销人：{}'.format(getattr(creator, 'name', ''))
-    ws['C11'] = '部门负责人：{}'.format(getattr(owner, 'name', ''))
-    ws['C12'] = '财务负责人：{}'.format(getattr(finOwner, 'name'))
+    ws['C10'] = '报销人：{}'.format(getAttrEvenNone(creator, 'name', ''))
+    ws['C11'] = '部门负责人：{}'.format(getAttrEvenNone(owner, 'name', ''))
+    ws['C12'] = '财务负责人：{}'.format(getAttrEvenNone(finOwner, 'name'))
 
     # 财务会计/人力行政负责人/公司负责人
-    ws['D10'] = '财务会计：{}'.format(getattr(finAccountant, 'name', ''))
-    ws['D11'] = '人力行政负责人：{}'.format(getattr(hrOwner, 'name', ''))
-    ws['D12'] = '公司负责人：{}'.format(getattr(ceo, 'name', ''))
+    ws['D10'] = '财务会计：{}'.format(getAttrEvenNone(finAccountant, 'name', ''))
+    ws['D11'] = '人力行政负责人：{}'.format(getAttrEvenNone(hrOwner, 'name', ''))
+    ws['D12'] = '公司负责人：{}'.format(getAttrEvenNone(ceo, 'name', ''))
 
     ## 账号信息系
     account = auditData['account']
@@ -961,21 +968,21 @@ def exportYongrenAuditDoc(activity):
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'] = getAttrEvenNone(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.assignee != None:
         ws['B8'] = '审批人：' + step.assignee.name + "      "
         ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'] = getAttrEvenNone(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.assignee != None:
         ws['B10'] = '审批人：' + step.assignee.name + "     "
         ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'] = getAttrEvenNone(step, 'desc', '无')
     ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.assignee != None:
         ws['B12'] = '审批人：' + step.assignee.name + "     "
@@ -1035,28 +1042,28 @@ def exportQingjiaAuditDoc(activity):
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'] = getAttrEvenNone(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B8'] = '审批人: ' + getattr(step.assignee, 'name', '无')
+        ws['B8'] = '审批人: ' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B8'] = '审批人: 无'
     ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'] = getAttrEvenNone(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B10'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B10'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B10'] = '审批人: 无'
     ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'] = getAttrEvenNone(step, 'desc', '无')
     ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B12'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B12'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B12'] = '审批人: 无'
     ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
@@ -1095,28 +1102,28 @@ def exportChuchaiAuditDoc(activity):
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'] = getAttrEvenNone(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B8'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B8'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B8'] = '审批人: 无'
     ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'] = getAttrEvenNone(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B10'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B10'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B10'] = '审批人: 无'
     ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'] = getAttrEvenNone(step, 'desc', '无')
     ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B12'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B12'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B12'] = '审批人: 无'
     ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
@@ -1154,28 +1161,28 @@ def exportKaoqinyichangAuditDoc(activity):
     ws['B4'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B6'] = getattr(step, 'desc', '无')
+    ws['B6'] = getAttrEvenNone(step, 'desc', '无')
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B7'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B7'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B7'] = '审批人: 无'
     ws['B7'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'] = getAttrEvenNone(step, 'desc', '无')
     ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B9'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B9'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B9'] = '审批人: 无'
     ws['B9'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B10'] = getattr(step, 'desc', '无')
+    ws['B10'] = getAttrEvenNone(step, 'desc', '无')
     ws['B10'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
-        ws['B11'] = '审批人:' + getattr(step.assignee, 'name', '无')
+        ws['B11'] = '审批人:' + getAttrEvenNone(step.assignee, 'name', '无')
     else:
         ws['B11'] = '审批人: 无'
     ws['B11'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
@@ -1212,19 +1219,19 @@ def exportZizhishiyongAuditDoc(activity):
     ws['B5'].alignment = Alignment(vertical='center', horizontal='left')
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B6'] = getattr(step, 'desc', '无')
+    ws['B6'] = getAttrEvenNone(step, 'desc', '无')
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['F6'] = getattr(step, 'desc', '无')
+    ws['F6'] = getAttrEvenNone(step, 'desc', '无')
     ws['F6'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='fin', pos='owner')
-    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'] = getAttrEvenNone(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['F7'] = getattr(step, 'desc', '无')
+    ws['F7'] = getAttrEvenNone(step, 'desc', '无')
     ws['F7'].alignment = Alignment(vertical='center', wrapText=True)
 
     ws['A8'] = '是否带出：{}'.format('是' if usage['out'] == '1' else '否')
@@ -1270,11 +1277,11 @@ def exportYinjiankezhiAuditDoc(activity):
     ws['B6'].alignment = Alignment(vertical='center', horizontal='left')
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'] = getAttrEvenNone(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'] = getAttrEvenNone(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
 
     fix_merged_cells_border(ws, 'A2:B9')
@@ -1310,11 +1317,11 @@ def exportDanganjiechuAuditDoc(activity):
     ws['B5'].alignment = Alignment(vertical='center', horizontal='left')
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B6'] = getattr(step, 'desc', '无')
+    ws['B6'] = getAttrEvenNone(step, 'desc', '无')
     ws['B6'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B8'] = getattr(step, 'desc', '无')
+    ws['B8'] = getAttrEvenNone(step, 'desc', '无')
     ws['B8'].alignment = Alignment(vertical='center', wrapText=True)
 
     fix_merged_cells_border(ws, 'A2:D9')
@@ -1359,28 +1366,28 @@ def exportZichanbaofeiAuditDoc(activity):
     ws['B4'].alignment = Alignment(vertical='center', horizontal='left')
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B5'] = getattr(step, 'desc', '无')
+    ws['B5'] = getAttrEvenNone(step, 'desc', '无')
     ws['B5'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
         ws['B6'] = '审批人:' + step.assignee.name
         ws['B6'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B7'] = getattr(step, 'desc', '无')
+    ws['B7'] = getAttrEvenNone(step, 'desc', '无')
     ws['B7'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
         ws['B8'] = '审批人:' + step.assignee.name
         ws['B8'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='fin', pos='owner')
-    ws['B9'] = getattr(step, 'desc', '无')
+    ws['B9'] = getAttrEvenNone(step, 'desc', '无')
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
         ws['B10'] = '审批人:' + step.assignee.name
         ws['B10'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B11'] = getattr(step, 'desc', '无')
+    ws['B11'] = getAttrEvenNone(step, 'desc', '无')
     ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
         ws['B12'] = '审批人:' + step.assignee.name
@@ -1429,21 +1436,21 @@ def exportZichancaigouAuditDoc(activity):
     ws['B10'].alignment = Alignment(vertical='center', horizontal='left')
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B11'] = getattr(step, 'desc', '无') or '无'
+    ws['B11'] = getAttrEvenNone(step, 'desc', '无') or '无'
     ws['B11'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
         ws['B12'] = '审批人: ' + step.assignee.name
         ws['B12'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B13'] = getattr(step, 'desc', '无') or '无'
+    ws['B13'] = getAttrEvenNone(step, 'desc', '无') or '无'
     ws['B13'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
         ws['B14'] = '审批人: ' + step.assignee.name
         ws['B14'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B15'] = getattr(step, 'desc', '无') or '无'
+    ws['B15'] = getAttrEvenNone(step, 'desc', '无') or '无'
     ws['B15'].alignment = Alignment(vertical='center', wrapText=True)
     if step:
         ws['B16'] = '审批人: ' + step.assignee.name
@@ -1498,7 +1505,7 @@ def exportZhuanzhengAuditDoc(activity):
     ws['C13'].alignment = Alignment(vertical='center', horizontal='center')
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B15'] = '审批意见: ' + (getattr(step, 'desc', '无') or '无')
+    ws['B15'] = '审批意见: ' + (getAttrEvenNone(step, 'desc', '无') or '无')
     ws['B15'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.extra != None:
         eva = step.extra.get('evaluation', '')
@@ -1511,7 +1518,7 @@ def exportZhuanzhengAuditDoc(activity):
         ws['D15'].alignment = Alignment(vertical='center', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B17'] = '审批意见:' + (getattr(step, 'desc', '无') or '无')
+    ws['B17'] = '审批意见:' + (getAttrEvenNone(step, 'desc', '无') or '无')
     ws['B17'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.extra != None:
         eva = step.extra.get('evaluation', '')
@@ -1588,7 +1595,7 @@ def exportTransferAudit(activity):
         ws['K10'].alignment = Alignment(vertical='center', horizontal='center', wrapText=True)
         ws['K15'] = '签名: {}       年   月  日  '.format(step.assignee.name)
         ws['K15'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
-    # ws['B20'] = getattr(step, 'desc', '无')
+    # ws['B20'] = getAttrEvenNone(step, 'desc', '无')
     # ws['B20'].alignment = Alignment(vertical='center', wrapText=True)
     #
     fix_merged_cells_border(ws, 'A3:M15')
@@ -1704,7 +1711,7 @@ def exportLeaveHandoverAuditDoc(activity):
         ws['B19'].alignment = Alignment(vertical='center', horizontal='right')
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B20'] = getattr(step, 'desc', '无')
+    ws['B20'] = getAttrEvenNone(step, 'desc', '无')
     ws['B20'].alignment = Alignment(vertical='center', wrapText=True)
 
     fix_merged_cells_border(ws, 'A2:D25')
@@ -1744,14 +1751,14 @@ def exportLeaveAuditDoc(activity):
     ws['B4'].alignment = Alignment(vertical='center', horizontal='center')
 
     step = resolveDepOwnerStepFromAudit(activity)
-    ws['B9'] = getattr(step, 'desc', '无') or '无'
+    ws['B9'] = getAttrEvenNone(step, 'desc', '无') or '无'
     ws['B9'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.assignee != None:
         ws['B11'] = '审批人：' + step.assignee.name
         ws['B11'].alignment = Alignment(vertical='center', horizontal='right', wrapText=True)
 
     step = resolveStepFromAudit(activity, dep='hr', pos='owner')
-    ws['B13'] = getattr(step, 'desc', '无') or '无'
+    ws['B13'] = getAttrEvenNone(step, 'desc', '无') or '无'
     ws['B13'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.assignee != None:
         ws['B14'] = '审批人：' + step.assignee.name
@@ -1760,7 +1767,7 @@ def exportLeaveAuditDoc(activity):
     # TODO: 面谈信息
 
     step = resolveStepFromAudit(activity, dep='root', pos='ceo')
-    ws['B15'] = getattr(step, 'desc', '无') or '无'
+    ws['B15'] = getAttrEvenNone(step, 'desc', '无') or '无'
     ws['B15'].alignment = Alignment(vertical='center', wrapText=True)
     if step != None and step.assignee != None:
         ws['B16'] = '审批人：' + step.assignee.name
@@ -1800,15 +1807,15 @@ def exportRongzitikuanAudit(activity):
     ws['B10'] = info.get('desc', '')
 
     creator = activity.creator
-    ws['B11'] = '{}'.format(getattr(creator, 'name', ''))
+    ws['B11'] = '{}'.format(getAttrEvenNone(creator, 'name', ''))
     jinrongOner = resolveProfileFromAudit(activity, dep='jinrong', pos='owner')
     finAccountant = resolveProfileFromAudit(activity, dep='fin', pos='fin_accountant')
     finOwner = resolveProfileFromAudit(activity, dep='fin', pos='owner')
     ceo = resolveProfileFromAudit(activity, dep='root', pos='ceo')
-    ws['B12'] = '{}'.format(getattr(jinrongOner, 'name', ''))
-    ws['B13'] = '{}'.format(getattr(finAccountant, 'name', ''))
-    ws['B14'] = '{}'.format(getattr(finOwner, 'name', ''))
-    ws['B15'] = '{}'.format(getattr(ceo, 'name', ''))
+    ws['B12'] = '{}'.format(getAttrEvenNone(jinrongOner, 'name', ''))
+    ws['B13'] = '{}'.format(getAttrEvenNone(finAccountant, 'name', ''))
+    ws['B14'] = '{}'.format(getAttrEvenNone(finOwner, 'name', ''))
+    ws['B15'] = '{}'.format(getAttrEvenNone(ceo, 'name', ''))
 
     for cell in ws.merged_cells:
         if not inBounds('A1:D15', cell):
