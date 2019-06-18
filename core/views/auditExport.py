@@ -33,7 +33,7 @@ empty = Side(border_style=None, color=None)
 medium = Side(border_style="medium", color="000000")
 
 
-def getAttrEvenNone(obj, attr, default=None):
+def getAttrEvenNone(obj, attr, default=''):
     try:
         getattr(obj, attr, default)
     except:
