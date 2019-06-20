@@ -33,7 +33,7 @@ empty = Side(border_style=None, color=None)
 medium = Side(border_style="medium", color="000000")
 
 
-def getAttrEvenNone(obj, attr, default=''):
+def getAttrEvenNone(obj, attr, default):
     try:
         getattr(obj, attr, default)
     except:
@@ -383,7 +383,7 @@ def exportCostAuditDoc(activity):
     if finOwner is None:
         ws['C' + str(r + 3)] = '财务负责人：'
     else:
-        ws['C' + str(r + 3)] = '财务负责人：{}'.format(getAttrEvenNone(finOwner, 'name'))
+        ws['C' + str(r + 3)] = '财务负责人：{}'.format(getAttrEvenNone(finOwner, 'name', ''))
 
     ## 财务会计/人力行政负责人/公司负责人
     ws['D' + str(r + 1)] = '财务会计：{}'.format(getAttrEvenNone(finAccountant, 'name', ''))
@@ -916,7 +916,7 @@ def exportTravelAuditDoc(activity):
     # 报销人/部分负责人/财务负责人
     ws['C10'] = '报销人：{}'.format(getAttrEvenNone(creator, 'name', ''))
     ws['C11'] = '部门负责人：{}'.format(getAttrEvenNone(owner, 'name', ''))
-    ws['C12'] = '财务负责人：{}'.format(getAttrEvenNone(finOwner, 'name'))
+    ws['C12'] = '财务负责人：{}'.format(getAttrEvenNone(finOwner, 'name', ''))
 
     # 财务会计/人力行政负责人/公司负责人
     ws['D10'] = '财务会计：{}'.format(getAttrEvenNone(finAccountant, 'name', ''))
