@@ -35,8 +35,9 @@ medium = Side(border_style="medium", color="000000")
 
 def getAttrEvenNone(obj, attr, default):
     try:
-        getattr(obj, attr, default)
+        return getattr(obj, attr, default)
     except:
+        logger.exception()
         return default
 
 
