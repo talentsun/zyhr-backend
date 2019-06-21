@@ -304,6 +304,165 @@ def exportQingjiaAuditPDF(activity):
     return ret
 
 
+def exportTravelAuditPDF(activity):
+    auditData = activity.extra
+
+    ret = resolve_activity(activity)
+    ret['createdAt'] = activity.created_at.strftime('%Y-%m-%d')
+    items = ret['extra'].get('items', [])
+
+    total = {
+        'normal': 0,
+        'train': 0,
+        'car': 0,
+        'ship': 0,
+        'plane': 0,
+        'hotel': 0,
+        'traffic': 0,
+        'other': 0,
+        'amount2': 0
+    }
+    t = 0
+    for index, item in enumerate(items):
+        def parseDate(str):
+            return datetime.datetime.strptime(str, '%Y-%m-%d %H:%M:%S')
+
+        arr = []
+        item['arr'] = arr
+        startDate, endDate = parseDate(item['startTime']), parseDate(item['endTime'])
+        # row = str(firstItemRow + index)
+        arr.append(startDate.month)
+        # ws['C' + row] = startDate.month
+        # ws['C' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append(startDate.day)
+        # ws['D' + row] = startDate.day
+        # ws['D' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append(startDate.hour)
+        # ws['E' + row] = startDate.hour
+        # ws['E' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append(endDate.month)
+        # ws['F' + row] = endDate.month
+        # ws['F' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append(endDate.day)
+        # ws['G' + row] = endDate.day
+        # ws['G' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append(endDate.hour)
+        # ws['H' + row] = endDate.hour
+        # ws['H' + row].alignment = Alignment(vertical='center', horizontal='center')
+        days = item['days']
+        arr.append(days)
+        # days = item['days']
+        # ws['I' + row] = days
+        # ws['I' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        arr.append(item['place'])
+        # ws['J' + row] = item['place']
+        # ws['J' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append(item['days'])
+        # ws['K' + row] = days
+        # ws['K' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append(item['spec'])
+        # ws['L' + row] = item['spec']
+        # ws['L' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        normal = try_convert_float(item['spec']) * days
+        total['normal'] = total['normal'] + normal
+        arr.append(normal)
+        # ws['M' + row] = normal
+        # ws['M' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        train = try_convert_float(item.get('train', '0'))
+        total['train'] = total['train'] + train
+        arr.append(amountFixed(train))
+        # ws['N' + row] = amountFixed(train)
+        # ws['N' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        car = try_convert_float(item.get('car', '0'))
+        total['car'] = total['car'] + car
+        arr.append(amountFixed(car))
+        # ws['O' + row] = amountFixed(car)
+        # ws['O' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        ship = try_convert_float(item.get('ship', '0'))
+        total['ship'] = total['ship'] + ship
+        arr.append(amountFixed(ship))
+        # ws['P' + row] = amountFixed(ship)
+        # ws['P' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        plane = try_convert_float(item.get('plane', '0'))
+        total['plane'] = total['plane'] + plane
+        arr.append(amountFixed(plane))
+        # ws['Q' + row] = amountFixed(plane)
+        # ws['Q' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        hotel = try_convert_float(item.get('hotel', '0'))
+        total['hotel'] = total['hotel'] + hotel
+        arr.append(amountFixed(hotel))
+        # ws['R' + row] = amountFixed(hotel)
+        # ws['R' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        traffic = try_convert_float(item.get('traffic', '0'))
+        total['traffic'] = total['traffic'] + traffic
+        arr.append(amountFixed(traffic))
+        # ws['S' + row] = amountFixed(traffic)
+        # ws['S' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        item_value = item.get('other', '0')
+        if item_value == '':
+            item_value = '0'
+        other = try_convert_float(item_value)
+        total['other'] = total['other'] + other
+        arr.append(amountFixed(other))
+        # ws['T' + row] = amountFixed(other)
+        # ws['T' + row].alignment = Alignment(vertical='center', horizontal='center')
+        arr.append('')
+
+        amount1 = train + car + ship + plane + traffic + other + hotel
+        arr.append(amountFixed(amount1))
+        # ws['V' + row] = amountFixed(amount1)
+        # ws['V' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        amount2 = normal + amount1
+        total['amount2'] = amount2 + total['amount2']
+        arr.append(amountFixed(amount2))
+        # ws['W' + row] = amountFixed(amount2)
+        # ws['W' + row].alignment = Alignment(vertical='center', horizontal='center')
+
+        t = amount2 + t
+
+    ret['extra']['heji_arr'] = [
+        amountFixed(total['normal']),
+        amountFixed(total['train']),
+        amountFixed(total['car']),
+        amountFixed(total['ship']),
+        amountFixed(total['plane']),
+        amountFixed(total['hotel']),
+        amountFixed(total['traffic']),
+        amountFixed(total['other']),
+        '',
+        amountFixed(total['amount2']),
+        amountFixed(t),
+    ]
+    ret['extra']['heji_rmb'] = '合计人民币（大写）    {}'.format(convertToDaxieAmount(t))
+    info = auditData['info']
+    ret['extra']['yuanjiekuan'] = '原借差旅费 {} 元                 剩余交回 {} 元'.format(
+        amountFixed(try_convert_float(info['yuanjiekuan'])),
+        amountFixed(try_convert_float(info.get('shengyu', '0')))
+    )
+
+    costNumbers = []
+    ret['extra']['cost_numbers'] = costNumbers
+    amount = paddingAmount(t)
+    for j, ch in enumerate(amount):
+        costNumbers.append(ch)
+    ret['extra']['cost_jine'] = '金额大写：{}'.format(convertToDaxieAmount(t))
+    ret['extra']['cost_yuanjiekuan'] = '原借款：{} 元'.format(amountFixed(try_convert_float(info['yuanjiekuan'])))
+    if info.get('tuibukuan', None) is not None:
+        ret['extra']['cost_tuibukuan'] = '退补款：{} 元'.format(amountFixed(try_convert_float(info.get('tuibukuan'))))
+
+    return ret
+
+
 def exportPDFData(activity):
     payload = None
     if activity.config.subtype == 'open_account':
@@ -318,10 +477,8 @@ def exportPDFData(activity):
         payload = exportBizContractAuditPDF(activity)
     elif re.match('fn', activity.config.subtype):
         payload = exportFnContractAuditPDF(activity)
-    # elif re.match('travel', activity.config.subtype):
-    #    # travel
-    #    path = exportTravelAuditDoc(activity)
-    #    filename = '差旅费用报销审批单.xlsx'
+    elif re.match('travel', activity.config.subtype):
+        payload = exportTravelAuditPDF(activity)
     # elif activity.config.subtype == 'yongren':
     #    # yongren
     #    path = exportYongrenAuditDoc(activity)
