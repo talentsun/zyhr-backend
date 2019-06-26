@@ -488,8 +488,8 @@ def approveStep(request, stepId):
             logger.info("{} activity has been approved, activity: {}".format(taskId, activity.pk))
 
             activity.state = AuditActivity.StateApproved
-            if activity.config.hasTask:
-                activity.taskState = 'pending'
+            # if activity.config.hasTask:
+            activity.taskState = 'pending'
             activity.save()
 
             onActivityEnd(activity)
@@ -860,7 +860,6 @@ def auditTasks(request):
     activities = AuditActivity.objects \
         .select_related('creator', 'config') \
         .filter(state__in=[AuditActivity.StateApproved, AuditActivity.StateObsolete],
-                config__hasTask=True,
                 archived=False)
     if notEmpty(auditType):
         activities = activities.filter(
@@ -877,9 +876,9 @@ def auditTasks(request):
 
     profile = request.profile
     if profile.department.code == 'hr':
-        activities = activities.filter(config__category__in=['law', 'hr'])
+        activities = activities.exclude(config__subtype__in=['travel', 'money', 'cost', 'loan', 'open_account'])
     elif profile.department.code == 'fin':
-        activities = activities.filter(config__category='fin')
+        activities = activities.filter(config__subtype__in=['travel', 'money', 'cost', 'loan', 'open_account'])
 
     activities = activities.order_by('-updated_at')
     total = activities.count()
