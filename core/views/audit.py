@@ -401,6 +401,16 @@ def submitAudit(request, activityId):
 @require_http_methods(['POST'])
 @validateToken
 @transaction.atomic
+def archive(request, activityId):
+    activity = AuditActivity.objects.get(pk=activityId)
+    activity.archived = True
+    activity.save()
+    return JsonResponse({'ok': True})
+
+
+@require_http_methods(['POST'])
+@validateToken
+@transaction.atomic
 def relaunch(request, activityId):
     taskId = uuid.uuid4()
     logger.info("{} relaunch activity, activity: {}".format(taskId, activityId))

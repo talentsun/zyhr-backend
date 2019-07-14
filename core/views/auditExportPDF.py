@@ -330,82 +330,46 @@ def exportTravelAuditPDF(activity):
         arr = []
         item['arr'] = arr
         startDate, endDate = parseDate(item['startTime']), parseDate(item['endTime'])
-        # row = str(firstItemRow + index)
         arr.append(startDate.month)
-        # ws['C' + row] = startDate.month
-        # ws['C' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append(startDate.day)
-        # ws['D' + row] = startDate.day
-        # ws['D' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append(startDate.hour)
-        # ws['E' + row] = startDate.hour
-        # ws['E' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append(endDate.month)
-        # ws['F' + row] = endDate.month
-        # ws['F' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append(endDate.day)
-        # ws['G' + row] = endDate.day
-        # ws['G' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append(endDate.hour)
-        # ws['H' + row] = endDate.hour
-        # ws['H' + row].alignment = Alignment(vertical='center', horizontal='center')
         days = item['days']
         arr.append(days)
-        # days = item['days']
-        # ws['I' + row] = days
-        # ws['I' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         arr.append(item['place'])
-        # ws['J' + row] = item['place']
-        # ws['J' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append(item['days'])
-        # ws['K' + row] = days
-        # ws['K' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append(item['spec'])
-        # ws['L' + row] = item['spec']
-        # ws['L' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         normal = try_convert_float(item['spec']) * days
         total['normal'] = total['normal'] + normal
         arr.append(normal)
-        # ws['M' + row] = normal
-        # ws['M' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         train = try_convert_float(item.get('train', '0'))
         total['train'] = total['train'] + train
         arr.append(amountFixed(train))
-        # ws['N' + row] = amountFixed(train)
-        # ws['N' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         car = try_convert_float(item.get('car', '0'))
         total['car'] = total['car'] + car
         arr.append(amountFixed(car))
-        # ws['O' + row] = amountFixed(car)
-        # ws['O' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         ship = try_convert_float(item.get('ship', '0'))
         total['ship'] = total['ship'] + ship
         arr.append(amountFixed(ship))
-        # ws['P' + row] = amountFixed(ship)
-        # ws['P' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         plane = try_convert_float(item.get('plane', '0'))
         total['plane'] = total['plane'] + plane
         arr.append(amountFixed(plane))
-        # ws['Q' + row] = amountFixed(plane)
-        # ws['Q' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         hotel = try_convert_float(item.get('hotel', '0'))
         total['hotel'] = total['hotel'] + hotel
         arr.append(amountFixed(hotel))
-        # ws['R' + row] = amountFixed(hotel)
-        # ws['R' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         traffic = try_convert_float(item.get('traffic', '0'))
         total['traffic'] = total['traffic'] + traffic
         arr.append(amountFixed(traffic))
-        # ws['S' + row] = amountFixed(traffic)
-        # ws['S' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         item_value = item.get('other', '0')
         if item_value == '':
@@ -413,20 +377,14 @@ def exportTravelAuditPDF(activity):
         other = try_convert_float(item_value)
         total['other'] = total['other'] + other
         arr.append(amountFixed(other))
-        # ws['T' + row] = amountFixed(other)
-        # ws['T' + row].alignment = Alignment(vertical='center', horizontal='center')
         arr.append('')
 
         amount1 = train + car + ship + plane + traffic + other + hotel
         arr.append(amountFixed(amount1))
-        # ws['V' + row] = amountFixed(amount1)
-        # ws['V' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         amount2 = normal + amount1
         total['amount2'] = amount2 + total['amount2']
         arr.append(amountFixed(amount2))
-        # ws['W' + row] = amountFixed(amount2)
-        # ws['W' + row].alignment = Alignment(vertical='center', horizontal='center')
 
         t = amount2 + t
 
@@ -459,6 +417,10 @@ def exportTravelAuditPDF(activity):
     ret['extra']['cost_yuanjiekuan'] = '原借款：{} 元'.format(amountFixed(try_convert_float(info['yuanjiekuan'])))
     if info.get('tuibukuan', None) is not None:
         ret['extra']['cost_tuibukuan'] = '退补款：{} 元'.format(amountFixed(try_convert_float(info.get('tuibukuan'))))
+
+    account = auditData['account']
+    ret['extra']['zhanghu_xinxi'] = '户名：{}\n收款账号:{} \n开户行：{}'. \
+        format(account['name'], account['number'], account['bank'])
 
     return ret
 
