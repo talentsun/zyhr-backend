@@ -4,6 +4,9 @@ from core.common import *
 
 
 def try_convert_float(s):
+    if s is None or s == '':
+        return 0.0
+
     if s[-1] == '元':
         return float(s[0:-1])
     else:
