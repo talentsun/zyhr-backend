@@ -73,6 +73,7 @@ urlpatterns = [
     path(r'messages/<uuid:messageId>/actions/mark-read', message.markRead),
 
     # emps api
+    path(r'export-emps', emps.export),
     path(r'emps', emps.index),
     path(r'emps/<uuid:empId>', emps.detail),
     path(r'emps/<uuid:empId>/actions/update-state', emps.updateState),

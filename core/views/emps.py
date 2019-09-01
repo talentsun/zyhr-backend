@@ -5,13 +5,45 @@ import json
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from sendfile import sendfile
 
 from core.models import *
 from core.auth import validateToken
 from core.common import *
 from core.exception import *
+from openpyxl import Workbook
 
 logger = logging.getLogger('app.core.views.emps')
+
+
+@require_http_methods(['GET'])
+def export(request):
+    depId = request.GET.get('dep', None)
+    dep = Department.objects.filter(pk=depId).first()
+    emps = Profile.objects.filter(department=dep, archived=False)
+
+    wb = Workbook()
+    ws = wb.active
+    ws['A1'] = '姓名'
+    ws['B1'] = '职位'
+    ws['C1'] = '手机号'
+    ws['D1'] = '邮箱'
+    for index, emp in enumerate(emps):
+        r = index + 2
+        cell = ws.cell(row=r, column=1)
+        cell.value = emp.name
+        cell = ws.cell(row=r, column=2)
+        cell.value = emp.position.name if emp.position is not None else ''
+        cell = ws.cell(row=r, column=3)
+        cell.value = emp.phone
+        cell = ws.cell(row=r, column=4)
+        cell.value = emp.email
+
+    path = '/tmp/{}.xlsx'.format(str(uuid.uuid4()))
+    wb.save(path)
+    return sendfile(request, path,
+                    attachment=True,
+                    attachment_filename=path)
 
 
 @require_http_methods(['GET', 'POST'])
@@ -25,6 +57,12 @@ def index(request):
         profiles = Profile.objects \
             .filter(archived=False) \
             .order_by('-updated_at')
+
+        depId = request.GET.get('dep', None)
+        if depId is not None:
+            dep = Department.objects.filter(pk=depId).first()
+            profiles = profiles.filter(department=dep)
+
         total = profiles.count()
         profiles = profiles[start:start + limit]
         return JsonResponse({
