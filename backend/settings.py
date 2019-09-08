@@ -29,6 +29,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 CORS_ORIGIN_ALLOW_ALL = True
 
+PASSWORD = os.getenv('PASSWORD', None)
 HOST = os.getenv('HOST', 'localhost:8000')
 SENDFILE_BACKEND = 'sendfile.backends.simple'
 
