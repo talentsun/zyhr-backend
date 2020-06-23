@@ -407,7 +407,7 @@ def exportTravelAuditPDF(activity):
     ret['extra']['heji_rmb'] = '合计人民币（大写）    {}'.format(convertToDaxieAmount(t))
     info = auditData['info']
     ret['extra']['yuanjiekuan'] = '原借差旅费 {} 元                 剩余交回 {} 元'.format(
-        amountFixed(try_convert_float(info.get('yuanjiekuan', '0')),
+        amountFixed(try_convert_float(info.get('yuanjiekuan', '0'))),
         amountFixed(try_convert_float(info.get('shengyu', '0')))
     )
 
