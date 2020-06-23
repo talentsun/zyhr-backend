@@ -417,7 +417,7 @@ def exportTravelAuditPDF(activity):
     for j, ch in enumerate(amount):
         costNumbers.append(ch)
     ret['extra']['cost_jine'] = '金额大写：{}'.format(convertToDaxieAmount(t))
-    ret['extra']['cost_yuanjiekuan'] = '原借款：{} 元'.format(amountFixed(try_convert_float(info['yuanjiekuan'])))
+    ret['extra']['cost_yuanjiekuan'] = '原借款：{} 元'.format(amountFixed(try_convert_float(info.get('yuanjiekuan', '0'))))
     if info.get('tuibukuan', None) is not None:
         ret['extra']['cost_tuibukuan'] = '退补款：{} 元'.format(amountFixed(try_convert_float(info.get('tuibukuan'))))
 
