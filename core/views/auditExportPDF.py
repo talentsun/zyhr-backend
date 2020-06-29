@@ -158,7 +158,8 @@ def exportMoneyAuditPDF(activity):
     ret['createdAt'] = activity.created_at.strftime('%Y-%m-%d')
 
     ret['extra']['daxie_yingfu'] = '（大写）{}'.format(convertToDaxieAmount(try_convert_float(info['amount'])))
-    ret['extra']['xiaoxie_yingfu'] = '￥' + amountFixed(try_convert_float(info['amount']))
+    currency = info.get('currency', "RMB")
+    ret['extra']['xiaoxie_yingfu'] = ('￥' if currency == 'RMB' else 'HK$') + amountFixed(try_convert_float(info['amount']))
     outAccount = auditData['outAccount']
     ret['extra']['fukuan_fangshi'] = '现金' if outAccount['type'] == 'cash' else '转账'
 
